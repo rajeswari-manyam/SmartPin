@@ -1,0 +1,170 @@
+{
+    "home": "Home",
+    "jobs": "Jobs",
+    "freeListing": "Free Listing",
+    "login": "Login / Sign Up",
+    "notifications": "Notifications",
+    "tagline": "Find Local Service Experts",
+    "searchPlaceholder": "Search for services...",
+    "searching": "Searching...",
+    "search": "Search",
+    "listening": "Listening... Speak now",
+    "voiceHint": "Speak to search services instantly",
+    "downloadApp": "Download App",
+    "popularCategories": "Popular Categories",
+    "exploreServices": "Explore services across various categories",
+    "viewAllCategories": "View All Categories →",
+    "categories": {
+        "restaurants": "Restaurants & Food",
+        "hospitals": "Hospitals & Healthcare",
+        "plumbers": "Plumbers & Home Repair",
+        "hotels": "Hotels & Travel",
+        "beauty": "Beauty & Wellness",
+        "realEstate": "Real Estate",
+        "shopping": "Shopping & Retail",
+        "education": "Education & Training",
+        "automotive": "Automotive",
+        "business": "Business Services",
+        "tech": "Tech & Digital",
+        "pets": "Pet Services",
+        "events": "Events & Entertainment",
+        "industrial": "Industrial Services",
+        "courier": "Courier & Logistics",
+        "labour": "Daily Wage Labour",
+        "agriculture": "Agriculture & Farming",
+        "corporate": "Corporate Services",
+        "creative": "Creative & Art",
+        "wedding": "Wedding Services"
+    },
+    "promo": {
+        "partTime": {
+            "title": "💼 Find Part-Time Jobs",
+            "subtitle": "Flexible Opportunities Await",
+            "description": "Discover thousands of part-time positions perfect for students, professionals, and anyone seeking flexible work.",
+            "button": "Browse Jobs"
+        },
+        "remote": {
+            "title": "🏠 Work From Home",
+            "subtitle": "Remote Opportunities",
+            "description": "Find remote part-time jobs that let you work from anywhere. Perfect for work-life balance.",
+            "button": "View Remote Jobs"
+        },
+        "student": {
+            "title": "🎓 Student-Friendly Jobs",
+            "subtitle": "Earn While You Learn",
+            "description": "Part-time positions designed around your class schedule. Gain experience and earn money simultaneously.",
+            "button": "Student Jobs"
+        },
+        "flexible": {
+            "title": "⏰ Flexible Hours",
+            "subtitle": "Work On Your Schedule",
+            "description": "Choose jobs with evening, weekend, or flexible shifts. Perfect for those with other commitments.",
+            "button": "Find Flexible Jobs"
+        },
+        "highPaying": {
+            "title": "💰 High-Paying Gigs",
+            "subtitle": "Maximize Your Earnings",
+            "description": "Discover part-time positions with competitive pay. Earn more in less time with premium opportunities.",
+            "button": "View High-Paying Jobs"
+        }
+    },
+    "marketplace": {
+        "tabs": {
+            "matched": "Matched Jobs",
+            "invitations": "Invitations",
+            "myJobs": "My Jobs"
+        },
+        "stats": {
+            "activeJobs": "Active Jobs",
+            "thisMonth": "This Month"
+        },
+        "noJobs": "No jobs available at the moment"
+    },
+    "jobDetails": {
+        "sections": {
+            "customerDetails": "Customer Details",
+            "jobInformation": "Job Information",
+            "location": "Location"
+        },
+        "labels": {
+            "name": "Name:",
+            "distance": "Distance:",
+            "type": "Type:",
+            "budget": "Budget:"
+        },
+        "actions": {
+            "call": "Call Customer",
+            "message": "Send Message",
+            "accept": "Accept This Job"
+        }
+    },
+    "welcome": {
+        "subtitle": "Find skilled professionals or offer your services",
+        "tapVoice": "Tap to use voice assistance",
+        "listening": "Listening... speak now",
+        "getStarted": "Get Started",
+        "alreadyHaveAccount": "Already have an account? Login",
+        "voiceNotSupported": "Voice recognition not supported in this browser"
+    },
+    "auth": {
+        "welcomeBack": "Welcome back!",
+        "findProfessionals": "Find skilled professionals for your needs",
+        "listening": "Listening... Speak your number",
+        "voiceAssistance": "Voice assistance available throughout",
+        "mobileNumber": "Mobile Number",
+        "verifyText": "We'll send you an OTP to verify your number",
+        "sendOTP": "Send OTP",
+        "agreeTo": "By continuing, you agree to our",
+        "terms": "Terms & Conditions",
+        "privacy": "Privacy Policy"
+    },
+    "workerProfile": {
+        "title": "Create Your Worker Profile",
+        "fillVoice": "Fill profile using voice",
+        "fullName": "Full Name",
+        "fullNamePlaceholder": "Your full name",
+        "email": "Email",
+        "skills": "Skills & Expertise",
+        "skillsPlaceholder": "e.g., Plumbing, AC Repair, 5 years experience",
+        "bio": "Bio / Experience",
+        "bioPlaceholder": "Tell us about your experience and services...",
+        "speakBio": "Speak Bio",
+        "saveContinue": "Save & Continue",
+        "validationError": "Please fill in all required fields: Name, Category, Subcategory, City, and Service Charges"
+    },
+    "profile": {
+        "title": "Profile",
+        "close": "Close"
+    },
+    "roleSelection": {
+        "title": "How would you like to use our platform?",
+        "subtitle": "Choose your role to get started with our services",
+        "back": "Back",
+        "worker": {
+            "title": "I'm a Worker",
+            "description": "Offer your services and earn money by connecting with customers"
+        },
+        "customer": {
+            "title": "I'm a Customer",
+            "description": "Find and hire skilled professionals for your service needs",
+            "continue": "Continue as Customer"
+        },
+        "voice": {
+            "hint": "Select your role to access our complete range of services",
+            "notSupported": "Voice recognition not available - please click a role to select"
+        }
+    },
+    "otp": {
+        "verifyTitle": "Verify Phone Number",
+        "sentTo": "Code sent to",
+        "enterCode": "Enter Verification Code",
+        "verify": "Verify",
+        "verifying": "Verifying...",
+        "resend": "Resend Code",
+        "resendIn": "Resend in",
+        "success": {
+            "title": "Verified Successfully",
+            "message": "Your phone number has been verified"
+        }
+    }
+}

@@ -1,0 +1,37 @@
+{
+  "places": [
+    {
+      "categoryId": 1,
+      "categoryName": "Food & Drinks",
+      "items": [
+        { "name": "Restaurants", "icon": "🍴" },
+        { "name": "Cafes", "icon": "☕" },
+        { "name": "Bakeries", "icon": "🥖" },
+        { "name": "Juice & Smoothie Shops", "icon": "🥤" },
+        { "name": "Sweet Shops", "icon": "🍬" },
+        { "name": "Ice Cream Parlours", "icon": "🍦" }
+      ]
+    },
+    {
+      "categoryId": 2,
+      "categoryName": "Shops & Stores",
+      "items": [
+        { "name": "Grocery Stores", "icon": "🛒" },
+        { "name": "Supermarkets", "icon": "🏪" },
+        { "name": "Clothing Stores", "icon": "👕" },
+        { "name": "Shoe Shops", "icon": "👟" },
+        { "name": "Mobile Stores", "icon": "📱" }
+      ]
+    },
+    {
+      "categoryId": 3,
+      "categoryName": "Pet Services",
+      "items": [
+        { "name": "Pet Shops", "icon": "🐕" },
+        { "name": "Pet Grooming", "icon": "✂️" },
+        { "name": "Pet Training", "icon": "🦮" },
+        { "name": "Vet Clinics", "icon": "🩺" }
+      ]
+    }
+  ]
+}

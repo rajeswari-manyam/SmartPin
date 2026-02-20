@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out;
+  }
+}
+
+/* Hide Google Translate banner & branding */
+.goog-logo-link,
+.goog-te-gadget {
+  display: none !important;
+}
+
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+  @apply bg-secondary;
+}
+
+/* Keep hidden dropdown usable */
+.goog-te-combo {
+  position: absolute !important;
+  top: 60px;
+  /* adjust below navbar */
+  right: 20px;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+/* Dropdown animation */
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
