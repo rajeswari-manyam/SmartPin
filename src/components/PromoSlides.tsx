@@ -137,7 +137,7 @@ const PromoSlides: React.FC<PromoSlidesProps> = ({ className = "" }) => {
                                         {/* Button */}
                                         <button
                                             onClick={() => navigate(slide.path)}
-                                            className={`mt-4 md:mt-6 bg-white text-gray-800 px-8 md:px-10 py-3 md:py-4 rounded-full ${fontWeight.bold} ${responsiveFontSize.lg} hover:bg-gray-100 transition-all duration-300 shadow-2xl hover:shadow-3xl hover:scale-105 transform`}
+                                            className={`mt-4 md:mt-6 bg-white text-gray-800 px-8 md:px-10 py-3 md:py-4 rounded-full ${fontWeight.bold} ${responsiveFontSize.lg} hover:bg-[#00598a] transition-all duration-300 shadow-2xl hover:shadow-3xl hover:scale-105 transform`}
                                         >
                                             {slide.buttonText} →
                                         </button>
@@ -181,7 +181,7 @@ const PromoSlides: React.FC<PromoSlidesProps> = ({ className = "" }) => {
                                         {/* Button */}
                                         <button
                                             onClick={() => navigate(slide.path)}
-                                            className={`mt-4 md:mt-6 bg-white text-gray-800 px-6 md:px-8 py-2.5 md:py-3 rounded-full ${fontWeight.bold} ${responsiveFontSize.base} hover:bg-gray-100 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform`}
+                                            className={`mt-4 md:mt-6 bg-white text-gray-800 px-6 md:px-8 py-2.5 md:py-3 rounded-full ${fontWeight.bold} ${responsiveFontSize.base} hover:bg-[#00598a] transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 transform`}
                                         >
                                             {slide.buttonText} →
                                         </button>

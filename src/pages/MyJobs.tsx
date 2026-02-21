@@ -154,14 +154,14 @@ const JobCard: React.FC<{
             <div className="px-4 pb-3 grid grid-cols-2 gap-2">
                 <button
                     onClick={() => onEdit(job._id)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition active:scale-95"
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-gray-100 hover:bg-[#00598a]/60 text-[#00598a] font-semibold text-sm transition active:scale-95"
                 >
                     <Pencil size={14} />
                     Edit
                 </button>
                 <button
                     onClick={() => onDelete(job._id)}
-                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-sm transition active:scale-95"
+                    className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-50 hover:bg-[#00598a]/60 text-red-600 font-semibold text-sm transition active:scale-95"
                 >
                     <Trash2 size={14} />
                     Delete
@@ -286,7 +286,7 @@ const MyJobsPage: React.FC<MyJobsPageProps> = ({ userId, userName = "User" }) =>
                     <button
                         onClick={() => fetchJobs(true)}
                         disabled={refreshing}
-                        className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center shadow-sm hover:bg-gray-50 transition active:scale-95"
+                        className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center shadow-sm hover:bg-[#00598a]/60 transition active:scale-95"
                     >
                         <RefreshCw size={16} className={`text-blue-500 ${refreshing ? "animate-spin" : ""}`} />
                     </button>
@@ -312,7 +312,7 @@ const MyJobsPage: React.FC<MyJobsPageProps> = ({ userId, userName = "User" }) =>
                         </p>
                         <button
                             onClick={() => navigate("/post-job")}
-                            className="bg-orange-500 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-orange-600 transition"
+                            className="bg-[#00598a] text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-[#00598a]/60 transition"
                         >
                             + Post a Job
                         </button>
@@ -335,7 +335,7 @@ const MyJobsPage: React.FC<MyJobsPageProps> = ({ userId, userName = "User" }) =>
                 {/* ── FAB: Add new job ── */}
                 <button
                     onClick={() => navigate("/post-job")}
-                    className="fixed bottom-24 right-5 w-14 h-14 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg shadow-orange-200 flex items-center justify-center transition-all active:scale-95 z-50"
+                    className="fixed bottom-24 right-5 w-14 h-14 bg-[#00598a] hover:bg-[#00598a] text-white rounded-full shadow-lg shadow-[#00598a] flex items-center justify-center transition-all active:scale-95 z-50"
                 >
                     <Plus size={24} />
                 </button>

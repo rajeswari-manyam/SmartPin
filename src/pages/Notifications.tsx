@@ -175,7 +175,7 @@ const NotificationsPage: React.FC = () => {
                                 {/* Mark as Read Button */}
                                 <button
                                     onClick={() => handleMarkAsRead(notification.id)}
-                                    className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="flex-shrink-0 p-1 hover:bg-[#00598a]/100 rounded-full transition-colors"
                                 >
                                     {notification.read ? (
                                         <CheckCircle className="w-6 h-6 text-green-500" />

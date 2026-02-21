@@ -124,7 +124,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
-                <div className="bg-[#f09b13] px-6 py-8 text-center">
+                <div className="bg-[#00598a] px-6 py-8 text-center">
 
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">😊</span>
@@ -154,7 +154,7 @@ const UserModal: React.FC<UserModalProps> = ({
                                 setError(null);
                             }}
                             placeholder="Enter your name"
-                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#f09b13] text-gray-900"
+                            className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#00598a] text-gray-900"
                             autoFocus
                             disabled={isSubmitting}
                         />

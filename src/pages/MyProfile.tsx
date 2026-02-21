@@ -330,7 +330,7 @@ const MyProfile: React.FC = () => {
           <div className="relative group">
             <div
               onClick={handleImageClick}
-              className={`w-32 h-32 rounded-full overflow-hidden bg-gradient-to-r from-[#f09b13] to-[#f0c413] flex items-center justify-center shadow-lg ${isEditing ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+              className={`w-32 h-32 rounded-full overflow-hidden bg-gradient-to-r from-[#00598a] to-[#00598a] flex items-center justify-center shadow-lg ${isEditing ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
                 }`}
             >
               {profilePic ? (

@@ -62,10 +62,11 @@ const iconMap: Record<number, string> = {
     22: WeddingIcon,
 };
 
-// 🎨 Theme colors (same as screenshot)
-const BORDER_COLOR = "#f09b13";
-const ICON_BG_COLOR = "#f09b13";
-const TEXT_COLOR = "#f09b13";
+// 🎨 Theme colors
+const BORDER_COLOR = "#00598a";
+const ICON_BG_COLOR = "#00598a"; // 🔵 icons color
+const TEXT_COLOR = "#00598a"; // 🟢 text color
+const PAGE_BG_COLOR = "#F8FAFC";
 
 const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
     const navigate = useNavigate();
@@ -77,7 +78,10 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
     };
 
     return (
-        <div className="w-full py-12 bg-white">
+        <div
+            className="w-full py-12"
+            style={{ backgroundColor: PAGE_BG_COLOR }}
+        >
             <div className="max-w-7xl mx-auto px-6">
 
                 {/* Header */}
@@ -97,15 +101,14 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
                             key={category.id}
                             onClick={() => handleCategoryClick(category.id)}
                             className="
-                group rounded-3xl p-6 bg-white
-                border
-                transition-all duration-300 ease-out
-                hover:-translate-y-1 hover:shadow-xl
-                cursor-pointer
-              "
+                                group rounded-3xl p-6 bg-white
+                                border transition-all duration-300 ease-out
+                                hover:-translate-y-1 hover:shadow-xl
+                                cursor-pointer
+                            "
                             style={{
                                 minHeight: "160px",
-                                borderColor: BORDER_COLOR, // ✅ always blue
+                                borderColor: BORDER_COLOR,
                             }}
                         >
                             <div className="flex flex-col items-center justify-center h-full space-y-4">

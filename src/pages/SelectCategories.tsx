@@ -181,7 +181,7 @@ const SelectCategoriesScreen: React.FC = () => {
                     <button
                         onClick={handleVoiceSearch}
                         disabled={!isVoiceSupported}
-                        className={`flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 min-w-[200px] hover:scale-105 ${isListening ? 'animate-pulse ring-4 ring-red-300' : ''
+                        className={`flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#00598a] to-[#00598a] text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 min-w-[200px] hover:scale-105 ${isListening ? 'animate-pulse ring-4 ring-red-300' : ''
                             } ${!isVoiceSupported ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {isListening ? (

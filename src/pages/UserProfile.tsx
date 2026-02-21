@@ -323,7 +323,7 @@ const UserProfile: React.FC = () => {
 
       const jobData: CreateJobPayload = {
         userId: user._id,
-          name: localStorage.getItem('userName') || '',   // ← ADD THIS
+        name: localStorage.getItem('userName') || '',   // ← ADD THIS
         title: formData.title.trim(),
         description: formData.description.trim(),
         category: formData.category.trim(),
@@ -566,7 +566,7 @@ const UserProfile: React.FC = () => {
             <button
               type="button"
               onClick={handleUseCurrentLocation}
-              className="flex items-center gap-2 text-blue-600 text-sm font-medium hover:underline"
+              className="flex items-center gap-2 text-blue-600 text-sm font-medium :underline"
             >
               <img src={locationIcon} className="w-4 h-4" alt="location" />
               Use Current Location

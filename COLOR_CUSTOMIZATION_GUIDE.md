@@ -15,9 +15,9 @@ Find these lines and change the hex color values:
 export const colors = {
     // Primary Colors
     primary: {
-        main: '#f09b13',        // ← Change this to your desired primary color
-        light: '#f09b13',       // ← Lighter shade for hover effects
-        dark: '#f09b13',        // ← Darker shade for pressed states
+        main: '#00598a',        // ← Change this to your desired primary color
+        light: '#00598a',       // ← Lighter shade for hover effects
+        dark: '#00598a',        // ← Darker shade for pressed states
     },
 
     // Secondary/Background Colors
@@ -96,9 +96,9 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#f09b13',  // Change this
-          light: '#f09b13',
-          dark: '#f09b13',
+          DEFAULT: '#00598a',  // Change this
+          light: '#00598a',
+          dark: '#00598a',
         },
         secondary: {
           DEFAULT: '#F0F0F0',  // Change this
@@ -141,7 +141,7 @@ After changing colors:
 ## Color Palette Recommendations
 
 ### Professional Blue (Current)
-- Primary: `#f09b13`
+- Primary: `#00598a`
 - Secondary: `#F0F0F0`
 
 ### Modern Purple
@@ -153,7 +153,7 @@ After changing colors:
 - Secondary: `#D1FAE5`
 
 ### Vibrant Orange
-- Primary: `#f09b13`
+- Primary: `#00598a`
 - Secondary: `#FED7AA`
 
 ### Corporate Navy

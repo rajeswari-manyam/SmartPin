@@ -76,13 +76,13 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
         const sub = selectedSubcategory.toLowerCase().replace(/\s+/g, "-");
 
         switch (selectedCategoryId) {
-          
-            case 3:  return `/add-hospital-service-form?subcategory=${sub}`;
-            case 4:  return `/add-hotel-service-form?subcategory=${sub}`;
-            case 5:  return `/add-beauty-service-form?subcategory=${sub}`;
-            case 6:  return `/add-sports-service-form?subcategory=${sub}`;
-            case 7:  return `/add-education-form?subcategory=${sub}`;
-            case 9:  return `/add-shopping-form?subcategory=${sub}`;
+
+            case 3: return `/add-hospital-service-form?subcategory=${sub}`;
+            case 4: return `/add-hotel-service-form?subcategory=${sub}`;
+            case 5: return `/add-beauty-service-form?subcategory=${sub}`;
+            case 6: return `/add-sports-service-form?subcategory=${sub}`;
+            case 7: return `/add-education-form?subcategory=${sub}`;
+            case 9: return `/add-shopping-form?subcategory=${sub}`;
             case 12: return `/add-digital-service-form?subcategory=${sub}`;
             case 13: return `/add-pet-service-form?subcategory=${sub}`;
             case 14: return `/add-event-service-form?subcategory=${sub}`;
@@ -94,7 +94,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
             case 20: return `/add-corporative-form?subcategory=${sub}`;
             case 21: return `/add-wedding-form?subcategory=${sub}`;
             case 22: return `/add-art-form?subcategory=${sub}`;
-             case 23: return `/add-automotive-form?subcategory=${sub}`;
+            case 23: return `/add-automotive-form?subcategory=${sub}`;
             case 24: return `/add-real-estate-form?subcategory=${sub}`;
 
             case 26: return `/add-food-form?subcategory=${sub}`;
@@ -140,7 +140,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={fetchAllData}
-                        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl hover:bg-blue-600 transition font-semibold"
+                        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl :bg-blue-600 transition font-semibold"
                     >
                         Try Again
                     </button>
@@ -162,7 +162,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                 My Busines
                             </h1>
                         </div>
-                      
+
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -194,7 +194,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                     </div>
                 </div>
 
-              
+
 
                 {/* ─── ACTIVE FILTER TAGS ───────────────────────────────────── */}
                 {(selectedCategoryId || selectedSubcategory) && (
@@ -239,11 +239,11 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                             hideEmptyState={true}
                                         />
                                     )}
-                                  
+
                                     {selectedCategoryId === 3 && (
                                         <HospitalUserService
                                             userId={userId}
-                                            data={filterItems(allData.healthcare)}      
+                                            data={filterItems(allData.healthcare)}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
@@ -252,7 +252,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 4 && (
                                         <HotelUserService
                                             userId={userId}
-                                            data={filterItems(allData.hotelTravel)}      
+                                            data={filterItems(allData.hotelTravel)}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
@@ -307,7 +307,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 12 && (
                                         <DigitalUserService
                                             userId={userId}
-                                            data={allData.techDigital}                   
+                                            data={allData.techDigital}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
@@ -325,7 +325,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 14 && (
                                         <EventUserService
                                             userId={userId}
-                                            data={filterItems(allData.events)}            
+                                            data={filterItems(allData.events)}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
@@ -334,7 +334,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 15 && (
                                         <IndustrialUserService
                                             userId={userId}
-                                            data={filterItems(allData.industrialLocal)}  
+                                            data={filterItems(allData.industrialLocal)}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
@@ -379,7 +379,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 20 && (
                                         <CorporativeUserService
                                             userId={userId}
-                                            data={filterItems(allData.corporate)}        
+                                            data={filterItems(allData.corporate)}
                                             hideHeader={false}
                                             hideEmptyState={true}
                                         />
@@ -396,13 +396,13 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                                     {selectedCategoryId === 22 && (
                                         <ArtUserService
                                             userId={userId}
-                                            data={filterItems(allData.creative)}         
+                                            data={filterItems(allData.creative)}
                                             selectedSubcategory={selectedSubcategory}
                                             hideHeader={false}
                                             hideEmptyState={true}
                                         />
                                     )}
-                                    
+
                                     {selectedCategoryId === 24 && (
                                         <RealEstateUserService
                                             userId={userId}
@@ -434,26 +434,26 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                         <>
 
 
-                            <HospitalUserService    userId={userId} data={allData.healthcare}        hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hospital */}
-                            <HotelUserService       userId={userId} data={allData.hotelTravel}       hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hotel */}
-                            <BeautyUserService      userId={userId} data={allData.beauty}            hideHeader={false} hideEmptyState={true} />
-                            <RealEstateUserService  userId={userId} data={allData.realEstate}        hideHeader={false} hideEmptyState={true} />
-                            <ShoppingUserService    userId={userId} data={allData.shopping}          hideHeader={false} hideEmptyState={true} />
-                            <EducationUserService   userId={userId} data={allData.education}         hideHeader={false} hideEmptyState={true} />
-                            <DigitalUserService     userId={userId} data={allData.techDigital}       hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.digital */}
-                            <PetUserService         userId={userId} data={allData.pet}               hideHeader={false} hideEmptyState={true} />
-                            <EventUserService       userId={userId} data={allData.events}            hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.event */}
-                            <IndustrialUserService  userId={userId} data={allData.industrialLocal}   hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.industrial */}
-                            <BusinessUserService    userId={userId} data={allData.business}          hideHeader={false} hideEmptyState={true} />
-                            <CourierUserService     userId={userId} data={allData.courier}           hideHeader={false} hideEmptyState={true} />
-                            <DailyWageUserService   userId={userId} data={allData.dailyWage}         hideHeader={false} hideEmptyState={true} />
-                            <AgricultureUserService userId={userId} data={allData.agriculture}       hideHeader={false} hideEmptyState={true} />
-                            <CorporativeUserService userId={userId} data={allData.corporate}         hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.corporative */}
-                            <WeddingUserService     userId={userId} data={allData.wedding}           hideHeader={false} hideEmptyState={true} />
-                            <ArtUserService         userId={userId} data={allData.creative}          hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.art */}
-                             <AutomotiveUserService   userId={userId} data={allData.automotive}       hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.automotive */}   
-                            <SportsUserService      userId={userId} data={allData.sports}            hideHeader={false} hideEmptyState={true} />
-                            <FoodUserService     userId={userId} data={allData.food}              hideHeader={false} hideEmptyState={true} />
+                            <HospitalUserService userId={userId} data={allData.healthcare} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hospital */}
+                            <HotelUserService userId={userId} data={allData.hotelTravel} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hotel */}
+                            <BeautyUserService userId={userId} data={allData.beauty} hideHeader={false} hideEmptyState={true} />
+                            <RealEstateUserService userId={userId} data={allData.realEstate} hideHeader={false} hideEmptyState={true} />
+                            <ShoppingUserService userId={userId} data={allData.shopping} hideHeader={false} hideEmptyState={true} />
+                            <EducationUserService userId={userId} data={allData.education} hideHeader={false} hideEmptyState={true} />
+                            <DigitalUserService userId={userId} data={allData.techDigital} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.digital */}
+                            <PetUserService userId={userId} data={allData.pet} hideHeader={false} hideEmptyState={true} />
+                            <EventUserService userId={userId} data={allData.events} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.event */}
+                            <IndustrialUserService userId={userId} data={allData.industrialLocal} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.industrial */}
+                            <BusinessUserService userId={userId} data={allData.business} hideHeader={false} hideEmptyState={true} />
+                            <CourierUserService userId={userId} data={allData.courier} hideHeader={false} hideEmptyState={true} />
+                            <DailyWageUserService userId={userId} data={allData.dailyWage} hideHeader={false} hideEmptyState={true} />
+                            <AgricultureUserService userId={userId} data={allData.agriculture} hideHeader={false} hideEmptyState={true} />
+                            <CorporativeUserService userId={userId} data={allData.corporate} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.corporative */}
+                            <WeddingUserService userId={userId} data={allData.wedding} hideHeader={false} hideEmptyState={true} />
+                            <ArtUserService userId={userId} data={allData.creative} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.art */}
+                            <AutomotiveUserService userId={userId} data={allData.automotive} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.automotive */}
+                            <SportsUserService userId={userId} data={allData.sports} hideHeader={false} hideEmptyState={true} />
+                            <FoodUserService userId={userId} data={allData.food} hideHeader={false} hideEmptyState={true} />
                         </>
                     )}
                 </div>

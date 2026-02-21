@@ -248,7 +248,7 @@ const WorkerProfile: React.FC = () => {
             {/* Cancel */}
             <button
               onClick={() => navigate("/")}
-              className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
+              className="w-full px-4 py-2.5 md:py-3 text-gray-600 border border-gray-300 rounded-xl hover:bg-[#00598a]/100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm md:text-base"
               disabled={loading}
             >
               Cancel

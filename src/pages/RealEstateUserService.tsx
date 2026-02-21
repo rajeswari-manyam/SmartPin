@@ -243,7 +243,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-real-estate-form")}
-                        className="gap-1.5 bg-green-600 hover:bg-green-700"
+                        className="gap-1.5 bg-[#00598a] hover:bg-[#00598a]/100"
                     >
                         + Add Property
                     </Button>

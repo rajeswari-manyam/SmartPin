@@ -5,7 +5,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Project', 'Fixed Rate', 'Custom'];
 
@@ -91,6 +91,7 @@ const ArtForm: React.FC = () => {
 
     const artCategories = getCreativeArtSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || artCategories[0] || 'Craft Training';
+    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
@@ -281,7 +282,15 @@ const ArtForm: React.FC = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/my-business'), 1500);
+                        // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
         } catch (err: any) {
             console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');

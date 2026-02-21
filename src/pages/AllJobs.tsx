@@ -38,8 +38,8 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
 
     if (!images.length || imgError) {
         return (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#f09b13]/10 to-[#f5b340]/10">
-                <Briefcase size={40} className="text-[#f09b13]/50" />
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#00598a]/10 to-[#00598a]/10">
+                <Briefcase size={40} className="text-[#00598a]/50" />
             </div>
         );
     }
@@ -147,7 +147,6 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 localStorage.getItem("worker_id");
 
             if (!workerId) {
-                // ── No worker profile yet ──────────────────────────────────
                 setNoProfile(true);
                 setJobs([]);
                 setLoading(false);
@@ -160,7 +159,6 @@ const AllJobs: React.FC<AllJobsProps> = ({
             if (data.length === 0) setError("No jobs found near your location");
         } catch (err: any) {
             const msg: string = err.message || "";
-            // 404 means worker profile not created yet → show Create Profile screen
             if (
                 msg.includes("404") ||
                 msg.toLowerCase().includes("not found") ||
@@ -197,13 +195,16 @@ const AllJobs: React.FC<AllJobsProps> = ({
     // ── Loading ──────────────────────────────────────────────────────────────
     if (loading) return (
         <div className="min-h-[40vh] flex justify-center items-center">
-            <Loader2 className="w-10 h-10 animate-spin text-[#f09b13]" />
+            <Loader2 className="w-10 h-10 animate-spin text-[#00598a]" />
         </div>
     );
 
     // ── No Worker Profile → Create Profile Screen ────────────────────────────
     if (noProfile) return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-[#f0f4f8] px-6">
+        <div
+            className="flex flex-col items-center justify-center bg-[#f0f4f8] px-6"
+            style={{ height: "calc(100vh - 160px)" }}
+        >
             {/* Worker illustration emoji */}
             <div className="text-8xl mb-6 select-none">👷</div>
 
@@ -216,7 +217,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
             <button
                 onClick={() => navigate("/worker-profile")}
-                className="bg-[#f09b13] hover:bg-[#f5b340] active:scale-95 text-white
+                className="bg-[#00598a] hover:bg-[#00598a] active:scale-95 text-white
                     font-bold text-base px-10 py-4 rounded-full shadow-lg
                     transition-all duration-200 w-72"
             >
@@ -234,7 +235,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 <p className="text-gray-600 mb-6">{error}</p>
                 <button
                     onClick={fetchJobs}
-                    className="bg-[#f09b13] text-white px-6 py-3 rounded-xl hover:bg-[#f5b340] transition font-semibold"
+                    className="bg-[#00598a] text-white px-6 py-3 rounded-xl hover:bg-[#00598a] transition font-semibold"
                 >
                     Try Again
                 </button>
@@ -261,7 +262,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                             <span className="text-xs md:text-sm text-gray-500 font-medium">Within:</span>
                             <button
                                 onClick={() => setRadiusDropdownOpen(p => !p)}
-                                className="flex items-center gap-1 text-xs md:text-sm font-semibold text-gray-800 hover:text-[#f09b13]"
+                                className="flex items-center gap-1 text-xs md:text-sm font-semibold text-gray-800 hover:text-[#00598a]"
                             >
                                 {selectedRadius} km
                                 <ChevronDown size={13} className={`transition-transform ${radiusDropdownOpen ? "rotate-180" : ""}`} />
@@ -274,7 +275,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                         key={r}
                                         onClick={() => { setSelectedRadius(r); setRadiusDropdownOpen(false); }}
                                         className={`w-full text-left px-4 py-2 text-sm transition-colors
-                                            ${selectedRadius === r ? "bg-[#f09b13]/10 text-[#f09b13] font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+                                            ${selectedRadius === r ? "bg-[#00598a]/10 text-[#00598a] font-semibold" : "text-gray-700 hover:bg-[#00598a]"}`}
                                     >
                                         {r} km
                                     </button>
@@ -287,7 +288,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                     <div id="category-dropdown" className="relative">
                         <button
                             onClick={() => setDropdownOpen(p => !p)}
-                            className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 hover:border-[#f09b13] shadow-sm min-w-[130px] md:min-w-[150px] justify-between"
+                            className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 text-xs md:text-sm font-medium text-gray-700 hover:border-[#00598a] shadow-sm min-w-[130px] md:min-w-[150px] justify-between"
                         >
                             <span className="truncate">{categoryLabel}</span>
                             <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
@@ -298,7 +299,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                     <button
                                         onClick={() => { setSelectedCategory("all"); setDropdownOpen(false); }}
                                         className={`w-full text-left px-4 py-2.5 text-sm transition-colors
-                                            ${selectedCategory === "all" ? "bg-[#f09b13]/10 text-[#f09b13] font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+                                            ${selectedCategory === "all" ? "bg-[#00598a]/10 text-[#00598a] font-semibold" : "text-gray-700 hover:bg-[#00598a]"}`}
                                     >
                                         All Categories
                                     </button>
@@ -308,7 +309,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                             key={cat.name}
                                             onClick={() => { setSelectedCategory(cat.name); setDropdownOpen(false); }}
                                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors
-                                                ${selectedCategory === cat.name ? "bg-[#f09b13]/10 text-[#f09b13] font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
+                                                ${selectedCategory === cat.name ? "bg-[]/10 text-[#00598a] font-semibold" : "text-gray-700 hover:bg-gray-50"}`}
                                         >
                                             {cat.name}
                                         </button>
@@ -323,7 +324,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
             <p className="mb-4 text-sm text-gray-500">
                 Found <span className="font-semibold text-gray-800">{filtered.length}</span>{" "}
                 job{filtered.length !== 1 ? "s" : ""}
-                {selectedCategory !== "all" && <span className="ml-1 text-[#f09b13]">in "{categoryLabel}"</span>}
+                {selectedCategory !== "all" && <span className="ml-1 text-[#00598a]">in "{categoryLabel}"</span>}
             </p>
 
             {filtered.length === 0 ? (
@@ -336,7 +337,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                     {(searchText || selectedCategory !== "all") && (
                         <button
                             onClick={() => setSelectedCategory("all")}
-                            className="mt-3 text-[#f09b13] font-medium text-sm underline underline-offset-2"
+                            className="mt-3 text-[#00598a] font-medium text-sm underline underline-offset-2"
                         >
                             Clear filters
                         </button>
@@ -369,7 +370,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                     {/* Job type badge */}
                                     <div className="absolute top-3 left-3 z-10">
                                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold shadow
-                                            ${job.jobType === "FULL_TIME" ? "bg-green-500 text-white" : "bg-[#f09b13] text-white"}`}>
+                                            ${job.jobType === "FULL_TIME" ? "bg-green-500 text-white" : "bg-[#00598a] text-white"}`}>
                                             <Clock size={10} />
                                             {job.jobType === "FULL_TIME" ? "Full Time" : "Part Time"}
                                         </span>
@@ -379,14 +380,14 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                     {distLabel && (
                                         <div className="absolute top-3 right-3 z-10">
                                             <span className="inline-flex items-center gap-1 bg-white/95 text-gray-700 text-xs font-bold px-2 py-1 rounded-full shadow">
-                                                <MapPin size={10} className="text-[#f09b13]" />{distLabel}
+                                                <MapPin size={10} className="text-[#00598a]" />{distLabel}
                                             </span>
                                         </div>
                                     )}
 
                                     {/* Duration badge */}
                                     <div className="absolute bottom-3 left-3 z-10">
-                                        <span className="inline-flex items-center gap-1 bg-[#f09b13] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                        <span className="inline-flex items-center gap-1 bg-[#00598a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                             <Calendar size={10} />
                                             {duration} day{duration !== 1 ? "s" : ""}
                                         </span>
@@ -396,7 +397,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                 {/* Card body */}
                                 <div className="flex flex-col flex-1 px-3 md:px-4 pt-3 pb-4">
                                     <div className="flex flex-wrap gap-1.5 mb-2">
-                                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[#f09b13]/10 text-[#f09b13] border border-[#f09b13]/20">
+                                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-[#00598a]/10 text-[#00598a] border border-[#00598a]/20">
                                             {job.category}
                                         </span>
                                         {job.subcategory && (
@@ -435,7 +436,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                         </div>
                                         <button
                                             onClick={e => { e.stopPropagation(); navigate(`/job-details/${job._id}`); }}
-                                            className="flex items-center gap-1.5 bg-[#f09b13] hover:bg-[#f5b340] active:scale-95
+                                            className="flex items-center gap-1.5 bg-[#00598a] hover:bg-[#00598a] active:scale-95
                                                 text-white text-xs md:text-sm font-bold px-3 md:px-4 py-2 rounded-xl shadow-sm transition-all"
                                         >
                                             View <ArrowRight size={13} />

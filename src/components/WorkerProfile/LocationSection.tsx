@@ -62,13 +62,13 @@ const LocationSection: React.FC<LocationSectionProps> = ({
           <input
             value={address}
             onChange={(e) => onAddressChange(e.target.value)}
-            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#f09b13] focus:outline-none"
+            className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#00598a] focus:outline-none"
             placeholder="House / Building / Street"
           />
           <Button
             variant="primary"
             onClick={onAddressVoice}
-            className={`bg-gradient-to-r from-[#f09b13] to-[#f0c413]  ${
+            className={`bg-gradient-to-r from-[#00598a] to-[#00598a]  ${
               isAddressListening ? "animate-pulse" : ""
             }`}
           >
@@ -85,13 +85,13 @@ const LocationSection: React.FC<LocationSectionProps> = ({
             <input
               value={city}
               onChange={(e) => onCityChange(e.target.value)}
-              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#f09b13] focus:outline-none"
+              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-[#00598a] focus:outline-none"
               placeholder="City"
             />
             <Button
               variant="primary"
               onClick={onCityVoice}
-              className={`bg-gradient-to-r from-[#f09b13] to-[#f0c413] ${
+              className={`bg-gradient-to-r from-[#00598a] to-[#00598a] ${
                 isCityListening ? "animate-pulse" : ""
               }`}
             >

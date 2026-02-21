@@ -18,7 +18,7 @@ export const buttonStyles = {
     variants: {
         /* Primary Brand Button */
         primary:
-            "bg-[#f09b13] text-white hover:bg-[#f5b340] active:bg-[#e68a0f]",
+            "bg-[#00598a] text-white hover:bg-[#00598a] active:bg-[#00598a]",
 
         /* Secondary / Neutral Button */
         secondary:
@@ -34,14 +34,14 @@ export const buttonStyles = {
 
         /* Outline */
         outline:
-            "border-2 border-[#f09b13] text-[#f09b13] hover:bg-[#F0F0F0]",
+            "border-2 border-[#00598a] text-[#00598a] hover:bg-[#F0F0F0]",
 
         /* Gradients */
         "gradient-orange":
             "bg-gradient-to-r from-orange-400 to-pink-500 text-white",
 
         "gradient-blue":
-            "bg-gradient-to-r from-[#f09b13] to-[#f5b340] text-white",
+            "bg-gradient-to-r from-[#00598a] to-[#00598a] text-white",
     },
 
     /* ================= SEARCH BUTTONS ================= */
@@ -54,7 +54,7 @@ export const buttonStyles = {
         },
 
         submit:
-            "px-8 py-4 bg-[#f09b13] text-white font-bold rounded-r-xl hover:bg-[#f5b340] disabled:opacity-50 disabled:cursor-not-allowed",
+            "px-8 py-4 bg-[#00598a] text-white font-bold rounded-r-xl hover:bg-[#00598a] disabled:opacity-50 disabled:cursor-not-allowed",
 
         clear:
             "px-3 text-gray-400 hover:text-gray-600",

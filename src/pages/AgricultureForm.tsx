@@ -11,6 +11,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Service', 'Fixed Rate'];
@@ -178,6 +179,7 @@ const AgricultureForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState('');
 
     const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_CATEGORIES[0] || 'Tractor Service';
+        const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
@@ -420,7 +422,15 @@ const AgricultureForm: React.FC = () => {
                 setSuccessMessage('Service created successfully!');
             }
 
-            setTimeout(() => navigate('/my-business'), 1500);
+                       // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
 
         } catch (err: unknown) {
             console.error('Submit error:', err);
@@ -441,7 +451,7 @@ const AgricultureForm: React.FC = () => {
                 <div className="text-center">
                     <div
                         className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: '#f09b13' }}
+                        style={{ borderColor: '#00598a' }}
                     />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
@@ -629,7 +639,7 @@ const AgricultureForm: React.FC = () => {
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[#f09b13] !border-[#f09b13] hover:!bg-[#d4870f]"
+                            className="!py-1.5 !px-3 !bg-[#00598a] !border-[#00598a] hover:!bg-[#00598a]"
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -725,7 +735,7 @@ const AgricultureForm: React.FC = () => {
                         <div
                             className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             style={{
-                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
                                 backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
                             }}
                         >
@@ -734,7 +744,7 @@ const AgricultureForm: React.FC = () => {
                                     className="w-16 h-16 rounded-full flex items-center justify-center"
                                     style={{ backgroundColor: '#fff0d6' }}
                                 >
-                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
+                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -765,7 +775,7 @@ const AgricultureForm: React.FC = () => {
                                     </button>
                                     <span
                                         className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#f09b13' }}
+                                        style={{ backgroundColor: '#00598a' }}
                                     >
                                         Saved
                                     </span>
@@ -776,7 +786,7 @@ const AgricultureForm: React.FC = () => {
                                     <img
                                         src={preview} alt={`New ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#f09b13' }}
+                                        style={{ borderColor: '#00598a' }}
                                     />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
@@ -784,7 +794,7 @@ const AgricultureForm: React.FC = () => {
                                     </button>
                                     <span
                                         className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#f09b13' }}
+                                        style={{ backgroundColor: '#00598a' }}
                                     >
                                         New
                                     </span>
@@ -801,7 +811,7 @@ const AgricultureForm: React.FC = () => {
                         disabled={loading || !!successMessage}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading || successMessage ? '#f0b35c' : '#f09b13' }}
+                        style={{ backgroundColor: loading || successMessage ? '#00598a' : '#00598a' }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

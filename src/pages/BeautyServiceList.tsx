@@ -402,7 +402,7 @@ const BeautyServicesList: React.FC = () => {
                         </div>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
+                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white">
                         + Add Post
                     </Button>
                 </div>

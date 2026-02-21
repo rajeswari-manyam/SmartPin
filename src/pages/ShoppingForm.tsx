@@ -9,24 +9,28 @@ import {
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import { useAccount } from "../context/AccountContext";
 
-// ── #f09b13 ≈ Tailwind amber-500 — used consistently throughout ──────────────
+const BRAND = '#00598a';
+const BRAND_DARK = '#004a75';
+const BRAND_LIGHT_BG = '#e8f2f8';
+const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const getShoppingRetailSubcategories = () => {
     const shoppingCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 7);
     return shoppingCategory ? shoppingCategory.items.map((item: any) => item.name) : [];
 };
 
-// ── Shared input: amber focus ring ───────────────────────────────────────────
+// ── Shared input: #00598a focus ring ─────────────────────────────────────────
 const inputBase =
     `w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-xl ` +
-    `focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
+    `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in amber
+// Dropdown chevron in #00598a
 const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
     backgroundPosition: 'right 0.75rem center',
     backgroundSize: '1.5em 1.5em',
@@ -36,7 +40,7 @@ const selectStyle = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-1.5 sm:mb-2 text-sm sm:text-base font-medium`}>
-        {children}{required && <span className="text-amber-500 ml-1">*</span>}
+        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
     </label>
 );
 
@@ -86,7 +90,7 @@ const ShoppingForm: React.FC = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-
+    const { setAccountType } = useAccount();
     const storeTypes = getShoppingRetailSubcategories();
     const defaultType = getSubcategoryFromUrl() || storeTypes[0] || 'Supermarkets';
 
@@ -272,7 +276,11 @@ const ShoppingForm: React.FC = () => {
                 await createShoppingStore(fd);
                 setSuccessMessage('Store created successfully!');
             }
-            setTimeout(() => navigate('/my-business'), 1500);
+
+            setTimeout(() => {
+                setAccountType("worker");
+                navigate("/my-business");
+            }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
@@ -289,9 +297,9 @@ const ShoppingForm: React.FC = () => {
     // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -302,14 +310,14 @@ const ShoppingForm: React.FC = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-amber-50">
+        <div className="min-h-screen bg-white">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-amber-100 shadow-sm">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
                 <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-amber-50 rounded-full transition flex-shrink-0"
+                        className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-50 rounded-full transition flex-shrink-0"
                         aria-label="Go back"
                     >
                         <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -324,8 +332,7 @@ const ShoppingForm: React.FC = () => {
                             {isEditMode ? 'Update your store listing' : 'Create new store listing'}
                         </p>
                     </div>
-                    {/* Brand dot */}
-                    <div className="w-3 h-3 rounded-full bg-amber-500 flex-shrink-0" />
+                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
@@ -339,7 +346,7 @@ const ShoppingForm: React.FC = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-3 sm:p-4 bg-amber-50 border border-amber-400 rounded-xl text-amber-800 text-sm font-medium">
+                    <div className="p-3 sm:p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
                         ✓ {successMessage}
                     </div>
                 )}
@@ -407,7 +414,10 @@ const ShoppingForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: BRAND }}
+                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
@@ -437,9 +447,9 @@ const ShoppingForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Tip box — amber */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-2.5 sm:p-3">
-                        <p className={`${typography.body.small} text-amber-800 text-xs sm:text-sm`}>
+                    {/* Tip box */}
+                    <div className="rounded-xl p-2.5 sm:p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
+                        <p className={`${typography.body.small} text-xs sm:text-sm`} style={{ color: BRAND }}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
@@ -467,14 +477,17 @@ const ShoppingForm: React.FC = () => {
                             className="hidden"
                             disabled={maxImagesReached}
                         />
-                        <div className={`border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center transition-colors ${
-                            maxImagesReached
-                                ? 'border-gray-200 bg-gray-50'
-                                : 'border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
-                        }`}>
+                        <div
+                            className="border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center transition-colors"
+                            style={
+                                maxImagesReached
+                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
+                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
+                            }
+                        >
                             <div className="flex flex-col items-center gap-2 sm:gap-3">
-                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                                    <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-amber-500" />
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
+                                    <Upload className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700 text-sm sm:text-base`}>
@@ -486,7 +499,7 @@ const ShoppingForm: React.FC = () => {
                                         Upload photos of your store, products, or team
                                     </p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-amber-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -498,7 +511,6 @@ const ShoppingForm: React.FC = () => {
                     {/* Image Grid */}
                     {(existingImages.length > 0 || selectedImages.length > 0) && (
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 sm:mt-4">
-                            {/* Existing images (not marked for deletion) */}
                             {existingImages
                                 .filter(url => !imagesToDelete.includes(url))
                                 .map((url, i) => (
@@ -516,19 +528,19 @@ const ShoppingForm: React.FC = () => {
                                         >
                                             <X className="w-3 h-3 sm:w-4 sm:h-4" />
                                         </button>
-                                        <span className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-amber-500 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full">
+                                        <span className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full" style={{ backgroundColor: BRAND }}>
                                             Saved
                                         </span>
                                     </div>
                                 ))}
 
-                            {/* New images */}
                             {selectedImages.map((file, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img
                                         src={imagePreviews[i]}
                                         alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-amber-400"
+                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2"
+                                        style={{ borderColor: BRAND }}
                                     />
                                     <button
                                         type="button"
@@ -575,11 +587,10 @@ const ShoppingForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`w-full sm:flex-1 px-6 py-3 sm:py-3.5 rounded-lg font-semibold text-white transition-colors shadow-sm text-sm sm:text-base ${
-                            loading
-                                ? 'bg-amber-300 cursor-not-allowed'
-                                : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700'
-                        } ${typography.body.base}`}
+                        className={`w-full sm:flex-1 px-6 py-3 sm:py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm text-sm sm:text-base ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -588,7 +599,8 @@ const ShoppingForm: React.FC = () => {
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-amber-50 active:bg-amber-100 transition-colors text-sm sm:text-base ${typography.body.base}`}
+                        disabled={loading}
+                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors text-sm sm:text-base ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

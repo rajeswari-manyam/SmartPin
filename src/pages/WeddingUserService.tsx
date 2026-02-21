@@ -220,7 +220,7 @@ const WeddingUserService: React.FC<WeddingUserServiceProps> = ({
                             variant="primary"
                             size="md"
                             onClick={() => navigate("/add-wedding-service-form")}
-                            className="gap-1.5 bg-pink-600 hover:bg-pink-700"
+                            className="gap-1.5 bg-[#00598a] hover:bg-[#00598a]/100"
                         >
                             + Add Your First Service
                         </Button>

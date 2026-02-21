@@ -8,7 +8,7 @@ const BackIcon = FaArrowLeft as any;
 
 const Header: React.FC<HeaderProps> = ({ onBack, onSkip }) => {
     return (
-        <div className="bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white shadow-lg">
+        <div className="bg-gradient-to-r from-[#00598a] to-[#003a5c] text-white shadow-lg">
             <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 sm:py-6">
                 <div className="flex items-center justify-between">
                     <button

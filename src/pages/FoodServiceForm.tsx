@@ -4,6 +4,7 @@ import FoodServiceAPI from "../services/FoodService.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategories from "../data/subcategories.json";
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 
 import { X, Upload, MapPin, Store, Phone, Mail, Tag } from "lucide-react";
 
@@ -11,10 +12,10 @@ const foodServiceTypes = subcategories.subcategories
     .find(cat => cat.categoryId === 1)!
     .items.map(item => ({ value: item.name, icon: item.icon }));
 
-    
+
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#f09b13] focus:border-[#f09b13] ` +
+    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 bg-white`;
 
 // ============================================================================
@@ -63,6 +64,7 @@ const FoodServiceForm: React.FC = () => {
     const navigate = useNavigate();
     const { id } = useParams<{ id?: string }>();
     const isEditMode = !!id;
+    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
 
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(false);
@@ -73,6 +75,7 @@ const FoodServiceForm: React.FC = () => {
     const isGPSDetected = useRef(false);
 
     const [formData, setFormData] = useState({
+        userId: resolveUserId(),
         createdBy: resolveUserId(),
         name: "",
         type: "Restaurant",
@@ -108,9 +111,11 @@ const FoodServiceForm: React.FC = () => {
                 const res = await FoodServiceAPI.getFoodServiceById(id);
                 if (res.success && res.data) {
                     const d = res.data;
+                    const uid = (d as any).createdBy || (d as any).userId || formData.userId;
                     setFormData(prev => ({
                         ...prev,
-                        createdBy: (d as any).createdBy || (d as any).userId || prev.createdBy,
+                        userId: uid,
+                        createdBy: uid,
                         name: d.name || "",
                         type: d.type || "Restaurant",
                         icon: d.icon || "🍽️",
@@ -236,25 +241,23 @@ const FoodServiceForm: React.FC = () => {
     };
 
     // ============================================================================
-    // SUBMIT — FormData exactly matching the API:
-    // formdata.append("createdBy", "699304a6ef2843d58fa30564");
-    // formdata.append("images", fileInput.files[0], filename);
-    // fetch("/createFoodService", { method: "POST", body: formdata })
+    // SUBMIT
     // ============================================================================
     const handleSubmit = async () => {
         setLoading(true); setError(""); setSuccessMessage("");
         try {
-            let uid = formData.createdBy;
-            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, createdBy: uid })); }
+            let uid = formData.userId || formData.createdBy;
+            if (!uid) { uid = resolveUserId(); }
             if (!uid) throw new Error("User not logged in. Please log out and log back in.");
 
-            if (!formData.name || !formData.type || !formData.area || !formData.city)
-                throw new Error("Please fill in all required fields (Name, Type, Area, City)");
+            if (!formData.name || !formData.type || !formData.area || !formData.city || !formData.state || !formData.pincode)
+                throw new Error("Please fill in all required fields (Name, Type, Area, City, State, Pincode)");
             if (!formData.latitude || !formData.longitude)
                 throw new Error("Please provide a valid location using Auto Detect or manual entry.");
 
-            // ✅ Build FormData exactly like the API curl
             const fd = new FormData();
+
+            fd.append("userId", uid);
             fd.append("createdBy", uid);
             fd.append("name", formData.name);
             fd.append("type", formData.type);
@@ -267,7 +270,6 @@ const FoodServiceForm: React.FC = () => {
             fd.append("longitude", formData.longitude);
             fd.append("status", formData.status);
 
-            // Optional fields
             if (formData.phone) fd.append("phone", formData.phone);
             if (formData.email) fd.append("email", formData.email);
             if (formData.description) fd.append("description", formData.description);
@@ -277,15 +279,12 @@ const FoodServiceForm: React.FC = () => {
             if (formData.priceRange) fd.append("priceRange", formData.priceRange);
             if (specialties.length > 0) fd.append("specialties", JSON.stringify(specialties));
 
-            // ✅ Append images exactly like the API: append("images", file, file.name)
             selectedImages.forEach(f => fd.append("images", f, f.name));
 
-            // Preserve existing images on edit
             if (isEditMode && existingImages.length > 0) {
                 fd.append("existingImages", JSON.stringify(existingImages));
             }
 
-            // Debug log
             console.log("📤 Sending FormData:");
             Array.from(fd.entries()).forEach(([k, v]) => {
                 if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
@@ -305,7 +304,13 @@ const FoodServiceForm: React.FC = () => {
             if (parsed.success === false) throw new Error(parsed.message || "Server error");
 
             setSuccessMessage(isEditMode ? "Service updated successfully!" : "Service created successfully!");
-            setTimeout(() => navigate("/my-Business"), 1500);
+
+            // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+            setTimeout(() => {
+                setAccountType("worker");
+                navigate("/my-business");
+            }, 1500);
+
         } catch (err: any) {
             console.error("❌ Submit error:", err);
             setError(err.message || "Failed to submit form");
@@ -317,7 +322,7 @@ const FoodServiceForm: React.FC = () => {
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f09b13] mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
                 <p className="text-gray-600 text-sm">Loading service data...</p>
             </div>
         </div>
@@ -349,7 +354,7 @@ const FoodServiceForm: React.FC = () => {
                 {successMessage && <div className="p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm font-medium">✓ {successMessage}</div>}
 
                 {/* 1. BASIC INFO */}
-                <SectionCard title="Basic Information" icon={<Store size={18} className="text-[#f09b13]" />}>
+                <SectionCard title="Basic Information" icon={<Store size={18} className="text-[#00598a]" />}>
                     <div>
                         <FieldLabel required>Business Name</FieldLabel>
                         <input type="text" name="name" value={formData.name} onChange={handleInputChange}
@@ -375,7 +380,7 @@ const FoodServiceForm: React.FC = () => {
                 </SectionCard>
 
                 {/* 2. CONTACT */}
-                <SectionCard title="Contact Information" icon={<Phone size={18} className="text-[#f09b13]" />}>
+                <SectionCard title="Contact Information" icon={<Phone size={18} className="text-[#00598a]" />}>
                     <div>
                         <FieldLabel>Phone Number</FieldLabel>
                         <div className="relative">
@@ -401,20 +406,20 @@ const FoodServiceForm: React.FC = () => {
                 </SectionCard>
 
                 {/* 3. SPECIALTIES */}
-                <SectionCard title="Specialties / Menu Items" icon={<Tag size={18} className="text-[#f09b13]" />}>
+                <SectionCard title="Specialties / Menu Items" icon={<Tag size={18} className="text-[#00598a]" />}>
                     <div className="flex gap-2">
                         <input type="text" value={specialtyInput} onChange={e => setSpecialtyInput(e.target.value)}
                             onKeyPress={e => { if (e.key === "Enter") { e.preventDefault(); handleAddSpecialty(); } }}
                             className={inputBase} placeholder="e.g., Biryani, Masala Dosa, Coffee" />
                         <Button variant="primary" size="md" onClick={handleAddSpecialty}
-                            className="bg-[#f09b13] hover:bg-[#f5b340] shrink-0">Add</Button>
+                            className="bg-[#00598a] hover:bg-[#00598a] shrink-0">Add</Button>
                     </div>
                     {specialties.length > 0 && (
                         <div className="flex flex-wrap gap-2">
                             {specialties.map((s, i) => (
-                                <span key={i} className="inline-flex items-center gap-2 bg-[#f09b13]/10 text-[#f09b13] px-4 py-2 rounded-full text-sm font-medium border border-[#f09b13]/20">
+                                <span key={i} className="inline-flex items-center gap-2 bg-[#00598a]/10 text-[#00598a] px-4 py-2 rounded-full text-sm font-medium border border-[#00598a]/20">
                                     {s}
-                                    <button onClick={() => handleRemoveSpecialty(i)} className="text-[#f09b13] hover:text-red-600 font-bold text-lg">×</button>
+                                    <button onClick={() => handleRemoveSpecialty(i)} className="text-[#00598a] hover:text-red-600 font-bold text-lg">×</button>
                                 </span>
                             ))}
                         </div>
@@ -450,7 +455,7 @@ const FoodServiceForm: React.FC = () => {
                 {/* 5. LOCATION */}
                 <SectionCard
                     title="Location Details"
-                    icon={<MapPin size={18} className="text-[#f09b13]" />}
+                    icon={<MapPin size={18} className="text-[#00598a]" />}
                     action={
                         <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
                             {locationLoading
@@ -473,14 +478,14 @@ const FoodServiceForm: React.FC = () => {
                             <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g., Hyderabad" className={inputBase} /></div>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel>State</FieldLabel>
+                        <div><FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g., Telangana" className={inputBase} /></div>
-                        <div><FieldLabel>Pincode</FieldLabel>
+                        <div><FieldLabel required>Pincode</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="500001" maxLength={6} className={inputBase} /></div>
                     </div>
 
-                    <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
-                        <p className="text-sm text-[#f09b13]">📍 <strong>Tip:</strong> Click Auto Detect or enter your address manually above.</p>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl p-3">
+                        <p className="text-sm text-[#00598a]">📍 <strong>Tip:</strong> Click Auto Detect or enter your address manually above.</p>
                     </div>
 
                     {formData.latitude && formData.longitude && (
@@ -494,17 +499,17 @@ const FoodServiceForm: React.FC = () => {
                 </SectionCard>
 
                 {/* 6. PHOTOS */}
-                <SectionCard title="Food Service Photos (Optional)" icon={<Upload size={18} className="text-[#f09b13]" />}>
+                <SectionCard title="Food Service Photos (Optional)" icon={<Upload size={18} className="text-[#00598a]" />}>
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
                             disabled={selectedImages.length + existingImages.length >= 5} />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? "border-gray-200 bg-gray-50 cursor-not-allowed"
-                            : "border-[#f09b13] hover:border-[#f09b13] hover:bg-[#f09b13]/10"
+                            : "border-[#00598a] hover:border-[#00598a] hover:bg-[#00598a]/10"
                             }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-[#f09b13]/10 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-[#f09b13]" />
+                                <div className="w-16 h-16 rounded-full bg-[#00598a]/10 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-[#00598a]" />
                                 </div>
                                 <div>
                                     <p className="font-medium text-gray-700 text-sm">
@@ -514,7 +519,7 @@ const FoodServiceForm: React.FC = () => {
                                     </p>
                                     <p className="text-gray-500 text-xs mt-1">Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-[#f09b13] text-sm font-medium mt-1">
+                                        <p className="text-[#00598a] text-sm font-medium mt-1">
                                             {selectedImages.length} new image{selectedImages.length > 1 ? "s" : ""} selected ✓
                                         </p>
                                     )}
@@ -535,10 +540,10 @@ const FoodServiceForm: React.FC = () => {
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#f09b13]/20" />
+                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]/20" />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
-                                    <span className="absolute bottom-2 left-2 bg-[#f09b13] text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                                    <span className="absolute bottom-2 left-2 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full">New</span>
                                 </div>
                             ))}
                         </div>
@@ -548,7 +553,7 @@ const FoodServiceForm: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button onClick={handleSubmit} disabled={loading} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? "bg-[#f09b13]/40 cursor-not-allowed" : "bg-[#f09b13] hover:bg-[#f5b340] active:bg-[#d07a00]"}`}>
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? "bg-[#00598a]/40 cursor-not-allowed" : "bg-[#00598a] hover:bg-[#f5b340] active:bg-[#d07a00]"}`}>
                         {loading
                             ? (isEditMode ? "Updating..." : "Creating...")
                             : (isEditMode ? "✓ Update Service" : "✓ Create Service")}

@@ -113,7 +113,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
             <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
 
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
-                <div className="bg-gradient-to-r from-[#f09b13] to-[#f0c413] px-6 py-8 text-center">
+                <div className="bg-gradient-to-r from-[#00598a] to-[#00598a] px-6 py-8 text-center">
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">👷‍♂️</span>
                     </div>
@@ -185,7 +185,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                     <button
                         type="submit"
                         disabled={isSubmitting || !name.trim()}
-                        className="w-full py-3 bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white rounded-xl font-semibold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        className="w-full py-3 bg-gradient-to-r from-[#00598a] to-[#00598a] text-white rounded-xl font-semibold hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                     >
                         {isSubmitting ? "Saving..." : "Continue to Profile Setup"}
                     </button>

@@ -64,7 +64,7 @@ const CreateProfileModal: React.FC<{
                     <p className="text-gray-600 text-sm mb-6">
                         Please create your worker profile first.
                     </p>
-                    
+
                     <div className="flex items-center justify-end gap-3">
                         <button
                             onClick={onClose}
@@ -118,7 +118,7 @@ const ImageCarousel: React.FC<{ images: string[]; altBase: string }> = ({ images
                 <>
                     <button
                         onClick={prev}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-[#00598a]/60
               text-white rounded-full w-8 h-8 flex items-center justify-center
               opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                     >
@@ -127,7 +127,7 @@ const ImageCarousel: React.FC<{ images: string[]; altBase: string }> = ({ images
 
                     <button
                         onClick={next}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-[#00598a]/60
               text-white rounded-full w-8 h-8 flex items-center justify-center
               opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                     >
@@ -169,7 +169,7 @@ const SkillCard: React.FC<{
             {/* Edit Button - Top Right */}
             <button
                 onClick={onEdit}
-                className="absolute top-3 right-3 z-10 w-10 h-10 bg-[#f09b13] hover:bg-[#e08d0a] rounded-full flex items-center justify-center shadow-lg transition-colors"
+                className="absolute top-3 right-3 z-10 w-10 h-10 bg-[#00598a] hover:bg-[#00598a] rounded-full flex items-center justify-center shadow-lg transition-colors"
             >
                 <Edit size={18} className="text-white" />
             </button>
@@ -201,10 +201,10 @@ const SkillCard: React.FC<{
                         <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Service Rate</p>
                         <div className="flex items-baseline gap-1">
                             <span className="text-2xl font-bold text-gray-900">₹{skill.serviceCharge}</span>
-                            <span className="text-sm text-[#f09b13] font-medium">/ {skill.chargeType === "hour" ? "hour" : skill.chargeType}</span>
+                            <span className="text-sm text-[#00598a] font-medium">/ {skill.chargeType === "hour" ? "hour" : skill.chargeType}</span>
                         </div>
                     </div>
-                    
+
                     {/* Active Status Badge */}
                     <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
                         <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
@@ -246,7 +246,7 @@ const EmptyState: React.FC<{ onAddSkill: () => void }> = ({ onAddSkill }) => {
             {/* Orange Add Button */}
             <button
                 onClick={onAddSkill}
-                className="flex items-center gap-2 px-8 py-4 bg-[#f09b13] hover:bg-[#e08d0a] active:bg-[#d67f0a] text-white font-semibold rounded-full shadow-lg shadow-orange-200 transition-all transform hover:scale-105"
+                className="flex items-center gap-2 px-8 py-4 bg-[#00598a] hover:bg-[#00598a] active:bg-[#00598a] text-white font-semibold rounded-full shadow-lg shadow-orange-200 transition-all transform hover:scale-105"
             >
                 <Plus size={20} />
                 Add Your First Skill
@@ -276,7 +276,7 @@ const WorkerList: React.FC = () => {
                 setLoading(false);
                 return;
             }
-            
+
             try {
                 const res = await getWorkerWithSkills(workerId);
                 if (res?.worker) {
@@ -336,7 +336,7 @@ const WorkerList: React.FC = () => {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
                 <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-3 border-[#f09b13] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-10 h-10 border-3 border-[#00598a] border-t-transparent rounded-full animate-spin" />
                     <p className="text-gray-500 text-sm">Loading...</p>
                 </div>
             </div>
@@ -353,9 +353,9 @@ const WorkerList: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900">My Skills</h1>
                         <p className="text-sm text-gray-500 mt-0.5">0 skills registered</p>
                     </div>
-                    <button 
+                    <button
                         onClick={handleAddFirstSkill}
-                        className="w-12 h-12 bg-[#f09b13] hover:bg-[#e08d0a] rounded-full flex items-center justify-center shadow-lg transition-colors"
+                        className="w-12 h-12 bg-[#00598a] :bg-[#00598a] rounded-full flex items-center justify-center shadow-lg transition-colors"
                     >
                         <Plus size={24} className="text-white" />
                     </button>
@@ -387,9 +387,9 @@ const WorkerList: React.FC = () => {
                         <h1 className="text-2xl font-bold text-gray-900">My Skills</h1>
                         <p className="text-sm text-gray-500 mt-0.5">{skills.length} skill{skills.length !== 1 ? 's' : ''} registered</p>
                     </div>
-                    <button 
+                    <button
                         onClick={() => navigate("/add-skills")}
-                        className="w-12 h-12 bg-[#f09b13] hover:bg-[#e08d0a] rounded-full flex items-center justify-center shadow-lg transition-colors"
+                        className="w-12 h-12 bg-[#00598a] hover:bg-[#00598a] rounded-full flex items-center justify-center shadow-lg transition-colors"
                     >
                         <Plus size={24} className="text-white" />
                     </button>

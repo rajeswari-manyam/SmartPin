@@ -16,7 +16,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, isSelected, onTog
             {/* Icon Container */}
             <div
                 className={`w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 flex items-center justify-center rounded-full mb-3 sm:mb-4 transition-all duration-300 ${isSelected
-                    ? 'bg-gradient-to-r from-[#f09b13] to-[#f0c413]'
+                    ? 'bg-gradient-to-r from-[#00598a] to-[#0B0E92]'
                     : 'bg-gradient-to-br from-blue-50 to-purple-50 group-hover:from-blue-100 group-hover:to-purple-100'
                     }`}
             >

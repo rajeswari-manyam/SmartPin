@@ -12,7 +12,7 @@ const ProfilePhotoUpload: React.FC<ProfilePhotoUploadProps> = ({
     return (
         <div className="flex flex-col items-center mb-8">
             <div className="relative mb-4">
-                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-[#f09b13] to-[#f0c413] flex items-center justify-center shadow-lg">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-r from-[#00598a] to-[#00598a] flex items-center justify-center shadow-lg">
                     {profilePhoto ? (
                         <img
                             src={profilePhoto}

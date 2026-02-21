@@ -62,7 +62,7 @@ const ActionDropdown: React.FC<ActionDropdownProps> = ({ onEdit, onDelete }) => 
                             onDelete(e);
                             setIsOpen(false);
                         }}
-                        className={`${typography.body.small} w-full text-left px-4 py-2.5 hover:bg-red-50 flex items-center gap-2 text-gray-700 hover:text-red-600 transition-colors`}
+                        className={`${typography.body.small} w-full text-left px-4 py-2.5 hover:bg-[#00598a] flex items-center gap-2 text-gray-700 hover:text-white transition-colors`}
                     >
                         <Trash2 size={16} />
                         Delete

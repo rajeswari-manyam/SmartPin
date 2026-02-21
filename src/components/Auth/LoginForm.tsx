@@ -185,7 +185,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
             <div className="text-center pt-6">
                 <div className="flex justify-center mb-4">
-                    <div className="bg-gradient-to-r from-[#f09b13] to-[#f5b340] p-4 rounded-full">
+                    <div className="bg-gradient-to-r from-[#00598a] to-[#003a5c] p-4 rounded-full">
                         <span className={`text-white ${typography.logo.icon}`}>⚡</span>
                     </div>
                 </div>
@@ -204,7 +204,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 className={`w-full rounded-full py-3 px-6 text-center transition-all flex items-center justify-center gap-2 ${
                   isListening
                     ? "bg-red-600 animate-pulse"
-                    : "bg-gradient-to-r from-[#f09b13] to-[#f5b340] hover:brightness-110"
+                    : "bg-gradient-to-r from-[#00598a] to-[#003a5c] hover:brightness-110"
                 }`}
             >
                 <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
@@ -233,7 +233,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                             onChange={handlePhoneChange}
                             placeholder="98765 43210"
                             maxLength={10}
-                            className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#f09b13] transition-colors duration-200 ${typography.form.input}`}
+                            className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#00598a] transition-colors duration-200 ${typography.form.input}`}
                             required
                         />
 
@@ -243,7 +243,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                             className={`absolute inset-y-0 right-0 flex items-center pr-4 transition-colors duration-200 ${
                               isListening
                                 ? "text-red-500 animate-pulse"
-                                : "text-gray-400 hover:text-[#f09b13]"
+                                : "text-gray-400 hover:text-[#00598a]"
                             }`}
                             title={isListening ? "Stop listening" : "Use voice input"}
                         >
@@ -283,7 +283,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                         Agree to{" "}
                         <a
                             href="/terms"
-                            className="text-[#f09b13] hover:underline"
+                            className="text-[#00598a] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -293,7 +293,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                         and{" "}
                         <a
                             href="/privacy"
-                            className="text-[#f09b13] hover:underline"
+                            className="text-[#00598a] hover:underline"
                             onClick={(e) => e.stopPropagation()}
                             target="_blank"
                             rel="noopener noreferrer"

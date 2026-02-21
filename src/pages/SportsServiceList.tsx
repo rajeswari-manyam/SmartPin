@@ -337,7 +337,7 @@ const SportsServicesList: React.FC = () => {
                         </button>
                         <button
                             onClick={e => { e.stopPropagation(); handleView(id); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm :bg-blue-700 transition-colors"
                         >
                             <span>👁️</span> View
                         </button>

@@ -135,10 +135,10 @@ const SingleFarmingToolCard: React.FC<{ job: FarmingTool; onViewDetails: (job: F
                         <img src={currentPhoto} alt={job.title} className="w-full h-full object-cover" />
                         {photos.length > 1 && (
                             <>
-                                <button onClick={handlePrevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2">
+                                <button onClick={handlePrevImage} className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-[#00598a]/70 text-white rounded-full p-2">
                                     <ChevronLeft size={20} />
                                 </button>
-                                <button onClick={handleNextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2">
+                                <button onClick={handleNextImage} className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-[#00598a]/70 text-white rounded-full p-2">
                                     <ChevronRight size={20} />
                                 </button>
                                 <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
@@ -191,13 +191,13 @@ const SingleFarmingToolCard: React.FC<{ job: FarmingTool; onViewDetails: (job: F
                 <div className="flex gap-2 pt-4 mt-auto">
                     <button
                         onClick={handleDirections}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border-2 border-indigo-600 rounded-lg hover:bg-indigo-100 font-semibold"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-50 text-indigo-700 border-2 border-indigo-600 rounded-lg hover:bg-[#00598a]/100 font-semibold"
                     >
                         <Navigation size={16} /> Directions
                     </button>
                     <button
                         onClick={handleCall}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 border-2 border-green-600 rounded-lg hover:bg-green-100 font-semibold"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-50 text-green-700 border-2 border-green-600 rounded-lg hover:bg-[#00598a]/100 font-semibold"
                     >
                         <Phone size={16} /> Call
                     </button>

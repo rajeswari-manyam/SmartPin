@@ -54,9 +54,9 @@ const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               {/* Pulsing Rings */}
               {isListening && (
                 <>
-                  <div className="absolute inset-0 rounded-full bg-[#f09b13] opacity-20 animate-ping" />
+                  <div className="absolute inset-0 rounded-full bg-[#00598a] opacity-20 animate-ping" />
                   <div
-                    className="absolute inset-0 rounded-full bg-[#f09b13] opacity-30 animate-pulse"
+                    className="absolute inset-0 rounded-full bg-[#00598a] opacity-30 animate-pulse"
                     style={{ animationDelay: "0.3s" }}
                   />
                 </>
@@ -66,7 +66,7 @@ const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
               <div
                 className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-colors ${
                   isListening
-                    ? "bg-gradient-to-br from-[#f09b13] to-[#f5b340] shadow-lg"
+                    ? "bg-gradient-to-br from-[#00598a] to-[#00598a] shadow-lg"
                     : "bg-gray-300"
                 }`}
               >
@@ -90,7 +90,7 @@ const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
             </p>
 
             {/* Transcript Display */}
-            <div className="w-full min-h-[80px] max-h-[120px] overflow-y-auto bg-[#f09b13]/10 rounded-xl p-4 mb-6">
+            <div className="w-full min-h-[80px] max-h-[120px] overflow-y-auto bg-[#00598a]/10 rounded-xl p-4 mb-6">
               {transcript ? (
                 <p className="text-gray-700 text-left">{transcript}</p>
               ) : (
@@ -112,7 +112,7 @@ const VoiceSearchModal: React.FC<VoiceSearchModalProps> = ({
                 className={`flex-1 px-6 py-3 rounded-xl font-semibold transition ${
                   isListening
                     ? "bg-red-500 hover:bg-red-600 text-white"
-                    : "bg-gradient-to-r from-[#f09b13] to-[#f5b340] hover:from-[#f5b340] hover:to-[#ffb040] text-white"
+                    : "bg-gradient-to-r from-[#00598a] to-[#00598a] hover:from-[#00598a] hover:to-[#00598a] text-white"
                 }`}
               >
                 {isListening ? "Stop" : "Start"}

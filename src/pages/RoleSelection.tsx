@@ -42,17 +42,17 @@ const RoleSelection: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth(); // ✅ Get user from auth context
 
-  const {
-    isListening,
-    transcript,
-    error,
-    isVoiceSupported,
-    handleVoiceClick,
-    stopListening
-} = useVoiceRecognition((role: "worker" | "customer") => {
-    const mappedRole: "worker" | "user" = role === "customer" ? "user" : "worker";
-    setSelectedRole(mappedRole);
-});
+    const {
+        isListening,
+        transcript,
+        error,
+        isVoiceSupported,
+        handleVoiceClick,
+        stopListening
+    } = useVoiceRecognition((role: "worker" | "customer") => {
+        const mappedRole: "worker" | "user" = role === "customer" ? "user" : "worker";
+        setSelectedRole(mappedRole);
+    });
     const handleRoleSelection = (role: 'worker' | 'user') => {
         setAccountType(role);
         stopListening(); // your voice logic
@@ -125,7 +125,7 @@ const RoleSelection: React.FC = () => {
                     {selectedRole === 'user' && (
                         <div className="mt-6 sm:mt-8 md:mt-10 flex justify-center animate-fade-in">
                             <button
-                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold shadow-lg hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
+                                className="px-6 sm:px-8 md:px-10 py-3 sm:py-3.5 md:py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-semibold shadow-lg :scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg w-full sm:w-auto"
                                 onClick={handleContinue}
                             >
                                 Continue as Customer

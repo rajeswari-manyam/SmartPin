@@ -226,13 +226,13 @@ const RealEstateList: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(re); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-medium text-sm hover:bg-green-50 transition-colors">
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-medium text-sm :bg-green-50 transition-colors">
                             <span>📍</span> Directions
                         </button>
                         <button
                             onClick={e => { e.stopPropagation(); re.phone && openCall(re.phone); }}
                             disabled={!re.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${re.phone ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${re.phone ? 'bg-green-600 text-white hover:bg-[#00598a]/100' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                 }`}>
                             <span>📞</span> Call
                         </button>
@@ -300,7 +300,7 @@ const RealEstateList: React.FC = () => {
                         <p className="text-sm text-gray-500 mt-1">Find properties near you</p>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
+                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a]/100 text-white">
                         + Add Listing
                     </Button>
                 </div>

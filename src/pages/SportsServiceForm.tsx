@@ -10,7 +10,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 const chargeTypeOptions = ['Hour', 'Day', 'Session', 'Month', 'Package'];
 const CATEGORY_NAME = 'Sports & Activities';
 
@@ -53,8 +53,8 @@ const inputBase =
     `${typography.form.input} bg-white`;
 
 const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#f09b13';
-    e.target.style.boxShadow = '0 0 0 2px #f09b1340';
+    e.target.style.borderColor = '#00598a';
+    e.target.style.boxShadow = '0 0 0 2px #00598a40';
 };
 const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     e.target.style.borderColor = '#D1D5DB';
@@ -122,7 +122,7 @@ const SportsForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-
+     const { setAccountType } = useAccount();
     const sportsTypes = getSportsSubcategories();
     const defaultType = getSubcategoryFromUrl() || sportsTypes[0] || 'Gym & Fitness';
 
@@ -325,7 +325,15 @@ const SportsForm = () => {
                 if (!res.success) throw new Error('Failed to create service');
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/my-business'), 1500);
+                     // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
@@ -338,7 +346,7 @@ const SportsForm = () => {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: '#f09b13' }} />
+                        style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -350,7 +358,7 @@ const SportsForm = () => {
             {/* ── Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
+                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-[#00598a]/100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
@@ -436,11 +444,11 @@ const SportsForm = () => {
                                             : 'bg-gray-100 text-gray-700 hover:text-white'
                                     }`}
                                     style={formData.services.includes(service)
-                                        ? { backgroundColor: '#f09b13' }
+                                        ? { backgroundColor: '#00598a' }
                                         : undefined}
                                     onMouseEnter={e => {
                                         if (!formData.services.includes(service))
-                                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13';
+                                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a';
                                     }}
                                     onMouseLeave={e => {
                                         if (!formData.services.includes(service))
@@ -469,9 +477,9 @@ const SportsForm = () => {
                                 type="button"
                                 onClick={() => handleAddService(customService)}
                                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition whitespace-nowrap"
-                                style={{ backgroundColor: '#f09b13' }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                                style={{ backgroundColor: '#00598a' }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                             >
                                 Add
                             </button>
@@ -487,7 +495,7 @@ const SportsForm = () => {
                                 {formData.services.map((service, idx) => (
                                     <span key={idx}
                                         className="inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-full"
-                                        style={{ backgroundColor: '#f09b13' }}>
+                                        style={{ backgroundColor: '#00598a' }}>
                                         <span className={typography.misc.badge}>{service}</span>
                                         <button type="button" onClick={() => handleRemoveService(idx)} className="hover:opacity-70">
                                             <X size={14} />
@@ -531,7 +539,7 @@ const SportsForm = () => {
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
                             className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
-                            style={{ backgroundColor: formData.availability ? '#f09b13' : '#D1D5DB' }}
+                            style={{ backgroundColor: formData.availability ? '#00598a' : '#D1D5DB' }}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -547,9 +555,9 @@ const SportsForm = () => {
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
                             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
-                            style={{ backgroundColor: '#f09b13' }}
-                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                            style={{ backgroundColor: '#00598a  ' }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -593,7 +601,7 @@ const SportsForm = () => {
                         </div>
                     </div>
 
-                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #00598a40' }}>
                         <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
                             📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
                         </p>
@@ -620,14 +628,14 @@ const SportsForm = () => {
                             className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
                                 selectedImages.length + existingImages.length >= 5
                                     ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                    : 'hover:bg-orange-50'
+                                    : 'hover:bg-[#00598a]/100'
                             }`}
-                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#00598a' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center"
                                     style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
+                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -637,7 +645,7 @@ const SportsForm = () => {
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: '#f09b13' }}>
+                                        <p className="text-sm font-medium mt-1" style={{ color: '#00598a' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -662,13 +670,13 @@ const SportsForm = () => {
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img src={preview} alt={`Preview ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#f09b13' }} />
+                                        style={{ borderColor: '#00598a' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#f09b13' }}>New</span>
+                                        style={{ backgroundColor: '#00598a' }}>New</span>
                                 </div>
                             ))}
                         </div>
@@ -682,16 +690,16 @@ const SportsForm = () => {
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
-                        style={{ backgroundColor: loading ? '#f5b340' : '#f09b13', cursor: loading ? 'not-allowed' : 'pointer' }}
-                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        style={{ backgroundColor: loading ? '#00598a' : '#00598a', cursor: loading ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                     >
                         {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
                     <button
                         onClick={() => window.history.back()}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-[#00598a]/100 active:bg-gray-100 transition-all ${typography.body.base}`}
                     >
                         Cancel
                     </button>

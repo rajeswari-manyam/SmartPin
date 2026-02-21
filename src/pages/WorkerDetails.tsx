@@ -86,7 +86,7 @@ const ImageCarousel: React.FC<{ images: string[]; alt?: string; height?: string 
                     {/* Left arrow */}
                     <button
                         onClick={prev}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-[#00598a]/65
                             text-white rounded-full w-8 h-8 flex items-center justify-center
                             opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                     >
@@ -96,7 +96,7 @@ const ImageCarousel: React.FC<{ images: string[]; alt?: string; height?: string 
                     {/* Right arrow */}
                     <button
                         onClick={next}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/65
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-[#00598a]/65
                             text-white rounded-full w-8 h-8 flex items-center justify-center
                             opacity-0 group-hover:opacity-100 transition-opacity shadow-md"
                     >

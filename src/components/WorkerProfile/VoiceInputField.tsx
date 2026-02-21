@@ -40,7 +40,7 @@ const VoiceInputField: React.FC<VoiceInputFieldProps> = ({
                 <Button
                     variant="primary"
                     onClick={onVoiceClick}
-                    className={`bg-gradient-to-r from-[#f09b13] to-[#f0c413] ${
+                    className={`bg-gradient-to-r from-[#00598a] to-[#00598a] ${
                         isListening ? "animate-pulse" : ""
                     }`}
                 >

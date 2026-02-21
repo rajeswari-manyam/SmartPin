@@ -270,7 +270,7 @@ const UpdateJob: React.FC = () => {
                 <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 sm:p-3 rounded-full hover:bg-gray-200 transition"
+                        className="p-2 sm:p-3 rounded-full hover:bg-[#00598a]/100 transition"
                     >
                         <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
                     </button>
@@ -668,7 +668,7 @@ const UpdateJob: React.FC = () => {
                             <Button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
-                                className={`w-full py-3 sm:py-4 bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white rounded-lg sm:rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition mt-6 ${typography.body.base}`}
+                                className={`w-full py-3 sm:py-4 bg-gradient-to-r from-[#00598a] to-[#f0c413] text-white rounded-lg sm:rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transition mt-6 ${typography.body.base}`}
                             >
                                 {isSubmitting ? (
                                     <span className="flex items-center justify-center gap-2">

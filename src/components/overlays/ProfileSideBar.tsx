@@ -79,7 +79,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             </h2>
             <button
               onClick={() => onNavigate("/profile")}
-              className="text-sm text-[#f09b13] hover:underline"
+              className="text-sm text-[#00598a] hover:underline"
             >
               Click to view profile
             </button>
@@ -94,7 +94,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-[#f09b13] flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-full h-full bg-[#00598a] flex items-center justify-center text-white font-bold text-lg">
                 {getInitial(userName)}
               </div>
             )}
@@ -108,13 +108,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </p>
 
           <MenuItem
-            icon={<User className="text-[#f09b13]" />}
+            icon={<User className="text-[#00598a]" />}
             label="My Profile"
             onClick={() => onNavigate("/my-profile")}
           />
 
           <MenuItem
-            icon={<Globe className="text-[#f09b13]" />}
+            icon={<Globe className="text-[#00598a]" />}
             label="Change Language"
           />
 
@@ -175,7 +175,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in">
               {/* Header */}
-              <div className="bg-[#f09b13] px-6 py-8 text-center">
+              <div className="bg-[#00598a] px-6 py-8 text-center">
                 <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <LogOut className="w-10 h-10 text-white" />
                 </div>
@@ -194,7 +194,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                   <Button
                     onClick={handleLogout}
                     fullWidth
-                    className="bg-[#f09b13] text-white hover:brightness-110"
+                    className="bg-[#00598a] text-white hover:brightness-110"
                   >
                     Yes, Logout
                   </Button>

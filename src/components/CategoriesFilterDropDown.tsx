@@ -84,7 +84,7 @@ const CategoryFilterDropdown: React.FC<CategoryFilterDropdownProps> = ({
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-[#00598a] transition-colors shadow-sm"
             >
                 <Filter size={18} className="text-gray-600" />
                 <span className={typography.body.small}>{getSelectedLabel()}</span>
@@ -100,7 +100,7 @@ const CategoryFilterDropdown: React.FC<CategoryFilterDropdownProps> = ({
                     <div className="sticky top-0 bg-white border-b border-gray-200 p-3">
                         <button
                             onClick={handleClearFilters}
-                            className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg flex items-center gap-2 text-sm font-medium text-blue-600"
+                            className="w-full text-left px-3 py-2 hover:bg-[#00598a] rounded-lg flex items-center gap-2 text-sm font-medium text-blue-600"
                         >
                             <span>🔄</span> Clear All Filters
                         </button>
@@ -120,7 +120,7 @@ const CategoryFilterDropdown: React.FC<CategoryFilterDropdownProps> = ({
                                         onClick={() => handleCategoryClick(category.id)}
                                         className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between gap-2 transition-colors ${
                                             selectedCategoryId === category.id && !selectedSubcategory
-                                                ? "bg-blue-50 text-blue-700 font-medium"
+                                                ? "bg-[#00598a] text-white font-medium"
                                                 : "hover:bg-gray-50 text-gray-700"
                                         }`}
                                     >
@@ -146,7 +146,7 @@ const CategoryFilterDropdown: React.FC<CategoryFilterDropdownProps> = ({
                                                     onClick={() => handleSubcategoryClick(category.id, sub.name)}
                                                     className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-colors ${
                                                         selectedSubcategory === sub.name
-                                                            ? "bg-blue-50 text-blue-700 font-medium"
+                                                            ? "bg-[#00598a] text-white font-medium"
                                                             : "hover:bg-gray-50 text-gray-600"
                                                     }`}
                                                 >

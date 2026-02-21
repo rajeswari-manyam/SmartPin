@@ -54,12 +54,12 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#f09b13]/10 via-white to-[#f5b340]/10 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-[#00598a]/10 via-white to-[#f5b340]/10 flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8 relative">
                 {/* Back Arrow Button */}
                 <button
                     onClick={onBack}
-                    className="absolute top-6 left-6 text-gray-700 hover:text-gray-900 transition-colors"
+                    className="absolute top-6 left-6 text-gray-700 hover:text-[#00598a] transition-colors"
                     aria-label="Go back"
                     disabled={isVerifying}
                 >
@@ -112,8 +112,8 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                         disabled={isVerifying}
                         className={`w-full py-4 rounded-xl font-semibold text-white transition-all flex items-center justify-center gap-2 ${
                           isListening
-                            ? "bg-red-600 hover:bg-red-700 animate-pulse"
-                            : "bg-gradient-to-r from-[#f09b13] to-[#f5b340] hover:brightness-110"
+                            ? "bg-red-600 hover:bg-[#00598a] animate-pulse"
+                            : "bg-gradient-to-r from-[#00598a] to-[#003a5c] hover:brightness-110"
                         } ${isVerifying ? "opacity-50 cursor-not-allowed" : ""} ${typography.body.base}`}
                     >
                         {isListening ? (
@@ -137,7 +137,7 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                         className={`w-full py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 border-2 ${
                           !otp.some((digit) => digit !== "") || isVerifying
                             ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
-                            : "border-[#f09b13] text-[#f09b13] hover:bg-[#f09b13]/5 bg-white"
+                            : "border-[#00598a] text-[#00598a] hover:bg-[#00598a]/5 bg-white"
                         } ${typography.body.base}`}
                     >
                         <Volume2 className="w-5 h-5" />
@@ -177,7 +177,7 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                             className={`w-full py-3 rounded-xl font-semibold transition-all border-2 ${
                               timer > 0 || isVerifying
                                 ? "border-gray-300 text-gray-400 cursor-not-allowed bg-white"
-                                : "border-[#f09b13] text-[#f09b13] hover:bg-[#f09b13]/5 bg-white"
+                                : "border-[#00598a] text-[#00598a] hover:bg-[#00598a]/5 bg-white"
                             } ${typography.body.base}`}
                         >
                             Resend OTP

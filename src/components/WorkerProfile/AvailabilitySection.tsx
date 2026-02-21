@@ -60,8 +60,8 @@ const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
                             onClick={() => onToggleWorkingDay(day)}
                             className={`px-3 py-2 rounded-lg font-medium text-sm transition-all ${
                                 workingDays.includes(day)
-                                    ? "bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white"
-                                    : "bg-white border-2 border-gray-300 text-gray-700 #f09b13 hover:bg-gray-100"
+                                    ? "bg-gradient-to-r from-[#00598a] to-[#00598a] text-white"
+                                    : "bg-white border-2 border-gray-300 text-gray-700 #00598a hover:bg-gray-100"
                             }`}
                         >
                             {day.slice(0, 3)}

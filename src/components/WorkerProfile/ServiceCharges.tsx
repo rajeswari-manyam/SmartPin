@@ -34,8 +34,8 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
                         onClick={() => onChargeTypeChange("hourly")}
                         className={`px-4 py-3 rounded-lg font-semibold transition-all ${
                             chargeType === "hourly"
-                                ? "bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white"
-                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#f09b13]"
+                                ? "bg-gradient-to-r from-[#00598a] to-[#00598a] text-white"
+                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#00598a]"
                         }`}
                     >
                         Per Hour
@@ -45,8 +45,8 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
                         onClick={() => onChargeTypeChange("daily")}
                         className={`px-4 py-3 rounded-lg font-semibold transition-all ${
                             chargeType === "daily"
-                                ? "bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white"
-                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#f09b13]"
+                                ? "bg-gradient-to-r from-[#00598a] to-[#00598a] text-white"
+                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#00598a]"
                         }`}
                     >
                         Per Day
@@ -56,8 +56,8 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
                         onClick={() => onChargeTypeChange("fixed")}
                         className={`px-4 py-3 rounded-lg font-semibold transition-all ${
                             chargeType === "fixed"
-                                ? "bg-gradient-to-r from-[#f09b13] to-[#f0c413] text-white"
-                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#f09b13]"
+                                ? "bg-gradient-to-r from-[#00598a] to-[#00598a] text-white"
+                                : "bg-white border-2 border-gray-300 text-gray-700 hover:border-[#00598a]"
                         }`}
                     >
                         Fixed
@@ -83,7 +83,7 @@ const ServiceChargesSection: React.FC<ServiceChargesSectionProps> = ({
                     <Button
                         variant="primary"
                         onClick={onVoiceClick}
-                        className={`bg-gradient-to-r from-[#f09b13] to-[#f0c413] ${
+                        className={`bg-gradient-to-r from-[#00598a] to-[#00598a] ${
                             isListening ? "animate-pulse" : ""
                         }`}
                     >

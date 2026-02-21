@@ -5,7 +5,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-
+import { useAccount } from "../context/AccountContext";
 const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
 
 const getPlumberSubcategories = () => {
@@ -15,7 +15,7 @@ const getPlumberSubcategories = () => {
 
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:border-[#f09b13] ` +
+    `focus:ring-2 focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -77,7 +77,7 @@ const PlumberForm = () => {
 
     const plumberSubcategories = getPlumberSubcategories();
     const defaultSubcategory = getSubcategoryFromUrl() || plumberSubcategories[0] || 'Plumbing Services';
-
+    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: localStorage.getItem('userName') || '',
@@ -285,7 +285,15 @@ const PlumberForm = () => {
                 await createJob(jobPayload);
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/listed-jobs'), 1500);
+            // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
@@ -299,7 +307,7 @@ const PlumberForm = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#f09b13' }} />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -313,7 +321,7 @@ const PlumberForm = () => {
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-[]/100 rounded-full transition"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -355,8 +363,8 @@ const PlumberForm = () => {
                             onChange={handleInputChange}
                             placeholder="e.g., Professional Plumbing Services"
                             className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:outline-none placeholder-gray-400 transition-all duration-200 ${typography.form.input} bg-white`}
-                            style={{ '--tw-ring-color': '#f09b13' } as React.CSSProperties}
-                            onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                            style={{ '--tw-ring-color': '#00598a' } as React.CSSProperties}
+                            onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px 40'; }}
                             onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                         />
                     </div>
@@ -369,7 +377,7 @@ const PlumberForm = () => {
                             rows={4}
                             placeholder="Describe your services, experience, and specializations..."
                             className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:outline-none placeholder-gray-400 transition-all duration-200 resize-none ${typography.form.input} bg-white`}
-                            onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                            onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                             onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                         />
                     </div>
@@ -391,7 +399,7 @@ const PlumberForm = () => {
                                 backgroundSize: '1.5em 1.5em',
                                 paddingRight: '2.5rem'
                             }}
-                            onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                            onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                             onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                         >
                             {plumberSubcategories.map(sub => (
@@ -418,7 +426,7 @@ const PlumberForm = () => {
                                     backgroundSize: '1.5em 1.5em',
                                     paddingRight: '2.5rem'
                                 }}
-                                onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                                onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                                 onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                             >
                                 {jobTypeOptions.map(type => (
@@ -435,7 +443,7 @@ const PlumberForm = () => {
                                 onChange={handleInputChange}
                                 placeholder="2000"
                                 className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none placeholder-gray-400 transition-all duration-200 ${typography.form.input} bg-white`}
-                                onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                                onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                                 onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
@@ -450,7 +458,7 @@ const PlumberForm = () => {
                                 value={formData.startDate}
                                 onChange={handleInputChange}
                                 className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none transition-all duration-200 ${typography.form.input} bg-white`}
-                                onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                                onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                                 onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
@@ -462,7 +470,7 @@ const PlumberForm = () => {
                                 value={formData.endDate}
                                 onChange={handleInputChange}
                                 className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none transition-all duration-200 ${typography.form.input} bg-white`}
-                                onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                                onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                                 onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
@@ -478,9 +486,9 @@ const PlumberForm = () => {
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
                             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
-                            style={{ backgroundColor: '#f09b13' }}
-                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                            style={{ backgroundColor: '#00598a' }}
+                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -513,14 +521,14 @@ const PlumberForm = () => {
                                     onChange={handleInputChange}
                                     placeholder={field.placeholder}
                                     className={`w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none placeholder-gray-400 transition-all duration-200 ${typography.form.input} bg-white`}
-                                    onFocus={e => { e.target.style.borderColor = '#f09b13'; e.target.style.boxShadow = '0 0 0 2px #f09b1340'; }}
+                                    onFocus={e => { e.target.style.borderColor = '#00598a'; e.target.style.boxShadow = '0 0 0 2px #00598a40'; }}
                                     onBlur={e => { e.target.style.borderColor = '#D1D5DB'; e.target.style.boxShadow = 'none'; }}
                                 />
                             </div>
                         ))}
                     </div>
 
-                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #00598a40' }}>
                         <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
                             📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter address manually.
                         </p>
@@ -550,14 +558,13 @@ const PlumberForm = () => {
                             disabled={selectedImages.length >= 5}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
-                                selectedImages.length >= 5 ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'hover:bg-orange-50'
-                            }`}
-                            style={selectedImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length >= 5 ? 'border-gray-200 bg-gray-50 cursor-not-allowed' : 'hover:bg-[#00598a]/100'
+                                }`}
+                            style={selectedImages.length < 5 ? { borderColor: '#00598a' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
+                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -577,7 +584,7 @@ const PlumberForm = () => {
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#f09b13' }}
+                                        style={{ borderColor: '#00598a' }}
                                     />
                                     <button
                                         type="button"
@@ -599,9 +606,9 @@ const PlumberForm = () => {
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
-                        style={{ backgroundColor: loading ? '#f5b340' : '#f09b13', cursor: loading ? 'not-allowed' : 'pointer' }}
-                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        style={{ backgroundColor: loading ? '' : '#00598a', cursor: loading ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -610,7 +617,7 @@ const PlumberForm = () => {
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-[#00598a]/100 active:bg-gray-100 transition-all ${typography.body.base}`}
                     >
                         Cancel
                     </button>

@@ -10,7 +10,7 @@ import Button from '../components/ui/Buttons';
 import typography from '../styles/typography';
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 // ── Pull hospital subcategories from JSON (categoryId 2) ────────────────────
 const getHospitalSubcategories = () => {
     const hospitalCategory = subcategoriesData.subcategories.find(
@@ -26,7 +26,7 @@ const getHospitalSubcategories = () => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#f09b13] focus:border-[#f09b13] ` +
+    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -80,7 +80,7 @@ const HospitalForm = () => {
 
     const hospitalTypes = getHospitalSubcategories();
     const defaultType = getSubcategoryFromUrl() || hospitalTypes[0] || 'Hospitals';
-
+    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         hospitalName: '',
@@ -266,7 +266,15 @@ const HospitalForm = () => {
                     images: selectedImages,
                 });
                 setSuccessMessage('Hospital updated successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+                setTimeout(() => {
+
+                    setAccountType("worker");
+
+                    navigate("/my-business");
+
+                }, 1500);
             } else {
                 // Create
                 const payload: CreateHospitalPayload = {
@@ -285,7 +293,15 @@ const HospitalForm = () => {
                 };
                 await createHospital(payload);
                 setSuccessMessage('Hospital created successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+                setTimeout(() => {
+
+                    setAccountType("worker");
+
+                    navigate("/my-business");
+
+                }, 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
@@ -301,7 +317,7 @@ const HospitalForm = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f09b13] mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -355,7 +371,7 @@ const HospitalForm = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl ${typography.body.small} text-[#f09b13]`}>
+                    <div className={`p-4 bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl ${typography.body.small} text-[#00598a]`}>
                         {successMessage}
                     </div>
                 )}
@@ -431,9 +447,9 @@ const HospitalForm = () => {
                                     return (
                                         <span
                                             key={i}
-                                            className={`inline-flex items-center gap-1.5 bg-[#f09b13]/10 text-[#f09b13] px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                            className={`inline-flex items-center gap-1.5 bg-[#00598a]/10 text-[#00598a] px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
                                         >
-                                            <span className="text-[#f09b13]">🏥</span>
+                                            <span className="text-[#00598a]">🏥</span>
                                             {trimmed}
                                         </span>
                                     );
@@ -473,7 +489,7 @@ const HospitalForm = () => {
                                     return (
                                         <span
                                             key={i}
-                                            className={`inline-flex items-center gap-1.5 bg-[#f09b13]/5 text-[#f09b13]/80 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
+                                            className={`inline-flex items-center gap-1.5 bg-[#00598a]/5 text-[#00598a]/80 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
                                         >
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -496,7 +512,7 @@ const HospitalForm = () => {
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[#f09b13] hover:!bg-[#f5b340]"
+                            className="!py-1.5 !px-3 !bg-[] hover:!bg-[#00598a]"
                         >
                             {locationLoading ? (
                                 <>
@@ -563,16 +579,16 @@ const HospitalForm = () => {
                     </div>
 
                     {/* Location Tip */}
-                    <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-[#f09b13]`}>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl p-3">
+                        <p className={`${typography.body.small} text-[#00598a]`}>
                             📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
                         </p>
                     </div>
 
                     {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-[#f09b13]/10 border border-[#f09b13]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#f09b13]`}>
+                        <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-[#00598a]`}>
                                 <span className="font-semibold">✓ Location detected:</span>
                                 <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
                             </p>
@@ -593,11 +609,11 @@ const HospitalForm = () => {
                         />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-[#f09b13]/20 hover:border-[#f09b13] hover:bg-[#f09b13]/10'
+                            : 'border-[#00598a]/20 hover:border-[#00598a] hover:bg-[#00598a]/10'
                             }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-[#f09b13]/10 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-[#f09b13]" />
+                                <div className="w-16 h-16 rounded-full bg-[#00598a]/10 flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-[#00598a]" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -628,7 +644,7 @@ const HospitalForm = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#f09b13] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-[#00598a] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
                                         Saved
                                     </span>
                                 </div>
@@ -638,7 +654,7 @@ const HospitalForm = () => {
                                     <img
                                         src={preview}
                                         alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-[#f09b13]/20"
+                                        className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]/20"
                                     />
                                     <button
                                         type="button"
@@ -647,7 +663,7 @@ const HospitalForm = () => {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#f09b13] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-2 left-2 bg-[#00598a] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
                                         New
                                     </span>
                                 </div>
@@ -663,8 +679,8 @@ const HospitalForm = () => {
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? "bg-[#f09b13]/40 cursor-not-allowed"
-                            : "bg-[#f09b13] hover:bg-[#f5b340] active:bg-[#d07a00]"
+                            ? "bg-[#00598a]/40 cursor-not-allowed"
+                            : "bg-[#00598a] hover:bg-[#00598a] active:bg-[#00598a]"
                             } shadow-sm ${typography.body.base}`}
                     >
                         {loading

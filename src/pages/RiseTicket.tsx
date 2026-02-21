@@ -127,7 +127,7 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                 <div className="flex justify-end mb-6">
                     <button
                         onClick={handleViewTickets}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-semibold shadow-md hover:shadow-lg"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-[#00598a]/100 transition font-semibold shadow-md hover:shadow-lg"
                     >
                         <Eye className="w-5 h-5" />
                         View Tickets
@@ -196,7 +196,7 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                                         onClick={() => setFormData((prev: CreateTicketPayload) => ({ ...prev, priority: level }))}
                                         className={`px-4 py-3 rounded-lg border-2 font-semibold transition ${formData.priority === level
                                                 ? priorityColors[level]
-                                                : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                                                : 'bg-white text-gray-600 border-gray-300 hover:border-[#00598a]/100'
                                             }`}
                                     >
                                         {level}
@@ -247,7 +247,7 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                             type="button"
                             onClick={handleSubmit}
                             disabled={loading || !currentUserId}
-                            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2"
+                            className="w-full bg-indigo-600 hover:bg-[#00598a]/100 disabled:bg-indigo-400 text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2"
                         >
                             {loading ? (
                                 <>

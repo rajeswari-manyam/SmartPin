@@ -410,7 +410,7 @@ const JobDetailsPage: React.FC = () => {
                         <button
                             onClick={handleSendEnquiry}
                             disabled={enquiryLoading}
-                            className="flex items-center justify-center gap-2 w-full bg-[#f09b13] hover:bg-[#f5b340] #f09b13     disabled:bg-orange-300 text-white font-bold text-base py-4 rounded-2xl shadow-md shadow-orange-100 transition-all active:scale-[0.98]"
+                            className="flex items-center justify-center gap-2 w-full bg-[#00598a] hover:bg-[#00598a] #00598a    disabled:bg-orange-300 text-white font-bold text-base py-4 rounded-2xl shadow-md shadow-orange-100 transition-all active:scale-[0.98]"
                         >
                             {enquiryLoading ? (
                                 <>

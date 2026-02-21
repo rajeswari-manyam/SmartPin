@@ -73,7 +73,7 @@ const Filters: React.FC<FiltersProps> = ({
                     </span>
                     <button
                         onClick={() => setShowFilterModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors relative"
+                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-[#00598a] transition-colors relative"
                     >
                         <Filter size={18} />
                         <span className="text-sm font-medium">Filters</span>
@@ -117,7 +117,7 @@ const Filters: React.FC<FiltersProps> = ({
                             <h2 className="text-lg font-semibold">Filter Workers</h2>
                             <button
                                 onClick={() => setShowFilterModal(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full"
+                                className="p-2 hover:bg-[#00598a] rounded-full"
                             >
                                 <X size={20} />
                             </button>
@@ -245,7 +245,7 @@ const Filters: React.FC<FiltersProps> = ({
                         <div className="p-4 border-t bg-gray-50 flex gap-3">
                             <button
                                 onClick={handleClearAllFilters}
-                                className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors font-medium"
+                                className="flex-1 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-[#00598a] transition-colors font-medium"
                             >
                                 Clear All
                             </button>

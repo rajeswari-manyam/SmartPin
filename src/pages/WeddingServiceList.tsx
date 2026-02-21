@@ -203,12 +203,12 @@ const WeddingServicesList: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(s); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-pink-600 text-pink-600 rounded-lg font-medium text-sm hover:bg-pink-50 transition-colors">
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-pink-600 text-pink-600 rounded-lg font-medium text-sm hover:bg-[#00598a]/100 transition-colors">
                             <span>📍</span> Directions
                         </button>
                         <button
                             onClick={e => { e.stopPropagation(); handleView(s); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm bg-pink-600 text-white hover:bg-pink-700 transition-colors">
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm bg-pink-600 text-white hover:bg-[#00598a]/100 transition-colors">
                             <span>👁️</span> View
                         </button>
                     </div>
@@ -290,7 +290,7 @@ const WeddingServicesList: React.FC = () => {
                             </select>
                         </div>
                         <Button variant="primary" size="md" onClick={handleAddPost}
-                            className="w-full sm:w-auto justify-center bg-[#f09b13] hover:bg-[#e08a0f] text-white">
+                            className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a]/100 text-white">
                             + Add Post
                         </Button>
                     </div>

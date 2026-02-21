@@ -105,8 +105,7 @@ export const resendOtp = async (phone: string): Promise<ApiResponse> => {
 export interface CreateJobPayload {
     userId: string;
     title: string;
-        name: string;        // ← ADD THIS
-
+    name: string;
     description: string;
     category: string;
     subcategory?: string;
@@ -127,7 +126,7 @@ export const createJob = async (data: CreateJobPayload) => {
     const formData = new FormData();
     formData.append("userId", data.userId);
     formData.append("title", data.title);
-      formData.append("name", data.name);        // ← ADD THIS LINE
+    formData.append("name", data.name);
     formData.append("description", data.description);
     formData.append("category", data.category);
     if (data.subcategory) formData.append("subcategory", data.subcategory);
@@ -447,7 +446,6 @@ export const getTicketsByUserId = async (
 };
 
 // ==================== CREATE WORKER (STEP 1) ====================
-// FIX: Use multipart/form-data to support profilePic file upload
 export interface CreateWorkerBasePayload {
     userId: string;
     name: string;
@@ -458,7 +456,7 @@ export interface CreateWorkerBasePayload {
     latitude: number | string;
     longitude: number | string;
     experience?: string;
-    profilePic?: File; // ✅ ADDED: profilePic file support (matches Postman)
+    profilePic?: File;
 }
 
 export interface CreateWorkerBaseResponse {
@@ -489,8 +487,6 @@ export const createWorkerBase = async (
     payload: CreateWorkerBasePayload
 ): Promise<CreateWorkerBaseResponse> => {
     try {
-        // ✅ FIX: Use FormData (multipart/form-data) instead of URLSearchParams
-        // Reason: API accepts profilePic file upload (confirmed in Postman test)
         const formData = new FormData();
         formData.append("userId", payload.userId);
         formData.append("name", payload.name);
@@ -504,13 +500,10 @@ export const createWorkerBase = async (
         if (payload.experience) {
             formData.append("experience", payload.experience);
         }
-
-        // ✅ FIX: Attach profilePic if provided
         if (payload.profilePic) {
             formData.append("profilePic", payload.profilePic);
         }
 
-        // ✅ FIX: No Content-Type header — browser sets it automatically with boundary
         const response = await fetch(`${API_BASE_URL}/createworkers`, {
             method: "POST",
             body: formData,
@@ -532,7 +525,6 @@ export const createWorkerBase = async (
 };
 
 // ==================== ADD WORKER SKILL (STEP 2) ====================
-// FIX: Use multipart/form-data to support images file upload
 export interface AddWorkerSkillPayload {
     workerId: string;
     category: string | string[];
@@ -540,7 +532,7 @@ export interface AddWorkerSkillPayload {
     skill: string;
     serviceCharge: number;
     chargeType: "hour" | "day" | "fixed";
-    images?: File[]; // ✅ ADDED: images file support (matches Postman)
+    images?: File[];
 }
 
 export interface AddWorkerSkillResponse {
@@ -571,12 +563,9 @@ export const addWorkerSkill = async (
     payload: AddWorkerSkillPayload
 ): Promise<AddWorkerSkillResponse> => {
     try {
-        // ✅ FIX: Use FormData (multipart/form-data) instead of URLSearchParams
-        // Reason: API accepts images file uploads (confirmed in Postman test)
         const formData = new FormData();
         formData.append("workerId", payload.workerId);
 
-        // Handle category array → comma-separated string
         const categoryString = Array.isArray(payload.category)
             ? payload.category.join(",")
             : payload.category;
@@ -587,12 +576,10 @@ export const addWorkerSkill = async (
         formData.append("serviceCharge", String(payload.serviceCharge));
         formData.append("chargeType", payload.chargeType);
 
-        // ✅ FIX: Attach each image file if provided
         if (payload.images?.length) {
             payload.images.forEach((file) => formData.append("images", file));
         }
 
-        // ✅ FIX: No Content-Type header — browser sets it automatically with boundary
         const response = await fetch(`${API_BASE_URL}/addworkerSkill`, {
             method: "POST",
             body: formData,
@@ -654,7 +641,7 @@ export const createWorkerComplete = async (
             pincode: payload.pincode,
             latitude: payload.latitude,
             longitude: payload.longitude,
-            profilePic: payload.profilePic, // ✅ FIX: Pass profilePic through
+            profilePic: payload.profilePic,
         });
 
         if (!baseWorkerResponse.success) {
@@ -673,7 +660,7 @@ export const createWorkerComplete = async (
             skill: payload.skills,
             serviceCharge: payload.serviceCharge,
             chargeType: payload.chargeType,
-            images: payload.images, // ✅ FIX: Pass images through
+            images: payload.images,
         });
 
         if (!skillResponse.success) {
@@ -942,7 +929,6 @@ export const getNearbyJobsForWorker = async (
     try {
         console.log("🔍 Fetching nearby jobs for worker ID:", workerId);
 
-        // ✅ Correct
         const response = await fetch(
             `${API_BASE_URL}/getNearbyJobsWorker/${workerId}`,
             {
@@ -966,46 +952,35 @@ export const getNearbyJobsForWorker = async (
     }
 };
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Types — each key maps to the category name returned by the API
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface ServiceItem {
     _id: string;
     userId: string;
     subcategory?: string;
-    [key: string]: any; // allow extra fields per service type
+    [key: string]: any;
 }
 
-// ============================================================================
-// UPDATE THIS INTERFACE IN YOUR api.service.ts FILE
-// Replace your existing AllUserData interface with this corrected version
-// ============================================================================
-
 export interface AllUserData {
-    agriculture?:    ServiceItem[];
-    automotive?:     ServiceItem[];
-    beauty?:         ServiceItem[];
-    business?:       ServiceItem[];
-    corporate?:      ServiceItem[];   // ✅ was "corporative" — fixed to match backend
-    creative?:       ServiceItem[];   // ✅ was "art"         — fixed to match backend
-    dailyWage?:      ServiceItem[];
-    techDigital?:    ServiceItem[];   // ✅ was "digital"     — fixed to match backend
-    education?:      ServiceItem[];
-    events?:         ServiceItem[];   // ✅ was "event"       — fixed to match backend
-    food?:           ServiceItem[];
-    healthcare?:     ServiceItem[];   // ✅ was "hospital"    — fixed to match backend
-    hotelTravel?:    ServiceItem[];   // ✅ was "hotel"       — fixed to match backend
-    industrialLocal?: ServiceItem[];  // ✅ was "industrial"  — fixed to match backend
-    courier?:        ServiceItem[];
-    pet?:            ServiceItem[];
-    realEstate?:     ServiceItem[];
-    shopping?:       ServiceItem[];
-    sports?:         ServiceItem[];
-    wedding?:        ServiceItem[];
-
-    [key: string]: ServiceItem[] | undefined; // index signature for dynamic access
+    agriculture?: ServiceItem[];
+    automotive?: ServiceItem[];
+    beauty?: ServiceItem[];
+    business?: ServiceItem[];
+    corporate?: ServiceItem[];
+    creative?: ServiceItem[];
+    dailyWage?: ServiceItem[];
+    techDigital?: ServiceItem[];
+    education?: ServiceItem[];
+    events?: ServiceItem[];
+    food?: ServiceItem[];
+    healthcare?: ServiceItem[];
+    hotelTravel?: ServiceItem[];
+    industrialLocal?: ServiceItem[];
+    courier?: ServiceItem[];
+    pet?: ServiceItem[];
+    realEstate?: ServiceItem[];
+    shopping?: ServiceItem[];
+    sports?: ServiceItem[];
+    wedding?: ServiceItem[];
+    [key: string]: ServiceItem[] | undefined;
 }
 
 export interface GetAllDataByUserIdResponse {
@@ -1014,14 +989,6 @@ export interface GetAllDataByUserIdResponse {
     data: AllUserData;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// API Function
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * GET /getAllDataByUserId/:userId
- * Returns all service listings created by this user, grouped by category.
- */
 export const getAllDataByUserId = async (
     userId: string
 ): Promise<GetAllDataByUserIdResponse> => {
@@ -1050,7 +1017,6 @@ export const getAllDataByUserId = async (
 };
 
 // ==================== REMOVE WORKER FROM JOB ====================
-// POST /removeEnquiry  { workerId, jobId }
 export const removeEnquiry = async (
     workerId: string,
     jobId: string
@@ -1075,8 +1041,7 @@ export const removeEnquiry = async (
     }
 };
 
-// ==================== CONFIRM WORKER FOR JOB ====================
-// POST /confirm-job  { jobId, workerId }
+// ==================== SEND ENQUIRY TO JOB ====================
 export const sendEnquiryToJob = async (
     jobId: string,
     workerId: string
@@ -1101,6 +1066,7 @@ export const sendEnquiryToJob = async (
     }
 };
 
+// ==================== CONFIRMED WORKERS TYPES ====================
 export interface ConfirmedWorkers {
     _id: string;
     userId: string;
@@ -1127,9 +1093,13 @@ export interface ConfirmedWorkers {
 export interface GetConfirmedWorkersResponse {
     success: boolean;
     message?: string;
-    data: ConfirmedWorkers[];  // already flattened by the function below
+    data: ConfirmedWorkers[];
 }
 
+// ==================== GET CONFIRMED WORKERS ====================
+// ✅ FIXED: API stores applicants in `enquiredWorkers` (array of ID strings),
+//           not `confirmedWorkers` (which is an empty array until customer confirms).
+//           We now read both and use whichever has data.
 export const getConfirmedWorkers = async (
     jobId: string
 ): Promise<GetConfirmedWorkersResponse> => {
@@ -1143,23 +1113,57 @@ export const getConfirmedWorkers = async (
 
         const json = await response.json();
 
-        // ✅ API nests workers inside json.data.confirmedWorkers
+        // ── Try confirmedWorkers (full objects) first ──────────────────────────
+        const confirmedWorkers: ConfirmedWorkers[] = (
+            json?.data?.confirmedWorkers || []
+        ).filter((w: any) => typeof w === "object" && w !== null);
+
+        // ── Fall back to enquiredWorkers (array of ID strings) ────────────────
+        // Map each ID string into a minimal ConfirmedWorkers shape so the
+        // enrichment logic in JobApplicantsPage can call getWorkerWithSkills(id)
+        const enquiredWorkerIds: string[] = (
+            json?.data?.enquiredWorkers || []
+        ).filter((w: any) => typeof w === "string");
+
         const workers: ConfirmedWorkers[] =
-            json?.data?.confirmedWorkers ||
-            json?.data ||
-            [];
+            confirmedWorkers.length > 0
+                ? confirmedWorkers
+                : enquiredWorkerIds.map((id) => ({
+                    _id: id,
+                    userId: id,          // resolved later via getWorkerWithSkills
+                    name: "",
+                    category: [],
+                    subCategories: [],
+                    skills: [],
+                    serviceCharge: 0,
+                    chargeType: "hour" as const,
+                    profilePic: "",
+                    images: [],
+                    area: "",
+                    city: "",
+                    state: "",
+                    pincode: "",
+                    latitude: 0,
+                    longitude: 0,
+                    isActive: true,
+                    createdAt: "",
+                    updatedAt: "",
+                    __v: 0,
+                }));
 
         return {
             success: json.success ?? true,
             message: json.message,
-            data: workers,   // ← always a flat array
+            data: workers,
         };
     } catch (error) {
         console.error("❌ getConfirmedWorkers error:", error);
         throw error;
     }
 };
+
 // ==================== CHECK IF WORKER ALREADY APPLIED TO JOB ====================
+// ✅ FIXED: checks both confirmedWorkers (objects) and enquiredWorkers (ID strings)
 export const checkJobApplication = async (
     jobId: string,
     workerId: string
@@ -1174,15 +1178,19 @@ export const checkJobApplication = async (
 
         const json = await response.json();
 
-        // ✅ FIXED: same path fix
-        const workers: any[] =
-            json?.data?.confirmedWorkers ||
-            json?.data ||
-            [];
-
-        return workers.some(
-            (w) => w._id === workerId || w.userId === workerId
+        // Check confirmed workers (full objects)
+        const confirmed: any[] = json?.data?.confirmedWorkers || [];
+        const confirmedMatch = confirmed.some(
+            (w) => typeof w === "object" && (w._id === workerId || w.userId === workerId)
         );
+
+        // Check enquired workers (ID strings)
+        const enquired: any[] = json?.data?.enquiredWorkers || [];
+        const enquiredMatch = enquired.some(
+            (id) => typeof id === "string" && id === workerId
+        );
+
+        return confirmedMatch || enquiredMatch;
     } catch (error) {
         console.error("❌ checkJobApplication error:", error);
         return false;
@@ -1190,6 +1198,7 @@ export const checkJobApplication = async (
 };
 
 // ==================== GET CONFIRMED WORKERS COUNT FOR A JOB ====================
+// ✅ FIXED: counts both confirmedWorkers and enquiredWorkers
 export const getConfirmedWorkersCount = async (
     jobId: string
 ): Promise<number> => {
@@ -1203,13 +1212,11 @@ export const getConfirmedWorkersCount = async (
 
         const json = await response.json();
 
-        // ✅ FIXED: same path fix
-        const workers: any[] =
-            json?.data?.confirmedWorkers ||
-            json?.data ||
-            [];
+        const confirmed: any[] = json?.data?.confirmedWorkers || [];
+        const enquired: any[] = json?.data?.enquiredWorkers || [];
 
-        return workers.length;
+        // Use whichever array has data
+        return confirmed.length > 0 ? confirmed.length : enquired.length;
     } catch (error) {
         console.error("❌ getConfirmedWorkersCount error:", error);
         return 0;

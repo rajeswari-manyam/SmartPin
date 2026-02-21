@@ -5,6 +5,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import { useAccount } from "../context/AccountContext";
 
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
@@ -13,19 +14,25 @@ const getHotelTravelSubcategories = () => {
     return hotelCategory ? hotelCategory.items.map(item => item.name) : [];
 };
 
-// ── Brand color: #f09b13 ──────────────────────────────────────────────────────
-const BRAND = '#f09b13';
+// ── Brand color ───────────────────────────────────────────────────────────────
+const BRAND = '#00598a';
+const BRAND_DARK = '#004a75';
+const BRAND_LIGHT_BG = '#e8f2f8';
+const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const inputBase =
     `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
-    `focus:outline-none focus:ring-2 focus:border-transparent ` +
+    `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Inline style helper for brand focus ring
-const focusStyle = {
-    '--tw-ring-color': BRAND,
-} as React.CSSProperties;
+const selectChevronStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
 
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -83,7 +90,7 @@ const HotelForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-
+    const { setAccountType } = useAccount();
     const hotelTypes = getHotelTravelSubcategories();
     const defaultType = getSubcategoryFromUrl() || hotelTypes[0] || 'Hotels';
 
@@ -280,7 +287,10 @@ const HotelForm = () => {
                 const payload: Hotel = { ...formData, latitude: parseFloat(formData.latitude), longitude: parseFloat(formData.longitude) };
                 await updateHotel(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => {
+                    setAccountType("worker");
+                    navigate("/my-business");
+                }, 1500);
             } else {
                 const formdata = new FormData();
                 formdata.append("userId", formData.userId);
@@ -311,7 +321,10 @@ const HotelForm = () => {
                 const result = JSON.parse(responseText);
                 if (!result.success) throw new Error(result.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => {
+                    setAccountType("worker");
+                    navigate("/my-business");
+                }, 1500);
             }
         } catch (err: any) {
             console.error("❌ Submit error:", err);
@@ -325,7 +338,7 @@ const HotelForm = () => {
 
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-orange-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
@@ -334,18 +347,17 @@ const HotelForm = () => {
         );
     }
 
-    // ── Shared input with brand focus ring ─────────────────────────────────
-    const brandInput = `${inputBase} focus:ring-[#f09b13]`;
+    const totalImages = selectedImages.length + existingImages.length;
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: '#fdf6ec' }}>
+        <div className="min-h-screen bg-white">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-orange-100 px-4 py-4 shadow-sm">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 rounded-full transition hover:bg-orange-50"
+                        className="p-2 -ml-2 rounded-full transition hover:bg-gray-50"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -359,7 +371,6 @@ const HotelForm = () => {
                             {isEditMode ? 'Update your service listing' : 'Create new hotel/travel listing'}
                         </p>
                     </div>
-                    {/* Brand accent dot */}
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
@@ -374,8 +385,7 @@ const HotelForm = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl border text-sm font-medium"
-                        style={{ backgroundColor: '#fff8ed', borderColor: '#f09b13', color: '#92570a' }}>
+                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
                         ✓ {successMessage}
                     </div>
                 )}
@@ -390,7 +400,7 @@ const HotelForm = () => {
                             value={formData.name}
                             onChange={handleInputChange}
                             placeholder="Enter hotel or service name"
-                            className={brandInput}
+                            className={inputBase}
                         />
                     </div>
                 </SectionCard>
@@ -399,11 +409,11 @@ const HotelForm = () => {
                 <SectionCard title="Contact Information">
                     <div>
                         <FieldLabel required>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={brandInput} />
+                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
                     </div>
                     <div>
                         <FieldLabel required>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={brandInput} />
+                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
                     </div>
                 </SectionCard>
 
@@ -415,14 +425,8 @@ const HotelForm = () => {
                             name="type"
                             value={formData.type}
                             onChange={handleInputChange}
-                            className={brandInput + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
+                            className={inputBase + ' appearance-none'}
+                            style={selectChevronStyle}
                         >
                             {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
@@ -439,7 +443,7 @@ const HotelForm = () => {
                             onChange={handleInputChange}
                             rows={3}
                             placeholder="Room Service, Pool, Spa, Restaurant, Parking"
-                            className={brandInput + ' resize-none'}
+                            className={inputBase + ' resize-none'}
                         />
                         <p className={`${typography.misc.caption} mt-2`}>
                             💡 Enter services separated by commas
@@ -455,7 +459,7 @@ const HotelForm = () => {
                                             <span
                                                 key={i}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                                                style={{ backgroundColor: '#fff3d9', color: '#92570a' }}
+                                                style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
                                             >
                                                 ✓ {trimmed}
                                             </span>
@@ -472,11 +476,11 @@ const HotelForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
-                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} placeholder="Years" min="0" className={brandInput} />
+                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} placeholder="Years" min="0" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>Price Range (₹)</FieldLabel>
-                            <input type="text" name="priceRange" value={formData.priceRange} onChange={handleInputChange} placeholder="e.g. 1000" className={brandInput} />
+                            <input type="text" name="priceRange" value={formData.priceRange} onChange={handleInputChange} placeholder="e.g. 1000" className={inputBase} />
                         </div>
                     </div>
 
@@ -493,7 +497,7 @@ const HotelForm = () => {
                     </div>
                 </SectionCard>
 
-                {/* 6. BIO */}
+                {/* 6. DESCRIPTION */}
                 <SectionCard title="Description">
                     <textarea
                         name="description"
@@ -501,7 +505,7 @@ const HotelForm = () => {
                         onChange={handleInputChange}
                         rows={4}
                         placeholder="Describe your hotel or service..."
-                        className={brandInput + ' resize-none'}
+                        className={inputBase + ' resize-none'}
                     />
                 </SectionCard>
 
@@ -513,8 +517,10 @@ const HotelForm = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
                             style={{ backgroundColor: BRAND }}
+                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -533,34 +539,34 @@ const HotelForm = () => {
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={brandInput} />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={brandInput} />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={brandInput} />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={brandInput} />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
                         </div>
                     </div>
 
                     {/* Tip box */}
-                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', borderWidth: 1, borderStyle: 'solid', borderColor: '#fcd596' }}>
-                        <p className={`${typography.body.small}`} style={{ color: '#92570a' }}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
+                        <p className={`${typography.body.small}`} style={{ color: BRAND }}>
                             📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to fill your location automatically, or enter manually above.
                         </p>
                     </div>
 
                     {formData.latitude && formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#f0fdf4', borderWidth: 1, borderStyle: 'solid', borderColor: '#bbf7d0' }}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected: </span>
                                 {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
@@ -571,30 +577,30 @@ const HotelForm = () => {
 
                 {/* 8. PHOTOS */}
                 <SectionCard title="Photos (Optional)">
-                    <label className="cursor-pointer block">
+                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
                             type="file"
                             accept="image/*"
                             multiple
                             onChange={handleImageSelect}
                             className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
+                            disabled={totalImages >= 5}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            className="border-2 border-dashed rounded-2xl p-8 text-center transition"
                             style={
-                                selectedImages.length + existingImages.length >= 5
+                                totalImages >= 5
                                     ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#fcd596', backgroundColor: '#fffbf2' }
+                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
                             }
                         >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff3d9' }}>
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
                                     <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
+                                        {totalImages >= 5
                                             ? 'Maximum limit reached (5 images)'
                                             : 'Tap to upload photos'}
                                     </p>
@@ -646,13 +652,10 @@ const HotelForm = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${typography.body.base}`}
-                        style={{
-                            backgroundColor: loading ? '#f5be72' : BRAND,
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                        }}
-                        onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d98610'; }}
-                        onMouseLeave={e => { if (!loading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = BRAND; }}
+                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                     >
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
@@ -661,7 +664,8 @@ const HotelForm = () => {
                     <button
                         onClick={handleCancel}
                         type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-orange-50 active:bg-orange-100 transition-all ${typography.body.base}`}
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

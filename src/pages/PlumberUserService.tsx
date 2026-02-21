@@ -246,7 +246,7 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => openDirections(job)}
-                            className="flex-1 justify-center gap-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
+                            className="flex-1 justify-center gap-1 border-gray-300 text-gray-700 hover:bg-[#00598a]/100 text-xs"
                         >
                             📍 Directions
                         </Button>

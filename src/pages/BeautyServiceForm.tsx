@@ -9,6 +9,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
@@ -49,8 +50,8 @@ const inputError =
 
 // Focus handlers reused across all inputs
 const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#f09b13';
-    e.target.style.boxShadow = '0 0 0 2px #f09b1340';
+    e.target.style.borderColor = '#00598a';
+    e.target.style.boxShadow = '0 0 0 2px #00598a40';
 };
 const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, hasError = false) => {
     e.target.style.borderColor = hasError ? '#f87171' : '#D1D5DB';
@@ -181,7 +182,7 @@ const BeautyServiceForm: React.FC = () => {
 
     const defaultSubcategory = getSubcategoryFromUrl() || BEAUTY_CATEGORIES[0] || 'Beauty Parlour';
     const defaultCategory = getCategoryFromSubcategory(defaultSubcategory);
-
+     const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
@@ -404,7 +405,15 @@ const BeautyServiceForm: React.FC = () => {
                 await createBeautyWorker(payload, selectedImages);
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/my-business'), 1500);
+                        // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
         } catch (err: unknown) {
             if (err instanceof Error) setError(err.message);
             else if (typeof err === 'string') setError(err);
@@ -421,7 +430,7 @@ const BeautyServiceForm: React.FC = () => {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: '#f09b13' }} />
+                        style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
@@ -575,7 +584,7 @@ const BeautyServiceForm: React.FC = () => {
                                     return (
                                         <span key={i}
                                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white ${typography.misc.badge} font-medium`}
-                                            style={{ backgroundColor: '#f09b13' }}>
+                                            style={{ backgroundColor: '#00598a' }}>
                                             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
@@ -637,12 +646,12 @@ const BeautyServiceForm: React.FC = () => {
                                 Toggle on to appear as available to clients
                             </p>
                         </div>
-                        {/* Toggle — uses #f09b13 when active */}
+                        {/* Toggle — uses #00598a when active */}
                         <button
                             type="button"
                             onClick={handleAvailabilityToggle}
                             className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
-                            style={{ backgroundColor: isCurrentlyAvailable ? '#f09b13' : '#D1D5DB' }}
+                            style={{ backgroundColor: isCurrentlyAvailable ? '#00598a' : '#D1D5DB' }}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
                         </button>
@@ -671,9 +680,9 @@ const BeautyServiceForm: React.FC = () => {
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
                             className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
-                            style={{ backgroundColor: '#f09b13' }}
+                            style={{ backgroundColor: '#00598a' }}
                             onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -724,7 +733,7 @@ const BeautyServiceForm: React.FC = () => {
                     )}
 
                     {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #f09b1340' }}>
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #00598a40' }}>
                             <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
                                 📍 <span className="font-medium">Tip:</span> Click "Auto Detect" or type your address — coordinates set automatically.
                             </p>
@@ -753,12 +762,12 @@ const BeautyServiceForm: React.FC = () => {
                                     ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                                     : 'hover:bg-orange-50'
                             }`}
-                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#f09b13' } : {}}
+                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#00598a' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center"
                                     style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
+                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -790,13 +799,13 @@ const BeautyServiceForm: React.FC = () => {
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img src={preview} alt={`New ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#f09b13' }} />
+                                        style={{ borderColor: '#00598a' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#f09b13' }}>New</span>
+                                        style={{ backgroundColor: '#00598a' }}>New</span>
                                 </div>
                             ))}
                         </div>
@@ -810,9 +819,9 @@ const BeautyServiceForm: React.FC = () => {
                         disabled={loading || !!successMessage}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md ${typography.body.base}`}
-                        style={{ backgroundColor: loading || successMessage ? '#f5b340' : '#f09b13', cursor: loading || successMessage ? 'not-allowed' : 'pointer' }}
-                        onMouseEnter={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                        onMouseLeave={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f09b13'; }}
+                        style={{ backgroundColor: loading || successMessage ? '#00598a' : '#00598a', cursor: loading || successMessage ? 'not-allowed' : 'pointer' }}
+                        onMouseEnter={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                        onMouseLeave={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

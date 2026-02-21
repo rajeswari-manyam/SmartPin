@@ -135,7 +135,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                             <button
                                 key={suggestion.id}
                                 onClick={() => handleSuggestionClick(suggestion)}
-                                className="w-full px-5 py-3 text-left hover:bg-gray-50 transition-colors duration-150 flex items-center gap-3 group"
+                                className="w-full px-5 py-3 text-left hover:bg-[#00598a] transition-colors duration-150 flex items-center gap-3 group"
                             >
                                 <SearchIcon className={`${typography.icon.xs} text-gray-400 group-hover:text-blue-600 transition-colors`} />
                                 <div className="flex-1">

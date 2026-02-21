@@ -4,8 +4,12 @@ import { addLabour, updateLabour, getLabourById } from "../services/DailyWage.se
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import { useAccount } from "../context/AccountContext";
 
-// ── #f09b13 ≈ Tailwind amber-500 ─────────────────────────────────────────────
+const BRAND = '#00598a';
+const BRAND_DARK = '#004a75';
+const BRAND_LIGHT_BG = '#e8f2f8';
+const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Task', 'Fixed Rate'];
 
@@ -16,16 +20,16 @@ const getDailyWageSubcategories = () => {
         : ['Loading/Unloading Workers', 'Cleaning Helpers', 'Construction Labor', 'Garden Workers', 'Event Helpers', 'Watchmen'];
 };
 
-// ── Shared input: amber focus ring ───────────────────────────────────────────
+// ── Shared input: #00598a focus ring ─────────────────────────────────────────
 const inputBase =
     `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
-    `focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
+    `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in amber (#f09b13)
+// Dropdown chevron in #00598a
 const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23f09b13'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
     backgroundPosition: 'right 0.75rem center',
     backgroundSize: '1.5em 1.5em',
@@ -35,7 +39,7 @@ const selectStyle = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-amber-500 ml-1">*</span>}
+        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
     </label>
 );
 
@@ -89,6 +93,7 @@ const DailyWageForm: React.FC = () => {
 
     const dailyWageCategories = getDailyWageSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || dailyWageCategories[0] || 'Loading/Unloading Workers';
+    const { setAccountType } = useAccount();
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
@@ -264,8 +269,13 @@ const DailyWageForm: React.FC = () => {
                     availability: formData.availability,
                 };
                 const response = await updateLabour(editId, payload, selectedImages);
-                if (response.success) { setSuccessMessage('Worker updated successfully!'); setTimeout(() => navigate('/my-business'), 1500); }
-                else throw new Error(response.message || 'Failed to update worker');
+                if (response.success) {
+                    setSuccessMessage('Worker updated successfully!');
+                    setTimeout(() => {
+                        setAccountType("worker");
+                        navigate("/my-business");
+                    }, 1500);
+                } else throw new Error(response.message || 'Failed to update worker');
             } else {
                 const payload = {
                     userId: formData.userId, description: formData.description,
@@ -276,8 +286,10 @@ const DailyWageForm: React.FC = () => {
                     name: formData.name || undefined, phone: formData.phone || undefined, email: formData.email || undefined,
                 };
                 const response = await addLabour(payload, selectedImages);
-                if (response.success) { setSuccessMessage('Worker created successfully!'); setTimeout(() => navigate('/my-business'), 1500); }
-                else throw new Error(response.message || 'Failed to create worker');
+                if (response.success) {
+                    setSuccessMessage('Worker created successfully!');
+                    setTimeout(() => navigate('/my-business'), 1500);
+                } else throw new Error(response.message || 'Failed to create worker');
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
@@ -291,9 +303,9 @@ const DailyWageForm: React.FC = () => {
     // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-amber-50 flex items-center justify-center p-4">
+            <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500 mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -306,14 +318,14 @@ const DailyWageForm: React.FC = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-amber-50">
+        <div className="min-h-screen bg-white">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-amber-100 px-4 py-4 shadow-sm">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-amber-50 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -327,7 +339,7 @@ const DailyWageForm: React.FC = () => {
                             {isEditMode ? 'Update worker listing' : 'Create new worker listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full bg-amber-500" />
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
@@ -346,7 +358,7 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 bg-amber-50 border border-amber-400 rounded-xl text-amber-800 text-sm font-medium">
+                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
                         <div className="flex items-start gap-2">
                             <span className="mt-0.5">✓</span>
                             <p>{successMessage}</p>
@@ -424,7 +436,7 @@ const DailyWageForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Availability toggle — amber when active */}
+                    {/* Availability toggle */}
                     <div className="flex items-center justify-between py-2">
                         <span className={`${typography.body.small} font-semibold text-gray-800`}>
                             Currently Available
@@ -432,14 +444,12 @@ const DailyWageForm: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                                formData.availability ? 'bg-amber-500' : 'bg-gray-300'
-                            }`}
+                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+                            style={{ backgroundColor: formData.availability ? BRAND : '#d1d5db' }}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                                    formData.availability ? 'translate-x-6' : 'translate-x-1'
-                                }`}
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'
+                                    }`}
                             />
                         </button>
                     </div>
@@ -453,7 +463,10 @@ const DailyWageForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white text-sm font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: BRAND }}
+                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
@@ -490,9 +503,9 @@ const DailyWageForm: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* Tip box — amber */}
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-amber-800`}>
+                    {/* Tip box */}
+                    <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
+                        <p className={`${typography.body.small}`} style={{ color: BRAND }}>
                             📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your work area manually.
                         </p>
                     </div>
@@ -517,14 +530,17 @@ const DailyWageForm: React.FC = () => {
                             onChange={handleImageSelect} className="hidden"
                             disabled={totalImages >= 5}
                         />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${
-                            totalImages >= 5
-                                ? 'border-gray-200 bg-gray-50'
-                                : 'border-amber-300 bg-amber-50 hover:border-amber-400 hover:bg-amber-100'
-                        }`}>
+                        <div
+                            className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors"
+                            style={
+                                totalImages >= 5
+                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
+                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
+                            }
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-amber-500" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
+                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -534,7 +550,7 @@ const DailyWageForm: React.FC = () => {
                                         JPG, PNG, WebP — max 5 MB each
                                     </p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-amber-600 text-sm font-medium mt-1">
+                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -552,14 +568,14 @@ const DailyWageForm: React.FC = () => {
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className="absolute bottom-2 left-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">
+                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
                                         Saved
                                     </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-amber-400" />
+                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
                                         <X className="w-4 h-4" />
@@ -579,11 +595,10 @@ const DailyWageForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-colors ${
-                            loading
-                                ? 'bg-amber-300 cursor-not-allowed'
-                                : 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 shadow-md hover:shadow-lg'
-                        } ${typography.body.base}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-opacity shadow-md ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -598,7 +613,7 @@ const DailyWageForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-amber-50 active:bg-amber-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>

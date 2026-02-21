@@ -74,7 +74,7 @@ const PrivacyPolicyScreen: React.FC = () => {
                     <div className="flex items-center justify-between h-16">
                         <button
                             onClick={() => window.history.back()}
-                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+                            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[#00598a]/100 transition-colors"
                         >
                             <ArrowLeft className="w-6 h-6 text-gray-900" />
                         </button>

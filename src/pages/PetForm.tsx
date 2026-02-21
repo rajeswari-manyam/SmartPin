@@ -5,7 +5,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-
+import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
 // ── Pull pet service subcategories from JSON (categoryId 13) ────────────────
 const getPetServiceSubcategories = () => {
     const petCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 13);
@@ -106,7 +106,7 @@ const PetForm = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-
+    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
     const petCategories = getPetServiceSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || petCategories[0] || 'Pet Shops';
 
@@ -313,7 +313,15 @@ const PetForm = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to add service');
                 setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => navigate('/my-business'), 1500);
+            // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
+
+            setTimeout(() => {
+
+                setAccountType("worker");
+
+                navigate("/my-business");
+
+            }, 1500);
         } catch (err: any) {
             console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
@@ -326,7 +334,7 @@ const PetForm = () => {
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#f09b13' }} />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
@@ -340,7 +348,7 @@ const PetForm = () => {
             {/* Header */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
+                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-[]/100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
@@ -439,7 +447,7 @@ const PetForm = () => {
                         size="sm"
                         onClick={getCurrentLocation}
                         disabled={locationLoading}
-                        className="!py-1.5 !px-3 !bg-[#f09b13] !border-[#f09b13] hover:!bg-[#d4870f]"
+                        className="!py-1.5 !px-3 !bg-[#00598a] !border-[#00598a] hover:!bg-[#00598a]"
                     >
                         {locationLoading
                             ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -494,13 +502,13 @@ const PetForm = () => {
                         <div
                             className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                             style={{
-                                borderColor: maxImagesReached ? '#d1d5db' : '#f09b13',
+                                borderColor: maxImagesReached ? '#d1d5db' : '',
                                 backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
                             }}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#f09b13' }} />
+                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -510,7 +518,7 @@ const PetForm = () => {
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: '#f09b13' }}>
+                                        <p className="text-sm font-medium mt-1" style={{ color: '' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
                                         </p>
                                     )}
@@ -525,12 +533,12 @@ const PetForm = () => {
                                 <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-[#00598a]/100 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span
                                         className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#f09b13' }}
+                                        style={{ backgroundColor: '#00598a' }}
                                     >
                                         Saved
                                     </span>
@@ -540,9 +548,9 @@ const PetForm = () => {
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img src={preview} alt={`Preview ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#f09b13' }} />
+                                        style={{ borderColor: '#00598a' }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-[#00598a]/100 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
@@ -561,7 +569,7 @@ const PetForm = () => {
                         disabled={loading}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading ? '#f0b35c' : '#f09b13' }}
+                        style={{ backgroundColor: loading ? '#00598a' : '#00598a' }}
                     >
                         {loading
                             ? <span className="flex items-center justify-center gap-2"><span className="animate-spin">⏳</span>{isEditMode ? 'Updating...' : 'Creating...'}</span>
@@ -570,7 +578,7 @@ const PetForm = () => {
                     <button
                         onClick={() => window.history.back()}
                         type="button"
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-[#00598a]/100 active:bg-gray-100 transition-all ${typography.body.base}`}
                     >
                         Cancel
                     </button>
