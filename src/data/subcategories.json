@@ -5,22 +5,22 @@
             "items": [
                 {
                     "name": "Restaurants",
-                    "icon": "🍴",
-                    "imgPath": "/assets/icons/RestaurentsSubcategoris.png"
+                    "icon": "🍽️",
+                    "imgPath": "/assets/icons/Restaurants.png"
                 },
                 {
                     "name": "Cafes",
                     "icon": "☕",
-                    "imgPath": "/assets/icons/Cfaes.png"
+                    "imgPath": "/assets/icons/Cafes.png"
                 },
                 {
                     "name": "Bakeries",
                     "icon": "🥖",
-                    "imgPath": "/assets/icons/Bckeries.png"
+                    "imgPath": "/assets/icons/Bakeries.png"
                 },
                 {
                     "name": "Street Food",
-                    "icon": "🌮",
+                    "icon": "🍔",
                     "imgPath": "/assets/icons/StreetFood.png"
                 },
                 {
@@ -30,7 +30,7 @@
                 },
                 {
                     "name": "Sweet Shops",
-                    "icon": "🍬",
+                    "icon": "🍭",
                     "imgPath": "/assets/icons/SweetShops.png"
                 },
                 {
@@ -40,17 +40,17 @@
                 },
                 {
                     "name": "Catering Services",
-                    "icon": "🍱",
+                    "icon": "🍽️",
                     "imgPath": "/assets/icons/Catering.png"
                 },
                 {
                     "name": "Food Delivery",
-                    "icon": "🛵",
+                    "icon": "�",
                     "imgPath": "/assets/icons/FoodDelivery.png"
                 },
                 {
                     "name": "Mess Services",
-                    "icon": "🍛",
+                    "icon": "🍜",
                     "imgPath": "/assets/icons/MessService.png"
                 }
             ]

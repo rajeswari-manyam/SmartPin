@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import subcategoryData from "../data/subcategories.json";
 import categoryData from "../data/categories.json";
 import { ArrowLeft } from "lucide-react";
+import { Wrench } from "lucide-react";
 import {
     PLACE_SUBCATEGORIES,
     WORKER_SUBCATEGORIES,
@@ -290,38 +291,57 @@ const CategoryPage: React.FC = () => {
                 </div>
 
                 {/* Subcategories Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 gap-6">
                     {subcategoryGroup.items.map((item, index) => (
                         <button
                             key={index}
                             onClick={() => handleClick(item.name)}
-                            className={`group subcategory-btn-${index} p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center border border-gray-100 hover:-translate-y-1`}
+                            className="group bg-white rounded-2xl border border-[#00598a] p-6 flex flex-col items-center text-center transition-all duration-300 hover:bg-[#00598a] hover:shadow-xl hover:-translate-y-1"
                         >
-                            <style>
-                                {`
-                                    .subcategory-btn-${index}:hover { border-color: ${ACTIVE_TAB} !important; }
-                                    .subcategory-btn-${index}:hover .icon-container { background-color: ${HOVER_BG} !important; }
-                                    .subcategory-btn-${index}:hover .subcategory-text { color: ${ACTIVE_TAB} !important; }
-                                `}
-                            </style>
+                        {/* Icon */}
+<div
+  className="w-16 h-16 rounded-full flex items-center justify-center
+             bg-[#00598a] mb-4
+             transition-all duration-300
+             group-hover:bg-white"
+>
+  {(item as any).imgPath ? (
+   <img
+  src={(item as any).imgPath}
+  alt={item.name}
+  className="
+    w-8 h-8 object-contain
+    transition-all duration-300
+    filter brightness-0 invert
+    group-hover:invert-0
+  "
+/>
 
-                            {/* Icon Container */}
-                            <div className="icon-container w-16 h-16 mb-3 flex items-center justify-center bg-blue-50 rounded-full transition-all duration-300 group-hover:scale-110">
-                                {(item as any).imgPath ? (
-                                    <img
-                                        src={(item as any).imgPath}
-                                        alt={item.name}
-                                        className="w-9 h-9 object-contain group-hover:scale-110 transition-transform duration-300"
-                                    />
-                                ) : (
-                                    <span className="text-3xl group-hover:scale-110 transition-transform duration-300">
-                                        {item.icon}
-                                    </span>
-                                )}
-                            </div>
 
-                            {/* Subcategory Name */}
-                            <p className="subcategory-text font-semibold text-sm md:text-base text-gray-800 transition-colors duration-300">
+/* <div
+  className="
+    w-8 h-8
+    bg-white
+    group-hover:bg-[#00598a]
+    transition-colors duration-300
+    mask-contain mask-center mask-no-repeat
+  "
+  style={{
+    WebkitMaskImage: `url(${(item as any).imgPath})`,
+    maskImage: `url(${(item as any).imgPath})`,
+  }}
+/> */
+  ) : (
+    <Wrench
+      size={28}
+      className="text-white transition-colors duration-300
+                 group-hover:text-[#00598a]"
+    />
+  )}
+</div>
+
+                            {/* Text */}
+                            <p className="font-semibold text-sm md:text-base text-[#00598a] transition-colors duration-300 group-hover:text-white">
                                 {item.name}
                             </p>
                         </button>

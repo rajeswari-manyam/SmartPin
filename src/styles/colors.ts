@@ -56,7 +56,7 @@ export const colors = {
 
     // Hover States
     hover: {
-        background: '#F0F0F0',  // Background color on hover
+        background: '#00598a',  // Background color on hover
         primary: '#00598a',     // Primary color on hover
     },
 

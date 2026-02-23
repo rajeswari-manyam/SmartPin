@@ -36,7 +36,7 @@
         {
           "name": "Ice Cream Parlours",
           "icon": "🍦",
-          "imgPath": "/assets/icons/IceCream.png"
+          "imgPath": "./assets/images/IceCream.png"
         },
         {
           "name": "Catering Services",
