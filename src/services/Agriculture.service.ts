@@ -17,6 +17,7 @@ export interface AgricultureWorker {
   area?: string;
   city?: string;
   state?: string;
+  pinCode?: string;
   pincode?: string;
   latitude?: number;
   longitude?: number;
@@ -36,10 +37,6 @@ export interface AgricultureWorkerResponse {
 
 /**
  * Fetch nearby agriculture service workers
- * @param latitude number
- * @param longitude number
- * @param distance number in km (any distance)
- * @returns Promise<AgricultureWorkerResponse>
  */
 export const getNearbyAgricultureWorkers = async (
   latitude: number,
@@ -68,9 +65,11 @@ export const getNearbyAgricultureWorkers = async (
   }
 };
 
+// ── ADD payload ──────────────────────────────────────────────────────────────
 export interface AddAgriculturePayload {
   userId: string;
   serviceName: string;
+  phone: string;        // ✅ ADDED
   description: string;
   subCategory: string;
   serviceCharge: number;
@@ -80,10 +79,9 @@ export interface AddAgriculturePayload {
   area: string;
   city: string;
   state: string;
-  images: File[]; // important
+  pinCode: string;      // ✅ ADDED
+  images: File[];
 }
-
-/* ================= API ================= */
 
 export const addAgricultureService = async (
   payload: AddAgriculturePayload
@@ -93,6 +91,7 @@ export const addAgricultureService = async (
 
     formData.append("userId", payload.userId);
     formData.append("serviceName", payload.serviceName);
+    formData.append("phone", payload.phone);               // ✅ ADDED
     formData.append("description", payload.description);
     formData.append("subCategory", payload.subCategory);
     formData.append("serviceCharge", payload.serviceCharge.toString());
@@ -102,6 +101,7 @@ export const addAgricultureService = async (
     formData.append("area", payload.area);
     formData.append("city", payload.city);
     formData.append("state", payload.state);
+    formData.append("pinCode", payload.pinCode);           // ✅ ADDED
 
     payload.images.forEach((image) => {
       formData.append("images", image);
@@ -125,10 +125,12 @@ export const addAgricultureService = async (
   }
 };
 
+// ── GET / READ interfaces ────────────────────────────────────────────────────
 export interface AgricultureService {
   _id: string;
   userId: string;
   serviceName: string;
+  phone: string;        // ✅ ADDED
   description: string;
   subCategory: string;
   serviceCharge: number;
@@ -138,6 +140,7 @@ export interface AgricultureService {
   area: string;
   city: string;
   state: string;
+  pinCode: string;      // ✅ ADDED
   images: string[];
   createdAt: string;
   updatedAt: string;
@@ -149,9 +152,7 @@ export const getAgricultureById = async (
   try {
     const response = await fetch(
       `${API_BASE_URL}/getAgricultureById/${agricultureId}`,
-      {
-        method: "GET",
-      }
+      { method: "GET" }
     );
 
     if (!response.ok) {
@@ -173,9 +174,7 @@ export const deleteAgricultureById = async (
   try {
     const response = await fetch(
       `${API_BASE_URL}/deleteAgriculture/${agricultureId}`,
-      {
-        method: "DELETE",
-      }
+      { method: "DELETE" }
     );
 
     if (!response.ok) {
@@ -205,13 +204,8 @@ export const getAllAgricultureServices = async (): Promise<AgricultureService[]>
 
     const data = await response.json();
 
-    // Handle both array and object responses
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data && Array.isArray(data.data)) {
-      return data.data;
-    }
-
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
     return [];
   } catch (error) {
     console.error("getAllAgricultureServices error:", error);
@@ -219,8 +213,10 @@ export const getAllAgricultureServices = async (): Promise<AgricultureService[]>
   }
 };
 
+// ── UPDATE payload ───────────────────────────────────────────────────────────
 export interface UpdateAgriculturePayload {
   serviceName?: string;
+  phone?: string;       // ✅ ADDED
   description?: string;
   subCategory?: string;
   serviceCharge?: number;
@@ -230,26 +226,24 @@ export interface UpdateAgriculturePayload {
   area?: string;
   city?: string;
   state?: string;
-  images?: File[]; // optional (only if updating images)
+  pinCode?: string;     // ✅ ADDED
+  images?: File[];
 }
 
 export const updateAgricultureById = async (
   agricultureId: string,
-  payload: UpdateAgriculturePayload
+  payload: UpdateAgriculturePayload & { existingImages?: string[] }
 ): Promise<AgricultureService> => {
   try {
     const formData = new FormData();
 
-    if (payload.serviceName)
-      formData.append("serviceName", payload.serviceName);
-    if (payload.description)
-      formData.append("description", payload.description);
-    if (payload.subCategory)
-      formData.append("subCategory", payload.subCategory);
+    if (payload.serviceName) formData.append("serviceName", payload.serviceName);
+    if (payload.phone) formData.append("phone", payload.phone);         // ✅ ADDED
+    if (payload.description) formData.append("description", payload.description);
+    if (payload.subCategory) formData.append("subCategory", payload.subCategory);
     if (payload.serviceCharge !== undefined)
       formData.append("serviceCharge", payload.serviceCharge.toString());
-    if (payload.chargeType)
-      formData.append("chargeType", payload.chargeType);
+    if (payload.chargeType) formData.append("chargeType", payload.chargeType);
     if (payload.latitude !== undefined)
       formData.append("latitude", payload.latitude.toString());
     if (payload.longitude !== undefined)
@@ -257,6 +251,11 @@ export const updateAgricultureById = async (
     if (payload.area) formData.append("area", payload.area);
     if (payload.city) formData.append("city", payload.city);
     if (payload.state) formData.append("state", payload.state);
+    if (payload.pinCode) formData.append("pinCode", payload.pinCode);     // ✅ ADDED
+
+    if (payload.existingImages) {
+      formData.append("existingImages", JSON.stringify(payload.existingImages));
+    }
 
     if (payload.images && payload.images.length > 0) {
       payload.images.forEach((img) => {
@@ -266,10 +265,7 @@ export const updateAgricultureById = async (
 
     const response = await fetch(
       `${API_BASE_URL}/updateAgricultureById/${agricultureId}`,
-      {
-        method: "PUT",
-        body: formData,
-      }
+      { method: "PUT", body: formData }
     );
 
     if (!response.ok) {
@@ -286,7 +282,7 @@ export const updateAgricultureById = async (
 };
 
 // ============================================================================
-// FIXED: getUserAgricultureServices with better error handling
+// getUserAgricultureServices
 // ============================================================================
 export const getUserAgricultureServices = async (
   userId: string,
@@ -296,19 +292,14 @@ export const getUserAgricultureServices = async (
     console.log("🔍 Fetching user agriculture services for userId:", userId);
 
     const params = new URLSearchParams({ userId });
-
-    if (serviceName) {
-      params.append("serviceName", serviceName);
-    }
+    if (serviceName) params.append("serviceName", serviceName);
 
     const url = `${API_BASE_URL}/getUserAgriculture?${params.toString()}`;
     console.log("📡 Request URL:", url);
 
     const response = await fetch(url, {
       method: "GET",
-      headers: {
-        'Accept': 'application/json',
-      }
+      headers: { 'Accept': 'application/json' },
     });
 
     console.log("📥 Response status:", response.status);
@@ -316,49 +307,27 @@ export const getUserAgricultureServices = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ API Error Response:", errorText);
-      console.error("❌ Response status:", response.status);
-
-      // Return empty array instead of throwing to prevent UI crash
       if (response.status === 404) {
         console.warn("⚠️ Endpoint not found. Check if '/getUserAgriculture' exists on backend");
       }
-
       return [];
     }
 
     const data = await response.json();
     console.log("✅ API Response data:", data);
 
-    // Handle multiple possible response structures
-    if (Array.isArray(data)) {
-      console.log("✅ Response is array, returning directly");
-      return data;
-    } else if (data && Array.isArray(data.data)) {
-      console.log("✅ Response has data property, returning data.data");
-      return data.data;
-    } else if (data && Array.isArray(data.services)) {
-      console.log("✅ Response has services property, returning data.services");
-      return data.services;
-    } else if (data && typeof data === 'object') {
-      console.warn("⚠️ Unexpected response structure:", data);
-      // Try to extract any array from the object
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.data)) return data.data;
+    if (data && Array.isArray(data.services)) return data.services;
+    if (data && typeof data === 'object') {
       const arrayValue = Object.values(data).find(val => Array.isArray(val));
-      if (arrayValue) {
-        console.log("✅ Found array in response object");
-        return arrayValue as AgricultureService[];
-      }
+      if (arrayValue) return arrayValue as AgricultureService[];
     }
 
     console.warn("⚠️ No valid data found in response, returning empty array");
     return [];
   } catch (error) {
     console.error("❌ getUserAgricultureServices error:", error);
-    console.error("❌ Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      userId,
-      serviceName
-    });
-    // Return empty array instead of throwing to prevent app crash
     return [];
   }
 };

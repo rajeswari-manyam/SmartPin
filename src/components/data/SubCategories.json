@@ -5,53 +5,45 @@
       "items": [
         {
           "name": "Restaurants",
-          "icon": "🍴",
-          "imgPath": "/assets/icons/RestaurentsSubcategoris.png"
+          "icon": "RestaurantsIcon",
+          "imgPath": "/assets/icons/Restaurants.png"
         },
         {
           "name": "Cafes",
-          "icon": "☕",
-          "imgPath": "/assets/icons/Cfaes.png"
+          "icon": "CafesIcon",
+          "imgPath": "/assets/icons/Cafes.png"
         },
         {
           "name": "Bakeries",
-          "icon": "🥖",
-          "imgPath": "/assets/icons/Bckeries.png"
+          "icon": "BakeriesIcon"
         },
         {
           "name": "Street Food",
-          "icon": "🌮",
-          "imgPath": "/assets/icons/StreetFood.png"
+          "icon": "StreetFoodIcon"
         },
         {
           "name": "Juice Shops",
-          "icon": "🥤",
-          "imgPath": "/assets/icons/Juice.png"
+          "icon": "JuiceIcon"
         },
         {
           "name": "Sweet Shops",
-          "icon": "🍬",
-          "imgPath": "/assets/icons/SweetShops.png"
+          "icon": "SweetShopsIcon"
         },
         {
           "name": "Ice Cream Parlours",
-          "icon": "🍦",
-          "imgPath": "./assets/images/IceCream.png"
+          "icon": "IceCreamIcon"
         },
         {
           "name": "Catering Services",
-          "icon": "🍱",
-          "imgPath": "/assets/icons/Catering.png"
+          "icon": "CateringIcon"
         },
         {
           "name": "Food Delivery",
-          "icon": "🛵",
-          "imgPath": "/assets/icons/FoodDelivery.png"
+          "icon": "FoodDeliveryIcon"
         },
         {
           "name": "Mess Services",
-          "icon": "🍛",
-          "imgPath": "/assets/icons/MessService.png"
+          "icon": "MessServicesIcon"
         }
       ]
     },
@@ -60,51 +52,52 @@
       "items": [
         {
           "name": "Hospitals",
-          "icon": "🏥"
+          "icon": "HospitalsIcon",
+          "imgPath": "/assets/icons/Hospitals.png"
         },
         {
           "name": "Clinics",
-          "icon": "⚕️"
+          "icon": "ClinicsIcon"
         },
         {
           "name": "Dental Clinics",
-          "icon": "🦷"
+          "icon": "DentalClinicsIcon"
         },
         {
           "name": "Eye Hospitals",
-          "icon": "👁️"
+          "icon": "EyeHospitalsIcon"
         },
         {
           "name": "Dermatologists",
-          "icon": "💆"
+          "icon": "DermatologistsIcon"
         },
         {
           "name": "Diagnostic Labs",
-          "icon": "🔬"
+          "icon": "DiagnosticLabsIcon"
         },
         {
           "name": "Blood Banks",
-          "icon": "🩸"
+          "icon": "BloodBanksIcon"
         },
         {
           "name": "Ambulance Services",
-          "icon": "🚑"
+          "icon": "AmbulanceServicesIcon"
         },
         {
           "name": "Physiotherapy Centres",
-          "icon": "🧘"
+          "icon": "PhysiotherapyCentresIcon"
         },
         {
           "name": "Nursing Services",
-          "icon": "👩‍⚕️"
+          "icon": "NursingServicesIcon"
         },
         {
-          "name": "Vet Hospitals ",
-          "icon": "🐕"
+          "name": "Vet Hospitals",
+          "icon": "VetHospitalsIcon"
         },
         {
-          "name": " Medical Shops",
-          "icon": "💊"
+          "name": "Medical Shops",
+          "icon": "MedicalShopsIcon"
         }
       ]
     },
@@ -113,43 +106,43 @@
       "items": [
         {
           "name": "Plumbers",
-          "icon": "🚰"
+          "icon": "PlumbersIcon"
         },
         {
           "name": "Electricians",
-          "icon": "💡"
+          "icon": "ElectriciansIcon"
         },
         {
           "name": "Carpenters",
-          "icon": "🪚"
+          "icon": "CarpentersIcon"
         },
         {
           "name": "Painters",
-          "icon": "🎨"
+          "icon": "PaintersIcon"
         },
         {
           "name": "AC Repair",
-          "icon": "❄️"
+          "icon": "AcRepairIcon"
         },
         {
           "name": "Fridge Repair",
-          "icon": "🧊"
+          "icon": "FridgeRepairIcon"
         },
         {
           "name": "Washing Machine Repair",
-          "icon": "🫧"
+          "icon": "WashingMachineRepairIcon"
         },
         {
           "name": "Water Purifier Service",
-          "icon": "💧"
+          "icon": "WaterPurifierRepairIcon"
         },
         {
           "name": "Gas Stove Repair",
-          "icon": "🔥"
+          "icon": "GasStoveRepairIcon"
         },
         {
           "name": "Solar Panel Installation",
-          "icon": "☀️"
+          "icon": "SolarPanelInstallationIcon"
         }
       ]
     },
@@ -158,39 +151,39 @@
       "items": [
         {
           "name": "Hotels",
-          "icon": "🏨"
+          "icon": "HotelsIcon"
         },
         {
           "name": "Resorts",
-          "icon": "🏖️"
+          "icon": "ResortsIcon"
         },
         {
           "name": "Lodges",
-          "icon": "🛏️"
+          "icon": "LodgesIcon"
         },
         {
           "name": "Guest Houses",
-          "icon": "🏡"
+          "icon": "GuestHousesIcon"
         },
         {
           "name": "Travel Agencies",
-          "icon": "✈️"
+          "icon": "TravelAgenciesIcon"
         },
         {
           "name": "Taxi Services",
-          "icon": "🚖"
+          "icon": "TaxiServicesIcon"
         },
         {
           "name": "Vehicle Rentals",
-          "icon": "🚗"
+          "icon": "VehicleRentalsIcon"
         },
         {
           "name": "Bus Ticket Booking",
-          "icon": "🚌"
+          "icon": "BusTicketBookingIcon"
         },
         {
           "name": "Train Ticket Booking",
-          "icon": "🚆"
+          "icon": "TrainTicketBookingIcon"
         }
       ]
     },
@@ -199,39 +192,39 @@
       "items": [
         {
           "name": "Beauty Parlours",
-          "icon": "💄"
+          "icon": "BeautyParloursIcon"
         },
         {
           "name": "Salons",
-          "icon": "💇"
+          "icon": "SalonsIcon"
         },
         {
           "name": "Spa & Massage Centres",
-          "icon": "💆"
+          "icon": "SpaMassageCentresIcon"
         },
         {
           "name": "Makeup Artists",
-          "icon": "💅"
+          "icon": "MakeupArtistsIcon"
         },
         {
           "name": "Mehendi Artists",
-          "icon": "🎨"
+          "icon": "MehendiArtistsIcon"
         },
         {
           "name": "Fitness Centres",
-          "icon": "💪"
+          "icon": "FitnessCentresIcon"
         },
         {
           "name": "Yoga Centres",
-          "icon": "🧘‍♀️"
+          "icon": "YogaCentresIcon"
         },
         {
           "name": "Skin Clinics",
-          "icon": "✨"
+          "icon": "SkinClinicsIcon"
         },
         {
           "name": "Tattoo Studios",
-          "icon": "🖊️"
+          "icon": "TattooStudiosIcon"
         }
       ]
     },
@@ -240,31 +233,23 @@
       "items": [
         {
           "name": "Property Dealers",
-          "icon": "🏠"
+          "icon": "PropertyDealersIcon"
         },
         {
           "name": "Rent Lease Listings",
-          "icon": "🔑"
+          "icon": "RentLeaseListingsIcon"
         },
         {
           "name": "Builders Developers",
-          "icon": "🏗️"
+          "icon": "BuildersDevelopersIcon"
         },
         {
           "name": "Interior Designers",
-          "icon": "🛋️"
+          "icon": "InteriorDesignersIcon"
         },
         {
           "name": "Construction Contractors",
-          "icon": "👷"
-        },
-        {
-          "name": "Home Cleaning Services",
-          "icon": "🧽"
-        },
-        {
-          "name": "Pest Control",
-          "icon": "🐜"
+          "icon": "ConstructionContractorsIcon"
         }
       ]
     },
@@ -272,60 +257,44 @@
       "categoryId": 7,
       "items": [
         {
-          "name": "Grocery Stores",
-          "icon": "🛒"
-        },
-        {
           "name": "Supermarkets",
-          "icon": "🏪"
+          "icon": "SupermarketsIcon"
         },
         {
           "name": "Clothing Stores",
-          "icon": "👕"
+          "icon": "ClothingStoresIcon"
         },
         {
           "name": "Shoe Shops",
-          "icon": "👟"
+          "icon": "ShoeShopsIcon"
         },
         {
           "name": "Mobile Stores",
-          "icon": "📱"
+          "icon": "MobileStoresIcon"
         },
         {
           "name": "Electronics Shops",
-          "icon": "📺"
+          "icon": "ElectronicsShopsIcon"
         },
         {
           "name": "Furniture Stores",
-          "icon": "🛋️"
-        },
-        {
-          "name": "Furniture Repair Services",
-          "icon": "🔨"
+          "icon": "FurnitureStoresIcon"
         },
         {
           "name": "Jewellery Stores",
-          "icon": "💎"
-        },
-        {
-          "name": "Jewellery Showrooms",
-          "icon": "💍"
+          "icon": "JewelleryStoresIcon"
         },
         {
           "name": "Stationery Shops",
-          "icon": "✏️"
+          "icon": "StationeryShopsIcon"
         },
         {
           "name": "Gift Shops",
-          "icon": "🎁"
+          "icon": "GiftShopsIcon"
         },
         {
           "name": "Optical Shops",
-          "icon": "👓"
-        },
-        {
-          "name": "Hobbies",
-          "icon": "🎲"
+          "icon": "OpticalShopsIcon"
         }
       ]
     },
@@ -334,43 +303,39 @@
       "items": [
         {
           "name": "Schools",
-          "icon": "🏫"
+          "icon": "SchoolsIcon"
         },
         {
           "name": "Colleges",
-          "icon": "🎓"
+          "icon": "CollegesIcon"
         },
         {
           "name": "Coaching Centres",
-          "icon": "📚"
+          "icon": "CoachingCentresIcon"
         },
         {
           "name": "Tuition Teachers",
-          "icon": "👨‍🏫"
+          "icon": "TuitionTeachersIcon"
         },
         {
           "name": "Computer Training Institutes",
-          "icon": "🖥️"
+          "icon": "ComputerTrainingInstitutesIcon"
         },
         {
           "name": "Music & Dance Classes",
-          "icon": "🎵"
+          "icon": "MusicAndDanceClassesIcon"
         },
         {
           "name": "Spoken English Classes",
-          "icon": "🗣️"
+          "icon": "SpokenEnglishClassesIcon"
         },
         {
           "name": "Driving Schools",
-          "icon": "🚗"
+          "icon": "DrivingSchoolsIcon"
         },
         {
           "name": "Skill Development Centres",
-          "icon": "🛠️"
-        },
-        {
-          "name": "Vocational Training",
-          "icon": "👨‍🔧"
+          "icon": "SkillDevelopmentCentresIcon"
         }
       ]
     },
@@ -378,28 +343,28 @@
       "categoryId": 9,
       "items": [
         {
-          "name": "Car Repair",
-          "icon": "🔧"
+          "name": "Car Repair ",
+          "icon": "CarRepairIcon"
         },
         {
           "name": "Bike Repair",
-          "icon": "🏍️"
+          "icon": "BikeRepairIcon"
         },
         {
           "name": "Car Wash",
-          "icon": "🚿"
+          "icon": "CarWashIcon"
         },
         {
           "name": "Bike Wash",
-          "icon": "🧼"
+          "icon": "BikeWashIcon"
         },
         {
           "name": "Automobile Spare Parts",
-          "icon": "⚙️"
+          "icon": "AutomobileSparePartsIcon"
         },
         {
           "name": "Towing Services",
-          "icon": "🚚"
+          "icon": "TowingServicesIcon"
         }
       ]
     },
@@ -408,31 +373,31 @@
       "items": [
         {
           "name": "Maid Services",
-          "icon": "🧹"
+          "icon": "MaidServicesIcon"
         },
         {
           "name": "Cook Services",
-          "icon": "👨‍🍳"
+          "icon": "CookServicesIcon"
         },
         {
           "name": "Babysitters",
-          "icon": "👶"
+          "icon": "Ba bysittersIcon"
         },
         {
           "name": "Elderly Care",
-          "icon": "👴"
+          "icon": "ElderlyCareIcon"
         },
         {
           "name": "Laundry Services",
-          "icon": "🧺"
+          "icon": "LaundryServicesIcon"
         },
         {
           "name": "House Keeping Services",
-          "icon": "🧽"
+          "icon": "HouseKeepingServicesIcon"
         },
         {
           "name": "Water Can Supply",
-          "icon": "🚰"
+          "icon": "WaterCanSupplyIcon"
         }
       ]
     },
@@ -441,43 +406,43 @@
       "items": [
         {
           "name": "Chartered Accountant",
-          "icon": "💰"
+          "icon": "CharteredAccountantIcon"
         },
         {
           "name": "Lawyers",
-          "icon": "⚖️"
+          "icon": "LawyersIcon"
         },
         {
           "name": "Notary",
-          "icon": "📝"
+          "icon": "NotaryIcon"
         },
         {
           "name": "Insurance Agents",
-          "icon": "🛡️"
+          "icon": "InsuranceAgentsIcon"
         },
         {
           "name": "Marketing Agencies",
-          "icon": "📢"
+          "icon": "MarketingAgenciesIcon"
         },
         {
           "name": "Printing & Xerox Shops",
-          "icon": "🖨️"
+          "icon": "PrintingAndXeroxShopsIcon"
         },
         {
           "name": "Printing & Publishing Services",
-          "icon": "📰"
+          "icon": "PrintingAndPublishingServicesIcon"
         },
         {
           "name": "Event Planners",
-          "icon": "🎉"
+          "icon": "EventPlannersIcon"
         },
         {
           "name": "Placement Services",
-          "icon": "💼"
+          "icon": "PlacementServicesIcon"
         },
         {
           "name": "Registration Consultants",
-          "icon": "📋"
+          "icon": "RegistrationConsultantsIcon"
         }
       ]
     },
@@ -486,35 +451,35 @@
       "items": [
         {
           "name": "Mobile Repair",
-          "icon": "📱"
+          "icon": "MobileRepairIcon"
         },
         {
           "name": "Computer & Laptop Repair",
-          "icon": "🖥️"
+          "icon": "ComputerAndLaptopRepairIcon"
         },
         {
           "name": "CCTV Installation",
-          "icon": "📹"
+          "icon": "CCTVInstallationIcon"
         },
         {
           "name": "Software Services",
-          "icon": "💾"
+          "icon": "SoftwareServicesIcon"
         },
         {
           "name": "Website Development",
-          "icon": "🌐"
+          "icon": "WebsiteDevelopmentIcon"
         },
         {
           "name": "Internet Website Designers",
-          "icon": "🎨"
+          "icon": "InternetWebsiteDesignersIcon"
         },
         {
           "name": "Digital Marketing",
-          "icon": "📱"
+          "icon": "DigitalMarketingIcon"
         },
         {
           "name": "Graphic Designers",
-          "icon": "🖼️"
+          "icon": "GraphicDesignersIcon"
         }
       ]
     },
@@ -523,19 +488,19 @@
       "items": [
         {
           "name": "Pet Shops",
-          "icon": "🐕"
+          "icon": "PetShopsIcon"
         },
         {
           "name": "Pet Grooming",
-          "icon": "✂️"
+          "icon": "PetGroomingIcon"
         },
         {
           "name": "Pet Training",
-          "icon": "🦮"
+          "icon": "PetTrainingIcon"
         },
         {
-          "name": "Vet Clinics",
-          "icon": "🩺"
+          "name": "Pet Clinics",
+          "icon": "PetClinicsIcon"
         }
       ]
     },
@@ -544,15 +509,15 @@
       "items": [
         {
           "name": "DJ Services",
-          "icon": "🎧"
+          "icon": "DJServicesIcon"
         },
         {
           "name": "Party Decorations",
-          "icon": "🎈"
+          "icon": "PartyDecorationsIcon"
         },
         {
           "name": "Mandap Decorations",
-          "icon": "🌺"
+          "icon": "MandapDecorationsIcon"
         }
       ]
     },
@@ -561,27 +526,27 @@
       "items": [
         {
           "name": "Transporters",
-          "icon": "🚚"
+          "icon": "TransportersIcon"
         },
         {
           "name": "Water Tank Cleaning",
-          "icon": "💧"
+          "icon": "WaterTankCleaningIcon"
         },
         {
           "name": "Borewell Services",
-          "icon": "🕳️"
+          "icon": "BorewellServicesIcon"
         },
         {
           "name": "Fabricators",
-          "icon": "⚒️"
+          "icon": "FabricatorsIcon"
         },
         {
           "name": "Machine Repair",
-          "icon": "⚙️"
+          "icon": "MachineRepairIcon"
         },
         {
           "name": "Scrap Dealers",
-          "icon": "♻️"
+          "icon": "ScrapDealersIcon"
         }
       ]
     },
@@ -590,15 +555,15 @@
       "items": [
         {
           "name": "Courier offices",
-          "icon": "📮"
+          "icon": "CourierOfficesIcon"
         },
         {
           "name": "Parcel services",
-          "icon": "📦"
+          "icon": "ParcelServicesIcon"
         },
         {
           "name": "Packers",
-          "icon": "📦"
+          "icon": "PackersIcon"
         }
       ]
     },
@@ -607,19 +572,19 @@
       "items": [
         {
           "name": "Gyms",
-          "icon": "🏋️"
+          "icon": "GymsIcon"
         },
         {
           "name": "Sports Clubs",
-          "icon": "⚽"
+          "icon": "SportsClubsIcon"
         },
         {
           "name": "Indoor Play Areas",
-          "icon": "🎮"
+          "icon": "IndoorPlayAreasIcon"
         },
         {
           "name": "Stadiums",
-          "icon": "🏟️"
+          "icon": "StadiumsIcon"
         }
       ]
     },
@@ -628,19 +593,19 @@
       "items": [
         {
           "name": "Construction Labor",
-          "icon": "👷"
+          "icon": "ConstructionLaborIcon"
         },
         {
           "name": "Loading Workers",
-          "icon": "📦"
+          "icon": "LoadingWorkersIcon"
         },
         {
           "name": "Cleaning Helpers",
-          "icon": "🧹"
+          "icon": "CleaningHelpersIcon"
         },
         {
           "name": "Watchmen",
-          "icon": "👮"
+          "icon": "WatchmenIcon"
         }
       ]
     },
@@ -649,27 +614,27 @@
       "items": [
         {
           "name": "Fertilizer Shops",
-          "icon": "🌾"
+          "icon": "FertilizerShopsIcon"
         },
         {
           "name": "Tractor Rental",
-          "icon": "🚜"
+          "icon": "TractorRentalIcon"
         },
         {
           "name": "Seeds Shops",
-          "icon": "🌱"
+          "icon": "SeedsShopsIcon"
         },
         {
           "name": "Farming Tools",
-          "icon": "🔨"
+          "icon": "FarmingToolsIcon"
         },
         {
           "name": "Veterinary Doctors",
-          "icon": "🐄"
+          "icon": "VeterinaryDoctorsIcon"
         },
         {
           "name": "Water Pump Repair",
-          "icon": "💧"
+          "icon": "WaterPumpRepairIcon"
         }
       ]
     },
@@ -678,15 +643,15 @@
       "items": [
         {
           "name": "Background Verification",
-          "icon": "🔍"
+          "icon": "BackgroundVerificationIcon"
         },
         {
           "name": "Document Courier",
-          "icon": "📄"
+          "icon": "DocumentCourierIcon"
         },
         {
           "name": "Office Cleaning",
-          "icon": "🧹"
+          "icon": "OfficeCleaningIcon"
         }
       ]
     },
@@ -695,23 +660,23 @@
       "items": [
         {
           "name": "Painting Artists",
-          "icon": "🎨"
+          "icon": "PaintingArtistsIcon"
         },
         {
           "name": "Caricature Artists",
-          "icon": "✏️"
+          "icon": "CaricatureArtistsIcon"
         },
         {
           "name": "Handmade Gift Designers",
-          "icon": "🎁"
+          "icon": "HandmadeGiftDesignersIcon"
         },
         {
           "name": "Wall Murals",
-          "icon": "🖼️"
+          "icon": "WallMuralsIcon"
         },
         {
           "name": "Craft Training",
-          "icon": "✂️"
+          "icon": "CraftTrainingIcon"
         }
       ]
     },
@@ -720,23 +685,23 @@
       "items": [
         {
           "name": "Wedding Planners",
-          "icon": "💒"
+          "icon": "WeddingPlannersIcon"
         },
         {
           "name": "Poojari",
-          "icon": "🕉️"
+          "icon": "PoojariIcon"
         },
         {
           "name": "Music Team",
-          "icon": "🎺"
+          "icon": "MusicTeamIcon"
         },
         {
           "name": "Flower Decoration",
-          "icon": "💐"
+          "icon": "FlowerDecorationIcon"
         },
         {
           "name": "Sangeet Choreographers",
-          "icon": "💃"
+          "icon": "SangeetChoreographersIcon"
         }
       ]
     }

@@ -1,0 +1,32 @@
+/* public/firebase-messaging-sw.js */
+
+importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js");
+importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js");
+
+firebase.initializeApp({
+  // Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+  apiKey: "AIzaSyC3CWgbVMX4ITNzQ5D0ZGfsmLpImAFupLI",
+  authDomain: "parttime-jobs-9b736.firebaseapp.com",
+  projectId: "parttime-jobs-9b736",
+  storageBucket: "parttime-jobs-9b736.firebasestorage.app",
+  messagingSenderId: "234889445653",
+  appId: "1:234889445653:web:bdf44e3270c35c3b71a91c",
+  measurementId: "G-11GDDTHRRL"
+}
+);
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  console.log("📩 Background message:", payload);
+
+  self.registration.showNotification(
+    payload.notification?.title || "New Notification",
+    {
+      body: payload.notification?.body,
+      icon: "/logo192.png",
+    }
+  );
+});

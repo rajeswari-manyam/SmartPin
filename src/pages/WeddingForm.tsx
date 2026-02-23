@@ -10,7 +10,7 @@ const chargeTypeOptions = [
     { value: 'per event', label: 'per event' },
     { value: 'per day', label: 'per day' },
     { value: 'per hour', label: 'per hour' },
-    { value: 'fixed rate', label: 'fixed rate' },
+  
     { value: 'custom', label: 'custom' }
 ];
 

@@ -9,10 +9,10 @@ export interface CustomerDetails {
 export interface JobInformation {
     type: string;
     budget: string;
-    budgetType: "hour" | "fixed";
+    budgetType: "hour" | "day" | "fixed";
     description: string;
     startDate: string;
-    endDate: string;
+    endDate: string;    
     location: string;
     category: string;
     subcategory: string;

@@ -7,7 +7,7 @@ import SuccessScreen from "./OtpVerification/SuccessScreen";
 import UserModal from "../../modal/UserModal";
 import { extractDigits } from "../../utils/OTPUtils";
 import { verifyOtp, resendOtp, getUserById } from "../../services/api.service";
-
+import { generateFCMToken } from "../../firebase/fcm";
 interface VoiceRecognitionResult {
     transcript: string;
     confidence: number;
@@ -16,6 +16,7 @@ interface VoiceRecognitionResult {
 
 interface OTPVerificationProps {
     phoneNumber: string;
+    fcmToken?: string;
     onVerify?: (otp: string) => void;
     onResend?: () => void;
     onBack: () => void;
@@ -33,6 +34,7 @@ interface OTPVerifyResponse {
         phone: string;
         name?: string;
         token?: string;
+        fcmToken?: string;
     };
     token?: string;
     data?: any;
@@ -53,7 +55,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showSuccess, setShowSuccess] = useState(false);
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
     const [userId, setUserId] = useState<string>("");
-
+ 
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const voiceService = VoiceService.getInstance();
     const navigate = useNavigate();
@@ -175,11 +177,14 @@ useEffect(() => {
             setIsVerifying(true);
             console.log("🔐 Verifying OTP:", otpString);
 
-            const response: OTPVerifyResponse = await verifyOtp({
-                phone: phoneNumber,
-                otp: otpString,
-            });
+   // 🔑 Generate FCM token once user verifies OTP
+const fcmToken = await generateFCMToken();
 
+const response: OTPVerifyResponse = await verifyOtp({
+  phone: phoneNumber,
+  otp: otpString,
+  fcmToken: fcmToken || "",
+});
             if (response.success) {
                 console.log("✅ OTP verified!");
 
@@ -194,7 +199,9 @@ useEffect(() => {
                 setUserId(extractedUserId);
                 localStorage.setItem("userId", extractedUserId);
                 localStorage.setItem("userPhone", phoneNumber);
-
+             if (fcmToken) {
+    localStorage.setItem("fcmToken", fcmToken);
+}
                 const token = response.token || response.user?.token || response.data?.token;
                 if (token) localStorage.setItem("token", token);
 

@@ -160,3 +160,4 @@ export const categories: Category[] = [
         link: "/wedding",
     },
 ];
+

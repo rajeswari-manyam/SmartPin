@@ -122,6 +122,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 name: "User", // Default name
                 latitude: latitude ?? 0,
                 longitude: longitude ?? 0,
+
             });
 
             console.log("Registration response:", response);
@@ -162,12 +163,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
     // Show inline OTP if onOpenOTP is NOT provided
     if (currentStep === "otp" && !onOpenOTP) {
         return (
-            <OTPVerification
-                phoneNumber={phoneNumber}
-                onBack={handleBackToPhone}
-                onContinue={handleOTPContinue}
-                onClose={onClose}
-            />
+          <OTPVerification
+    phoneNumber={phoneNumber}
+    onBack={handleBackToPhone}
+    // ❌ remove: fcmToken={fcmToken}
+    onContinue={handleOTPContinue}
+    onClose={onClose}
+/>
         );
     }
 

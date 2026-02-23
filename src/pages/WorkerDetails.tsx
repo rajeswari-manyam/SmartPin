@@ -17,7 +17,7 @@ interface WorkerSkill {
     subCategory: string;
     skill: string;
     serviceCharge: number;
-    chargeType: 'hour' | 'day' | 'fixed';
+    chargeType: 'hour' | 'day';
     profilePic: string;
     images: string[];
     area: string;

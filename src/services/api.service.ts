@@ -25,6 +25,7 @@ interface RegisterWithOtpParams {
 interface VerifyOtpParams {
     phone: string;
     otp: string;
+    fcmToken: string;
 }
 
 interface ApiResponse {
@@ -68,7 +69,7 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
         const formData = new URLSearchParams();
         formData.append("phone", params.phone);
         formData.append("otp", params.otp);
-
+        formData.append("fcmToken", params.fcmToken); // 👈 NEW
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -239,7 +240,7 @@ export interface Worker {
     subCategories?: string[];
     skills?: string[];
     bio?: string;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day";
     serviceCharge: number;
     latitude: number;
     longitude: number;
@@ -531,7 +532,7 @@ export interface AddWorkerSkillPayload {
     subCategory: string;
     skill: string;
     serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day";
     images?: File[];
 }
 
@@ -610,7 +611,7 @@ export interface CreateWorkerCompletePayload {
     skills: string;
     bio?: string;
     serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day";
     area: string;
     city: string;
     state: string;
@@ -691,7 +692,7 @@ export interface WorkerSkillDetail {
     subCategory: string;
     skill: string;
     serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day";
     profilePic: string;
     images: string[];
     area: string;
@@ -721,7 +722,7 @@ export interface WorkerWithSkillsResponse {
         latitude: number;
         longitude: number;
         serviceCharge: number;
-        chargeType: "hour" | "day" | "fixed";
+        chargeType: "hour" | "day";
         skills: string[];
         categories: string[][];
         subCategories: string[];
@@ -758,7 +759,7 @@ export interface WorkerListItem {
     categories: string[];
     subCategories: string[];
     serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day" | "";
     area: string;
     city: string;
     state: string;
@@ -788,7 +789,7 @@ export interface WorkerSkillResponse {
         subCategory: string;
         skill: string;
         serviceCharge: number;
-        chargeType: "hour" | "day" | "fixed";
+        chargeType: "hour" | "day";
         profilePic: string;
         images: string[];
         area: string;
@@ -828,7 +829,7 @@ export interface UpdateWorkerSkillPayload {
     subCategory?: string;
     skill?: string;
     serviceCharge?: number;
-    chargeType?: "hour" | "day" | "fixed";
+    chargeType?: "hour" | "day";
 }
 
 export const updateWorkerSkill = async (
@@ -1075,7 +1076,7 @@ export interface ConfirmedWorkers {
     subCategories: string[];
     skills: string[];
     serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
+    chargeType: "hour" | "day";
     profilePic: string;
     images: string[];
     area: string;

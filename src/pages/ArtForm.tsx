@@ -5,11 +5,11 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { useAccount } from "../context/AccountContext";
+
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Project', 'Fixed Rate', 'Custom'];
 
-// ✅ FIXED: Exact category string matching Postman curl
 const CATEGORY_NAME = 'Creative & Art Services';
 
 // ── Pull creative art subcategories from JSON (categoryId 21) ───────────────
@@ -26,6 +26,12 @@ const getCreativeArtSubcategories = () => {
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `${typography.form.input} bg-white`;
+
+const inputError =
+    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
+    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -69,6 +75,21 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 };
 
 // ============================================================================
+// FIELD ERRORS
+// ============================================================================
+interface FieldErrors {
+    name?: string;
+    phone?: string;
+    description?: string;
+    serviceCharge?: string;
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    location?: string;
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 const ArtForm: React.FC = () => {
@@ -88,14 +109,16 @@ const ArtForm: React.FC = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     const artCategories = getCreativeArtSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || artCategories[0] || 'Craft Training';
-    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
+        phone: '',
         subCategory: defaultCategory,
         description: '',
         serviceCharge: '',
@@ -126,6 +149,7 @@ const ArtForm: React.FC = () => {
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
+                    phone: data.phone || '',
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
@@ -164,9 +188,12 @@ const ArtForm: React.FC = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name as keyof FieldErrors]) {
+            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
     };
 
-    // ── Image helpers — matches RealEstate pattern exactly ───────────────────
+    // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
@@ -198,9 +225,10 @@ const ArtForm: React.FC = () => {
     };
     const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
-    // ── GPS location — matches RealEstate pattern ────────────────────────────
+    // ── GPS location ─────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true); setError(''); setLocationWarning('');
+        setFieldErrors(prev => ({ ...prev, location: undefined }));
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -230,50 +258,59 @@ const ArtForm: React.FC = () => {
     };
 
     // ============================================================================
-    // SUBMIT — FormData exactly matching Postman curl
+    // SUBMIT
     // ============================================================================
     const handleSubmit = async () => {
-        setLoading(true); setError(''); setSuccessMessage('');
-        try {
-            if (!formData.name.trim()) throw new Error('Please enter a name');
-            if (!formData.description.trim()) throw new Error('Please enter a description');
-            if (!formData.serviceCharge.trim()) throw new Error('Please enter service charge');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location (use Auto Detect or enter address)');
+        setError(''); setSuccessMessage('');
 
-            // ✅ Build FormData exactly matching Postman curl field order
+        // Validate
+        const errors: FieldErrors = {};
+        if (!formData.name.trim()) errors.name = 'Service name is required';
+        if (!formData.phone.trim()) {
+            errors.phone = 'Phone number is required';
+        } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+            errors.phone = 'Enter a valid 10-digit Indian mobile number';
+        }
+        if (!formData.description.trim()) errors.description = 'Description is required';
+        if (!formData.serviceCharge.trim()) errors.serviceCharge = 'Service charge is required';
+        if (!formData.area.trim()) errors.area = 'Area is required';
+        if (!formData.city.trim()) errors.city = 'City is required';
+        if (!formData.state.trim()) errors.state = 'State is required';
+        if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
+        if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
+
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            setError('Please fix the errors below before submitting');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setLoading(true);
+        try {
             const fd = new FormData();
             fd.append('userId', formData.userId);
-            fd.append('description', formData.description);
-            fd.append('category', CATEGORY_NAME);           // ✅ required by API
+            fd.append('name', formData.name.trim());
+            fd.append('phone', formData.phone.trim());
+            fd.append('description', formData.description.trim());
+            fd.append('category', CATEGORY_NAME);
             fd.append('subCategory', formData.subCategory);
             fd.append('serviceCharge', formData.serviceCharge);
             fd.append('chargeType', formData.chargeType);
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
-            fd.append('area', formData.area);
-            fd.append('city', formData.city);
-            fd.append('state', formData.state);
-            fd.append('pincode', formData.pincode);
-            fd.append('name', formData.name);               // ✅ matches Postman field order
+            fd.append('area', formData.area.trim());
+            fd.append('city', formData.city.trim());
+            fd.append('state', formData.state.trim());
+            fd.append('pincode', formData.pincode.trim());
 
-            // ✅ Append images with filename — matches Postman: append("images", file, filename)
             selectedImages.forEach(f => fd.append('images', f, f.name));
 
-            // ✅ Preserve existing images on edit
             if (isEditMode && existingImages.length > 0) {
                 fd.append('existingImages', JSON.stringify(existingImages));
             }
 
-            // Debug log
-            console.log('📤 Art FormData:');
-            Array.from(fd.entries()).forEach(([k, v]) => {
-                if (v instanceof File) console.log(`  ${k}: [File] ${v.name} (${v.size}b)`);
-                else console.log(`  ${k}: ${v}`);
-            });
-
             if (isEditMode && editId) {
-                // ✅ Update also uses FormData (not JSON) — matches RealEstate pattern
                 const res = await updateCreativeArtService(editId, fd as any);
                 if (!res.success) throw new Error(res.message || 'Failed to update service');
                 setSuccessMessage('Service updated successfully!');
@@ -282,14 +319,10 @@ const ArtForm: React.FC = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
             }
-                        // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
 
             setTimeout(() => {
-
                 setAccountType("worker");
-
                 navigate("/my-business");
-
             }, 1500);
         } catch (err: any) {
             console.error('❌ Submit error:', err);
@@ -308,9 +341,12 @@ const ArtForm: React.FC = () => {
         </div>
     );
 
+    const totalImages = selectedImages.length + existingImages.length;
+
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
+
+            {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
@@ -330,118 +366,227 @@ const ArtForm: React.FC = () => {
             </div>
 
             <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
-                {error && <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>{error}</div>}
-                {successMessage && <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>{successMessage}</div>}
 
-                {/* 1. BASIC INFO */}
-                <SectionCard title="Basic Information">
+                {/* Global error banner */}
+                {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div>
+                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
+                                <p className={`${typography.form.error} text-red-700`}>{error}</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Success banner */}
+                {successMessage && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                        <span className="text-green-600 text-lg">✓</span>
+                        <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
+                    </div>
+                )}
+
+                {/* ─── 1. SERVICE NAME ─────────────────────────────────────── */}
+                <SectionCard>
                     <div>
                         <FieldLabel required>Artist / Service Name</FieldLabel>
-                        <input type="text" name="name" value={formData.name} onChange={handleInputChange}
-                            placeholder="e.g. Studio Artworks, Creative Designs" className={inputBase} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Category</FieldLabel>
-                        <select name="subCategory" value={formData.subCategory} onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
-                            {artCategories.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <p className={`${typography.body.xs} text-gray-400 mt-1`}>
-                            Parent category: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
-                        </p>
-                    </div>
-                    <div>
-                        <FieldLabel required>Description</FieldLabel>
-                        <textarea name="description" value={formData.description} onChange={handleInputChange}
-                            rows={4} placeholder="Describe your art services, specialties, and what makes your work unique..."
-                            className={inputBase + ' resize-none'} />
+                        <input
+                            type="text" name="name" value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="e.g. Studio Artworks, Creative Designs"
+                            className={fieldErrors.name ? inputError : inputBase}
+                        />
+                        {fieldErrors.name && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.name}</p>
+                        )}
                     </div>
                 </SectionCard>
 
-                {/* 2. PRICING */}
+                {/* ─── 2. CONTACT INFORMATION ──────────────────────────────── */}
+                <SectionCard title="Contact Information">
+                    <div>
+                        <FieldLabel required>Phone</FieldLabel>
+                        <input
+                            type="tel" name="phone" value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="Enter phone number"
+                            maxLength={10}
+                            className={fieldErrors.phone ? inputError : inputBase}
+                        />
+                        {fieldErrors.phone && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.phone}</p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 3. CATEGORY ─────────────────────────────────────────── */}
+                <SectionCard>
+                    <div>
+                        <FieldLabel required>Category</FieldLabel>
+                        <select
+                            name="subCategory" value={formData.subCategory}
+                            onChange={handleInputChange}
+                            className={inputBase + ' appearance-none bg-white'}
+                            style={selectStyle}
+                        >
+                            {artCategories.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                            Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                        </p>
+                    </div>
+                </SectionCard>
+
+                {/* ─── 4. PRICING ──────────────────────────────────────────── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
-                            <input type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange} placeholder="Amount" min="0" className={inputBase} />
+                            <input
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
+                                onChange={handleInputChange} placeholder="Amount" min="0"
+                                className={fieldErrors.serviceCharge ? inputError : inputBase}
+                            />
+                            {fieldErrors.serviceCharge && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.serviceCharge}</p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
-                            <select name="chargeType" value={formData.chargeType} onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
+                            <select
+                                name="chargeType" value={formData.chargeType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
                                 {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
                     </div>
                 </SectionCard>
 
-                {/* 3. LOCATION */}
-                <SectionCard title="Location Details" action={
-                    <Button variant="success" size="sm" onClick={getCurrentLocation} disabled={locationLoading} className="!py-1.5 !px-3">
-                        {locationLoading
-                            ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                            : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                    </Button>
-                }>
+                {/* ─── 5. DESCRIPTION ──────────────────────────────────────── */}
+                <SectionCard title="Service Details">
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description" value={formData.description}
+                            onChange={handleInputChange} rows={4}
+                            placeholder="Describe your art services, specialties, and what makes your work unique..."
+                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
+                        />
+                        {fieldErrors.description && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.description}</p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 6. LOCATION ─────────────────────────────────────────── */}
+                <SectionCard
+                    title="Location Details"
+                    action={
+                        <Button
+                            variant="success" size="sm"
+                            onClick={getCurrentLocation} disabled={locationLoading}
+                            className="!py-1.5 !px-3"
+                        >
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
+                        </Button>
+                    }
+                >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
+
+                    {/* Area + City */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} /></div>
-                        <div><FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="Area name"
+                                className={fieldErrors.area ? inputError : inputBase} />
+                            {fieldErrors.area && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.area}</p>}
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="City"
+                                className={fieldErrors.city ? inputError : inputBase} />
+                            {fieldErrors.city && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.city}</p>}
+                        </div>
                     </div>
+
+                    {/* State + PIN Code */}
                     <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} /></div>
-                        <div><FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} /></div>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="State"
+                                className={fieldErrors.state ? inputError : inputBase} />
+                            {fieldErrors.state && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>}
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="PIN code" maxLength={6}
+                                className={fieldErrors.pincode ? inputError : inputBase} />
+                            {fieldErrors.pincode && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.pincode}</p>}
+                        </div>
                     </div>
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-amber-800`}>
-                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
-                        </p>
-                    </div>
+
+                    {/* Location error */}
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-700 flex items-center gap-1.5"><span>⚠️</span> {fieldErrors.location}</p>
+                        </div>
+                    )}
+
+                    {/* Tip */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+                            <p className={`${typography.body.small} text-amber-800`}>
+                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Confirmed */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected: </span>
-                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* 4. PHOTOS — matches RealEstate photo section exactly */}
+                {/* ─── 7. PORTFOLIO PHOTOS ─────────────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
-                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect}
+                            className="hidden" disabled={totalImages >= 5} />
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-amber-300 hover:border-amber-400 hover:bg-amber-50'
-                            }`}>
+                            : 'border-amber-300 hover:border-amber-400 hover:bg-amber-50 cursor-pointer'}`}>
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
                                     <Upload className="w-8 h-8 text-amber-600" />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached (5 images)'
-                                            : 'Tap to upload portfolio photos'}
+                                        {totalImages >= 5 ? 'Maximum 5 images reached' : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-amber-600 text-sm font-medium mt-1">
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
-                                        </p>
-                                    )}
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
                                 </div>
                             </div>
                         </div>
@@ -450,18 +595,22 @@ const ArtForm: React.FC = () => {
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                                <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
                                     <span className={`absolute bottom-2 left-2 bg-amber-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-amber-400" />
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-amber-400" />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"><X className="w-4 h-4" /></button>
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
                                 </div>
                             ))}
@@ -469,14 +618,27 @@ const ArtForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* Action Buttons */}
+                {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
-                    <button onClick={handleSubmit} disabled={loading} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all shadow-sm ${loading ? 'bg-amber-400 cursor-not-allowed' : 'bg-amber-600 hover:bg-amber-700 active:bg-amber-800'} ${typography.body.base}`}>
-                        {loading ? (isEditMode ? 'Updating...' : 'Creating...') : (isEditMode ? 'Update Service' : 'Create Service')}
+                    <button
+                        onClick={handleSubmit} disabled={loading || !!successMessage} type="button"
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed bg-amber-400' : 'bg-amber-600 hover:bg-amber-700'}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
                     </button>
-                    <button onClick={() => window.history.back()} type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}>
+                    <button
+                        onClick={() => window.history.back()} type="button" disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
                         Cancel
                     </button>
                 </div>

@@ -14,6 +14,7 @@ export interface WeddingWorker {
   subCategory?: string;
   category?: string;
   services?: string[];
+  phone?: string;
   experience?: number;
   serviceCharge?: number;
   chargeType?: string;

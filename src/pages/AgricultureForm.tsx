@@ -11,7 +11,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { useAccount } from "../context/AccountContext";
 
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Service', 'Fixed Rate'];
@@ -93,11 +93,13 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // ============================================================================
 interface FieldErrors {
     serviceName?: string;
+    phone?: string;
     description?: string;
     serviceCharge?: string;
     area?: string;
     city?: string;
     state?: string;
+    pinCode?: string;
     location?: string;
     userId?: string;
 }
@@ -105,11 +107,13 @@ interface FieldErrors {
 const validateForm = (formData: {
     userId: string;
     serviceName: string;
+    phone: string;
     description: string;
     serviceCharge: string;
     area: string;
     city: string;
     state: string;
+    pinCode: string;
     latitude: string;
     longitude: string;
 }, isEditMode: boolean): FieldErrors => {
@@ -125,6 +129,12 @@ const validateForm = (formData: {
         errors.serviceName = 'Service name must be at least 3 characters';
     }
 
+    if (!formData.phone.trim()) {
+        errors.phone = 'Phone number is required';
+    } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+        errors.phone = 'Enter a valid 10-digit Indian mobile number';
+    }
+
     if (!formData.description.trim()) {
         errors.description = 'Description is required';
     } else if (formData.description.trim().length < 10) {
@@ -137,9 +147,7 @@ const validateForm = (formData: {
         const charge = parseFloat(formData.serviceCharge);
         if (isNaN(charge)) {
             errors.serviceCharge = 'Service charge must be a valid number';
-        } else if (charge < 0) {
-            errors.serviceCharge = 'Service charge cannot be negative';
-        } else if (charge === 0) {
+        } else if (charge <= 0) {
             errors.serviceCharge = 'Service charge must be greater than 0';
         }
     }
@@ -147,6 +155,11 @@ const validateForm = (formData: {
     if (!formData.area.trim()) errors.area = 'Area is required';
     if (!formData.city.trim()) errors.city = 'City is required';
     if (!formData.state.trim()) errors.state = 'State is required';
+    if (!formData.pinCode.trim()) {
+        errors.pinCode = 'PIN code is required';
+    } else if (!/^\d{6}$/.test(formData.pinCode.trim())) {
+        errors.pinCode = 'Enter a valid 6-digit PIN code';
+    }
 
     if (!formData.latitude || !formData.longitude) {
         errors.location = 'Location is required — use Auto Detect or enter your address';
@@ -179,11 +192,12 @@ const AgricultureForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState('');
 
     const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_CATEGORIES[0] || 'Tractor Service';
-        const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         serviceName: '',
+        phone: '',
         subCategory: defaultCategory,
         description: '',
         serviceCharge: '',
@@ -191,6 +205,7 @@ const AgricultureForm: React.FC = () => {
         area: '',
         city: '',
         state: '',
+        pinCode: '',
         latitude: '',
         longitude: '',
     });
@@ -217,6 +232,7 @@ const AgricultureForm: React.FC = () => {
                     ...prev,
                     userId: data.userId || prev.userId,
                     serviceName: data.serviceName || '',
+                    phone: data.phone || '',
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
@@ -224,6 +240,7 @@ const AgricultureForm: React.FC = () => {
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
+                    pinCode: data.pinCode || '',
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
@@ -240,7 +257,7 @@ const AgricultureForm: React.FC = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode ONLY when: area typed, lat/lng empty, not from GPS ───────
+    // ── Auto-geocode when address typed and lat/lng empty ────────────────────
     useEffect(() => {
         const { area, city, state, latitude, longitude } = formData;
         if (!area.trim()) return;
@@ -350,6 +367,7 @@ const AgricultureForm: React.FC = () => {
                             area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
                             city: data.address.city || data.address.town || data.address.village || prev.city,
                             state: data.address.state || prev.state,
+                            pinCode: data.address.postcode || prev.pinCode,
                         }));
                     }
                 } catch (e) { console.error('Reverse geocode error:', e); }
@@ -389,6 +407,7 @@ const AgricultureForm: React.FC = () => {
             if (isEditMode && editId) {
                 const payload: UpdateAgriculturePayload & { existingImages?: string[] } = {
                     serviceName: formData.serviceName.trim(),
+                    phone: formData.phone.trim(),
                     description: formData.description.trim(),
                     subCategory: formData.subCategory,
                     serviceCharge: charge,
@@ -398,6 +417,7 @@ const AgricultureForm: React.FC = () => {
                     area: formData.area.trim(),
                     city: formData.city.trim(),
                     state: formData.state.trim(),
+                    pinCode: formData.pinCode.trim(),
                     images: selectedImages.length > 0 ? selectedImages : undefined,
                     existingImages: existingImages,
                 };
@@ -407,6 +427,7 @@ const AgricultureForm: React.FC = () => {
                 const payload: AddAgriculturePayload = {
                     userId: formData.userId.trim(),
                     serviceName: formData.serviceName.trim(),
+                    phone: formData.phone.trim(),
                     description: formData.description.trim(),
                     subCategory: formData.subCategory,
                     serviceCharge: charge,
@@ -416,20 +437,16 @@ const AgricultureForm: React.FC = () => {
                     area: formData.area.trim(),
                     city: formData.city.trim(),
                     state: formData.state.trim(),
+                    pinCode: formData.pinCode.trim(),
                     images: selectedImages,
                 };
                 await addAgricultureService(payload);
                 setSuccessMessage('Service created successfully!');
             }
 
-                       // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
             setTimeout(() => {
-
                 setAccountType("worker");
-
                 navigate("/my-business");
-
             }, 1500);
 
         } catch (err: unknown) {
@@ -463,7 +480,7 @@ const AgricultureForm: React.FC = () => {
     const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
-    // RENDER — Mobile First
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -522,7 +539,7 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. SERVICE NAME ──────────────────────────────────────── */}
+                {/* ─── 1. SERVICE NAME ─────────────────────────────────────── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
@@ -542,7 +559,28 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CATEGORY ──────────────────────────────────── */}
+                {/* ─── 2. CONTACT INFORMATION ──────────────────────────────── */}
+                <SectionCard title="Contact Information">
+                    <div>
+                        <FieldLabel required>Phone</FieldLabel>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="Enter phone number"
+                            maxLength={10}
+                            className={fieldErrors.phone ? inputError : inputBase}
+                        />
+                        {fieldErrors.phone && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.phone}
+                            </p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 3. SERVICE CATEGORY ─────────────────────────────────── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Category</FieldLabel>
@@ -566,27 +604,7 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. DESCRIPTION ─────────────────────────────────── */}
-                <SectionCard title="Service Details">
-                    <div>
-                        <FieldLabel required>Description</FieldLabel>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Describe your agriculture service, equipment, or products..."
-                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
-                        />
-                        {fieldErrors.description && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.description}
-                            </p>
-                        )}
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. PRICING ───────────────────────────────────── */}
+                {/* ─── 4. PRICING ──────────────────────────────────────────── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -630,9 +648,29 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. LOCATION ─────────────────────────────────────── */}
+                {/* ─── 5. DESCRIPTION ──────────────────────────────────────── */}
+                <SectionCard title="Service Details">
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Describe your agriculture service, equipment, or products..."
+                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
+                        />
+                        {fieldErrors.description && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.description}
+                            </p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 6. LOCATION ─────────────────────────────────────────── */}
                 <SectionCard
-                    title="Service Location"
+                    title="Location Details"
                     action={
                         <Button
                             variant="primary"
@@ -656,12 +694,13 @@ const AgricultureForm: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Area + City */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input
                                 type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="e.g. Vidyanagar"
+                                onChange={handleInputChange} placeholder="Area name"
                                 className={fieldErrors.area ? inputError : inputBase}
                             />
                             {fieldErrors.area && (
@@ -672,7 +711,7 @@ const AgricultureForm: React.FC = () => {
                             <FieldLabel required>City</FieldLabel>
                             <input
                                 type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="e.g. Hubli"
+                                onChange={handleInputChange} placeholder="City"
                                 className={fieldErrors.city ? inputError : inputBase}
                             />
                             {fieldErrors.city && (
@@ -681,16 +720,31 @@ const AgricultureForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div>
-                        <FieldLabel required>State</FieldLabel>
-                        <input
-                            type="text" name="state" value={formData.state}
-                            onChange={handleInputChange} placeholder="e.g. Karnataka"
-                            className={fieldErrors.state ? inputError : inputBase}
-                        />
-                        {fieldErrors.state && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>
-                        )}
+                    {/* State + PIN Code */}
+                    <div className="grid grid-cols-2 gap-3">
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input
+                                type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="State"
+                                className={fieldErrors.state ? inputError : inputBase}
+                            />
+                            {fieldErrors.state && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>
+                            )}
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input
+                                type="text" name="pinCode" value={formData.pinCode}
+                                onChange={handleInputChange} placeholder="PIN code"
+                                maxLength={6}
+                                className={fieldErrors.pinCode ? inputError : inputBase}
+                            />
+                            {fieldErrors.pinCode && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.pinCode}</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Location error */}
@@ -706,7 +760,7 @@ const AgricultureForm: React.FC = () => {
                     {!formData.latitude && !formData.longitude && (
                         <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
                             <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
-                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
+                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -724,8 +778,8 @@ const AgricultureForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 6. PHOTOS ───────────────────────────────────────── */}
-                <SectionCard title={`Service Photos (${totalImages}/5)`}>
+                {/* ─── 7. PORTFOLIO PHOTOS ─────────────────────────────────── */}
+                <SectionCard title={`Portfolio Photos (Optional)`}>
                     <label className="cursor-pointer block">
                         <input
                             type="file" accept="image/*" multiple
@@ -750,10 +804,10 @@ const AgricultureForm: React.FC = () => {
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {maxImagesReached
                                             ? 'Maximum 5 images reached'
-                                            : `Tap to upload photos (${5 - totalImages} slots left)`}
+                                            : 'Tap to upload portfolio photos'}
                                     </p>
                                     <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        JPG, PNG, WebP — max 5 MB each, up to 5 images
+                                        Maximum 5 images
                                     </p>
                                 </div>
                             </div>
@@ -811,7 +865,7 @@ const AgricultureForm: React.FC = () => {
                         disabled={loading || !!successMessage}
                         type="button"
                         className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading || successMessage ? '#00598a' : '#00598a' }}
+                        style={{ backgroundColor: '#00598a' }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

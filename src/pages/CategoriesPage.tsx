@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import subcategoryData from "../data/subcategories.json";
 import categoryData from "../data/categories.json";
 import { ArrowLeft } from "lucide-react";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 import { Wrench } from "lucide-react";
 import {
     PLACE_SUBCATEGORIES,
@@ -299,38 +300,23 @@ const CategoryPage: React.FC = () => {
                             className="group bg-white rounded-2xl border border-[#00598a] p-6 flex flex-col items-center text-center transition-all duration-300 hover:bg-[#00598a] hover:shadow-xl hover:-translate-y-1"
                         >
                         {/* Icon */}
-<div
+   <div
   className="w-16 h-16 rounded-full flex items-center justify-center
              bg-[#00598a] mb-4
              transition-all duration-300
              group-hover:bg-white"
 >
-  {(item as any).imgPath ? (
-   <img
-  src={(item as any).imgPath}
-  alt={item.name}
-  className="
-    w-8 h-8 object-contain
-    transition-all duration-300
-    filter brightness-0 invert
-    group-hover:invert-0
-  "
-/>
-
-
-/* <div
-  className="
-    w-8 h-8
-    bg-white
-    group-hover:bg-[#00598a]
-    transition-colors duration-300
-    mask-contain mask-center mask-no-repeat
-  "
-  style={{
-    WebkitMaskImage: `url(${(item as any).imgPath})`,
-    maskImage: `url(${(item as any).imgPath})`,
-  }}
-/> */
+  {SUBCATEGORY_ICONS[item.name] ? (
+    <img
+      src={SUBCATEGORY_ICONS[item.name]}
+      alt={item.name}
+      className="
+        w-8 h-8 object-contain
+        transition-all duration-300
+        filter brightness-0 invert
+        group-hover:invert-0
+      "
+    />
   ) : (
     <Wrench
       size={28}
@@ -339,7 +325,6 @@ const CategoryPage: React.FC = () => {
     />
   )}
 </div>
-
                             {/* Text */}
                             <p className="font-semibold text-sm md:text-base text-[#00598a] transition-colors duration-300 group-hover:text-white">
                                 {item.name}

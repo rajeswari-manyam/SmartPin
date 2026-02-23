@@ -26,6 +26,7 @@ export interface SportsWorker {
   latitude?: number;
   longitude?: number;
   availability?: boolean;
+  phone?: string;
   rating?: number;
   status?: boolean;
   createdAt?: string;

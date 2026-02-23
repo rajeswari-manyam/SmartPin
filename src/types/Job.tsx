@@ -7,7 +7,7 @@ export type JobStatus = 'available' | 'in-progress' | 'completed' | 'cancelled';
 
 export interface Job {
     id: string;
-    title: string;
+    title: string;  
     description: string;
     paymentType: PaymentType;
     rate: number;
