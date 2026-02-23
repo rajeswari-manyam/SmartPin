@@ -307,9 +307,17 @@ const CategoryPage: React.FC = () => {
 
                             {/* Icon Container */}
                             <div className="icon-container w-16 h-16 mb-3 flex items-center justify-center bg-blue-50 rounded-full transition-all duration-300 group-hover:scale-110">
-                                <span className="text-3xl group-hover:scale-110 transition-transform duration-300">
-                                    {item.icon}
-                                </span>
+                                {(item as any).imgPath ? (
+                                    <img
+                                        src={(item as any).imgPath}
+                                        alt={item.name}
+                                        className="w-9 h-9 object-contain group-hover:scale-110 transition-transform duration-300"
+                                    />
+                                ) : (
+                                    <span className="text-3xl group-hover:scale-110 transition-transform duration-300">
+                                        {item.icon}
+                                    </span>
+                                )}
                             </div>
 
                             {/* Subcategory Name */}

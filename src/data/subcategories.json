@@ -5,43 +5,53 @@
             "items": [
                 {
                     "name": "Restaurants",
-                    "icon": "🍴"
+                    "icon": "🍴",
+                    "imgPath": "/assets/icons/RestaurentsSubcategoris.png"
                 },
                 {
                     "name": "Cafes",
-                    "icon": "☕"
+                    "icon": "☕",
+                    "imgPath": "/assets/icons/Cfaes.png"
                 },
                 {
                     "name": "Bakeries",
-                    "icon": "🥖"
+                    "icon": "🥖",
+                    "imgPath": "/assets/icons/Bckeries.png"
                 },
                 {
                     "name": "Street Food",
-                    "icon": "🌮"
+                    "icon": "🌮",
+                    "imgPath": "/assets/icons/StreetFood.png"
                 },
                 {
                     "name": "Juice Shops",
-                    "icon": "🥤"
+                    "icon": "🥤",
+                    "imgPath": "/assets/icons/Juice.png"
                 },
                 {
                     "name": "Sweet Shops",
-                    "icon": "🍬"
+                    "icon": "🍬",
+                    "imgPath": "/assets/icons/SweetShops.png"
                 },
                 {
                     "name": "Ice Cream Parlours",
-                    "icon": "🍦"
+                    "icon": "🍦",
+                    "imgPath": "/assets/icons/IceCream.png"
                 },
                 {
                     "name": "Catering Services",
-                    "icon": "🍱"
+                    "icon": "🍱",
+                    "imgPath": "/assets/icons/Catering.png"
                 },
                 {
                     "name": "Food Delivery",
-                    "icon": "🛵"
+                    "icon": "🛵",
+                    "imgPath": "/assets/icons/FoodDelivery.png"
                 },
                 {
                     "name": "Mess Services",
-                    "icon": "🍛"
+                    "icon": "🍛",
+                    "imgPath": "/assets/icons/MessService.png"
                 }
             ]
         },
@@ -137,46 +147,94 @@
                     "name": "Gas Stove Repair",
                     "icon": "🔥"
                 },
-    
                 {
                     "name": "Solar Panel Installation",
                     "icon": "☀️"
                 }
             ]
         },
-
         {
-  "categoryId": 4,
-  "items": [
-    { "name": "Hotels", "icon": "🏨" },
-  
-    { "name": "Resorts", "icon": "🏖️" },
-    { "name": "Lodges", "icon": "🛏️" },
-    { "name": "Guest Houses", "icon": "🏡" },
-  
-    { "name": "Travel Agencies", "icon": "✈️" },
-
-    { "name": "Taxi Services", "icon": "🚖" },
-    { "name": "Vehicle Rentals", "icon": "🚗" },
-    { "name": "Bus Ticket Booking", "icon": "🚌" },
-    { "name": "Train Ticket Booking", "icon": "🚆" }
-  ]
-},
-
-       {
-  "categoryId": 5,
-  "items": [
-    { "name": "Beauty Parlours", "icon": "💄" },
-    { "name": "Salons", "icon": "💇" },
-    { "name": "Spa & Massage Centres", "icon": "💆" },
-    { "name": "Makeup Artists", "icon": "💅" },
-    { "name": "Mehendi Artists", "icon": "🎨" },
-    { "name": "Fitness Centres", "icon": "💪" },
-    { "name": "Yoga Centres", "icon": "🧘‍♀️" },
-    { "name": "Skin Clinics", "icon": "✨" },
-    { "name": "Tattoo Studios", "icon": "🖊️" }
-  ]
-},
+            "categoryId": 4,
+            "items": [
+                {
+                    "name": "Hotels",
+                    "icon": "🏨"
+                },
+                {
+                    "name": "Resorts",
+                    "icon": "🏖️"
+                },
+                {
+                    "name": "Lodges",
+                    "icon": "🛏️"
+                },
+                {
+                    "name": "Guest Houses",
+                    "icon": "🏡"
+                },
+                {
+                    "name": "Travel Agencies",
+                    "icon": "✈️"
+                },
+                {
+                    "name": "Taxi Services",
+                    "icon": "🚖"
+                },
+                {
+                    "name": "Vehicle Rentals",
+                    "icon": "🚗"
+                },
+                {
+                    "name": "Bus Ticket Booking",
+                    "icon": "🚌"
+                },
+                {
+                    "name": "Train Ticket Booking",
+                    "icon": "🚆"
+                }
+            ]
+        },
+        {
+            "categoryId": 5,
+            "items": [
+                {
+                    "name": "Beauty Parlours",
+                    "icon": "💄"
+                },
+                {
+                    "name": "Salons",
+                    "icon": "💇"
+                },
+                {
+                    "name": "Spa & Massage Centres",
+                    "icon": "💆"
+                },
+                {
+                    "name": "Makeup Artists",
+                    "icon": "💅"
+                },
+                {
+                    "name": "Mehendi Artists",
+                    "icon": "🎨"
+                },
+                {
+                    "name": "Fitness Centres",
+                    "icon": "💪"
+                },
+                {
+                    "name": "Yoga Centres",
+                    "icon": "🧘‍♀️"
+                },
+                {
+                    "name": "Skin Clinics",
+                    "icon": "✨"
+                },
+                {
+                    "name": "Tattoo Studios",
+                    "icon": "🖊️"
+                }
+            ]
+        },
         {
             "categoryId": 6,
             "items": [
@@ -192,7 +250,6 @@
                     "name": "Builders Developers",
                     "icon": "🏗️"
                 },
-            
                 {
                     "name": "Interior Designers",
                     "icon": "🛋️"
@@ -201,13 +258,11 @@
                     "name": "Construction Contractors",
                     "icon": "👷"
                 }
-              
             ]
         },
         {
             "categoryId": 7,
             "items": [
-               
                 {
                     "name": "Supermarkets",
                     "icon": "🏪"
@@ -232,12 +287,10 @@
                     "name": "Furniture Stores",
                     "icon": "🛋️"
                 },
-             
                 {
                     "name": "Jewellery Stores",
                     "icon": "💎"
                 },
-             
                 {
                     "name": "Stationery Shops",
                     "icon": "✏️"
@@ -250,7 +303,6 @@
                     "name": "Optical Shops",
                     "icon": "👓"
                 }
-             
             ]
         },
         {
@@ -269,11 +321,9 @@
                     "icon": "📚"
                 },
                 {
-               
                     "name": "Tuition Teachers",
                     "icon": "👨‍🏫"
                 },
-              
                 {
                     "name": "Computer Training Institutes",
                     "icon": "🖥️"
@@ -294,7 +344,6 @@
                     "name": "Skill Development Centres",
                     "icon": "🛠️"
                 }
-          
             ]
         },
         {
@@ -316,8 +365,6 @@
                     "name": "Bike Wash",
                     "icon": "🧼"
                 },
-            
-           
                 {
                     "name": "Automobile Spare Parts",
                     "icon": "⚙️"
@@ -364,7 +411,6 @@
         {
             "categoryId": 11,
             "items": [
-             
                 {
                     "name": "Chartered Accountant",
                     "icon": "💰"
@@ -397,7 +443,6 @@
                     "name": "Event Planners",
                     "icon": "🎉"
                 },
-               
                 {
                     "name": "Placement Services",
                     "icon": "💼"
@@ -415,7 +460,6 @@
                     "name": "Mobile Repair",
                     "icon": "📱"
                 },
-              
                 {
                     "name": "Computer & Laptop Repair",
                     "icon": "🖥️"
@@ -424,7 +468,6 @@
                     "name": "CCTV Installation",
                     "icon": "📹"
                 },
-                
                 {
                     "name": "Software Services",
                     "icon": "💾"
@@ -475,13 +518,10 @@
                     "name": "DJ Services",
                     "icon": "🎧"
                 },
-              
-            
                 {
                     "name": "Party Decorations",
                     "icon": "🎈"
                 },
-             
                 {
                     "name": "Mandap Decorations",
                     "icon": "🌺"
@@ -491,7 +531,6 @@
         {
             "categoryId": 15,
             "items": [
-             
                 {
                     "name": "Transporters",
                     "icon": "🚚"
@@ -504,7 +543,6 @@
                     "name": "Borewell Services",
                     "icon": "🕳️"
                 },
-               
                 {
                     "name": "Fabricators",
                     "icon": "⚒️"
@@ -516,7 +554,7 @@
                 {
                     "name": "Scrap Dealers",
                     "icon": "♻️"
-                }               
+                }
             ]
         },
         {
@@ -526,7 +564,6 @@
                     "name": "Courier offices",
                     "icon": "📮"
                 },
-              
                 {
                     "name": "Parcel services",
                     "icon": "📦"
@@ -602,7 +639,6 @@
                     "name": "Veterinary Doctors",
                     "icon": "🐄"
                 },
-            
                 {
                     "name": "Water Pump Repair",
                     "icon": "💧"
@@ -649,7 +685,6 @@
                     "name": "Craft Training",
                     "icon": "✂️"
                 }
-              
             ]
         },
         {

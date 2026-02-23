@@ -6,7 +6,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Bell, Home, Calendar } from "lucide-react";
+import { Menu, X, Bell, Home } from "lucide-react";
+
+// Custom navbar icons
+import ListedJobsIcon from "../../assets/icons/ListedJobs.png";
+import MyBusinessIcon from "../../assets/icons/MyBusiness.png";
+import MySkillsIcon from "../../assets/icons/MySkills.png";
 
 import { useAuth } from "../../context/AuthContext";
 import { useAccount } from "../../context/AccountContext";
@@ -148,13 +153,13 @@ const Navbar: React.FC = () => {
                 {accountType === "user" ? (
                   <>
                     <NavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Calendar} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                    <NavItem icon={Home} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
                   </>
                 ) : (
                   <>
                     <NavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Calendar} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
-                    <NavItem icon={Calendar} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
+                    <NavItem icon={Home} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
+                    <NavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
                   </>
                 )}
               </div>
@@ -247,15 +252,14 @@ const Navbar: React.FC = () => {
             {accountType === "user" ? (
               <>
                 <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Calendar} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                <MobileNavItem icon={Home} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
               </>
             ) : (
               <>
                 <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Calendar} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
-                <MobileNavItem icon={Calendar} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
+                <MobileNavItem icon={Home} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
+                <MobileNavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
-              
             )}
             <MobileNavItem icon={Bell} label="Notification" path="/notification" onClick={() => handleNavClick("/notification")} />
           </div>
@@ -311,12 +315,13 @@ const Navbar: React.FC = () => {
 /* ================= HELPERS ================= */
 interface NavItemProps {
   icon: any;
+  imgSrc?: string;
   label: string;
   path: string;
   onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, path, onClick }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === path;
 
@@ -326,13 +331,17 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, path, onClick }) =
       className={`flex items-center space-x-1 text-sm font-medium transition-colors ${isActive ? "text-primary font-semibold" : "text-gray-700 hover:text-primary"
         }`}
     >
-      <Icon className="w-5 h-5" />
+      {imgSrc ? (
+        <img src={imgSrc} alt={label} className="w-5 h-5 object-contain" />
+      ) : (
+        <Icon className="w-5 h-5" />
+      )}
       <span>{label}</span>
     </button>
   );
 };
 
-const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, label, path, onClick }) => {
+const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === path;
 
@@ -342,7 +351,11 @@ const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, label, path, onClic
       className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors ${isActive ? "bg-primary/10 text-primary font-semibold" : "hover:bg-gray-100 text-gray-700"
         }`}
     >
-      {Icon && <Icon className="w-5 h-5" />}
+      {imgSrc ? (
+        <img src={imgSrc} alt={label} className="w-5 h-5 object-contain" />
+      ) : (
+        Icon && <Icon className="w-5 h-5" />
+      )}
       <span>{label}</span>
     </button>
   );

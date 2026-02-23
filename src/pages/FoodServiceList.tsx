@@ -16,6 +16,8 @@ import NearbyStreetFoodCard from "../components/cards/Restarents/NearByStreetFoo
 import NearbySweetShopCard from "../components/cards/Restarents/NearBySweetShopsCard";
 import NearbyCateringService from "../components/cards/Restarents/NearByCateringServiceCard";
 import NearbyTiffinServiceCard from "../components/cards/Restarents/NearByTiffinsCard";
+import NearbyMessServiceCard from "../components/cards/Restarents/NearByMessServiceCard";
+import NearbyFoodDeliveryCard from "../components/cards/Restarents/NearByFoodDeliveryCard";
 
 // ============================================================================
 // CARD MAP
@@ -30,8 +32,8 @@ const DUMMY_CARD_MAP: Record<string, React.ComponentType<any>> = {
     "sweet-shops": NearbySweetShopCard,
     "catering-services": NearbyCateringService,
     "catering": NearbyCateringService,
-    "mess-services": NearbyTiffinServiceCard,
-    "food-delivery": NearbyTiffinServiceCard,
+    "mess-services": NearbyMessServiceCard,
+    "food-delivery": NearbyFoodDeliveryCard,
 };
 
 // ============================================================================

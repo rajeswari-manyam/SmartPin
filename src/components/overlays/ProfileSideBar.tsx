@@ -15,20 +15,23 @@
 
 
 
+// Custom icon imports
+import MyProfileIcon from "../../assets/icons/MyProfile.png";
+import LogoutIcon from "../../assets/icons/Logout.png";
+import NeedHelpIcon from "../../assets/icons/NeedHelp.png";
+import ContactIcon from "../../assets/icons/Contact.png";
+import PrivacyIcon from "../../assets/icons/Pravicy.png";
+import RaiseIcon from "../../assets/icons/Raise.png";
+import ReferIcon from "../../assets/icons/Refer.png";
+import RestaurantIcon from "../../assets/icons/Restaurant.png";
 
 import React, { useState } from "react";
 import ReactDOM from "react-dom";
 import { useNavigate } from "react-router-dom";
 import {
-  User,
-  Globe,
-  Shield,
-  HelpCircle,
   LogOut,
   X,
-  Gift,
   Info,
-  Ticket,
 } from "lucide-react";
 import Button from "../ui/Buttons";
 
@@ -108,18 +111,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </p>
 
           <MenuItem
-            icon={<User className="text-[#00598a]" />}
+            icon={<img src={MyProfileIcon} alt="My Profile" className="w-5 h-5 object-contain" />}
             label="My Profile"
             onClick={() => onNavigate("/my-profile")}
           />
 
           <MenuItem
-            icon={<Globe className="text-[#00598a]" />}
+            icon={<img src={RestaurantIcon} alt="Change Language" className="w-5 h-5 object-contain" />}
             label="Change Language"
           />
 
           <MenuItem
-            icon={<Gift className="text-orange-500" />}
+            icon={<img src={ReferIcon} alt="Refer & Earn" className="w-5 h-5 object-contain" />}
             label="Refer & Earn"
             onClick={() => onNavigate("/refer-and-earn")}
           />
@@ -132,31 +135,37 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           </p>
 
           <MenuItem
-            icon={<Shield className="text-yellow-500" />}
+            icon={<img src={PrivacyIcon} alt="Privacy Policy" className="w-5 h-5 object-contain" />}
             label="Privacy Policy"
             onClick={() => onNavigate("/policy")}
           />
 
           <MenuItem
-            icon={<Info className="text-gray-500" />}
+            icon={<Info className="text-gray-500" size={20} />}
             label="About Us"
             onClick={() => onNavigate("/about-us")}
           />
 
           <MenuItem
-            icon={<Ticket className="text-yellow-500" />}
+            icon={<img src={RaiseIcon} alt="Raise Ticket" className="w-5 h-5 object-contain" />}
             label="Raise Ticket"
             onClick={() => onNavigate("/raise-ticket")}
           />
 
           <MenuItem
-            icon={<HelpCircle className="text-red-400" />}
+            icon={<img src={NeedHelpIcon} alt="Help" className="w-5 h-5 object-contain" />}
             label="Help"
             onClick={() => onNavigate("/help")}
           />
 
           <MenuItem
-            icon={<LogOut className="text-red-500" />}
+            icon={<img src={ContactIcon} alt="Contact" className="w-5 h-5 object-contain" />}
+            label="Contact Us"
+            onClick={() => onNavigate("/contact")}
+          />
+
+          <MenuItem
+            icon={<img src={LogoutIcon} alt="Logout" className="w-5 h-5 object-contain" />}
             label="Logout"
             danger
             onClick={() => setShowLogoutPopup(true)}
@@ -242,11 +251,10 @@ const MenuItem: React.FC<MenuItemProps> = ({
 }) => (
   <button
     onClick={onClick}
-    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition ${
-      danger
-        ? "text-red-600 hover:bg-red-50"
-        : "text-gray-700 hover:bg-[#F0F0F0]"
-    }`}
+    className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition ${danger
+      ? "text-red-600 hover:bg-red-50"
+      : "text-gray-700 hover:bg-[#F0F0F0]"
+      }`}
   >
     <span className="w-5 h-5 flex items-center justify-center">{icon}</span>
     <span className="flex-1 text-left">{label}</span>
