@@ -3,80 +3,90 @@ import { useNavigate } from 'react-router-dom';
 import {
     addIndustrialService,
     updateIndustrialService,
-    getIndustrialServiceById
+    getIndustrialServiceById,
 } from '../services/IndustrialService.service';
-import Button from "../components/ui/Buttons";
-import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext";
+import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { useAccount } from '../context/AccountContext';
 
-// ── Brand color ───────────────────────────────────────────────────────────────
-const BRAND = '#00598a';
-const BRAND_DARK = '#004a75';
-const BRAND_LIGHT_BG = '#e8f2f8';
-const BRAND_LIGHT_BORDER = '#b3d4e8';
-
-// ── Charge type options ──────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
 const chargeTypeOptions = ['per hour', 'per day', 'per project', 'fixed rate', 'negotiable', 'per event'];
 
-const getIndustrialSubcategories = () => {
-    const industrialCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 15);
-    return industrialCategory ? industrialCategory.items.map(item => item.name) : [
+const getIndustrialSubcategories = (): string[] => {
+    const cat = subcategoriesData.subcategories.find(c => c.categoryId === 15);
+    return cat ? cat.items.map(i => i.name) : [
         'Borewell Services', 'Fabricators', 'Transporters', 'Water Tank Cleaning',
-        'Scrap Dealers', 'Machine Repair', 'Movers & Packers'
+        'Scrap Dealers', 'Machine Repair', 'Movers & Packers',
     ];
 };
 
 const resolveUserId = (): string => {
-    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
-    for (const key of candidates) {
+    const keys = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+    for (const key of keys) {
         const raw = localStorage.getItem(key);
         if (!raw) continue;
         if (raw.length > 10 && !raw.startsWith('{')) return raw;
         try {
-            const parsed = JSON.parse(raw);
-            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+            const p = JSON.parse(raw);
+            const id = p._id || p.id || p.userId || p.user_id || p.uid;
             if (id) return String(id);
         } catch { }
     }
     return '';
 };
 
-// ── Shared input: #00598a focus ring ─────────────────────────────────────────
+// ── Shared Tailwind class strings ─────────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
-    `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
+    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
+    'focus:border-[#00598a] focus:ring-2 focus:ring-[#00598a]/20';
 
-// Dropdown chevron in #00598a
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem'
-};
+const inputErr =
+    'w-full px-4 py-3.5 border border-red-400 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
+    'focus:border-red-400 focus:ring-2 focus:ring-red-300/40';
 
+// ── Field errors type ─────────────────────────────────────────────────────────
+interface FieldErrors {
+    serviceName?: string;
+    phone?: string;
+    description?: string;
+    serviceCharge?: string;
+    location?: string;
+}
+
+// ── Micro-components ──────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
+    <label className="block text-base font-semibold text-gray-800 mb-2">
+        {children}
+        {required && <span className="text-[#00598a] ml-1">*</span>}
     </label>
 );
 
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-        {title && (
-            <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-                {action}
-            </div>
-        )}
+const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
+    msg ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
+
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 ${className}`}>
         {children}
     </div>
 );
 
+const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-1">
+        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+        {action}
+    </div>
+);
+
+const SelectWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="relative">
+        {children}
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00598a] pointer-events-none" />
+    </div>
+);
+
+// ── Geocoding ─────────────────────────────────────────────────────────────────
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
         const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
@@ -85,40 +95,48 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
         );
         const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
-            const loc = data.results[0].geometry.location;
-            return { lat: loc.lat, lng: loc.lng };
+            const { lat, lng } = data.results[0].geometry.location;
+            return { lat, lng };
         }
         return null;
     } catch { return null; }
 };
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-const IndustrialForm = () => {
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+const IndustrialForm: React.FC = () => {
     const navigate = useNavigate();
+    const { setAccountType } = useAccount();
 
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+    const getSubFromUrl = () => {
+        const s = new URLSearchParams(window.location.search).get('subcategory');
+        return s ? s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
+    const industrialTypes = getIndustrialSubcategories();
+    const defaultType = getSubFromUrl() || industrialTypes[0] || 'Borewell Services';
+
+    // ── UI state ──────────────────────────────────────────────────────────────
     const [loading, setLoading] = useState(false);
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-    const { setAccountType } = useAccount();
-    const industrialTypes = getIndustrialSubcategories();
-    const defaultType = getSubcategoryFromUrl() || industrialTypes[0] || 'Borewell Services';
+    const [locationLoading, setLocationLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+    const [isAvailable, setIsAvailable] = useState(true);
+    const isGPSDetected = useRef(false);
 
+    // ── Form state ────────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
         serviceName: '',
+        phone: '',
         category: 'Industrial',
         subCategory: defaultType,
         description: '',
@@ -135,10 +153,8 @@ const IndustrialForm = () => {
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const [isAvailable, setIsAvailable] = useState(true);
-    const isGPSDetected = useRef(false);
 
+    // ── Fetch edit data ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -152,6 +168,7 @@ const IndustrialForm = () => {
                     ...prev,
                     userId: data.userId || prev.userId,
                     serviceName: data.serviceName || '',
+                    phone: data.phone || '',
                     category: 'Industrial',
                     subCategory: data.subCategory || data.category || defaultType,
                     description: data.description || '',
@@ -164,7 +181,7 @@ const IndustrialForm = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+                if (Array.isArray(data.images)) setExistingImages(data.images);
                 if (data.availability !== undefined) setIsAvailable(data.availability);
             } catch (err) {
                 console.error(err);
@@ -174,24 +191,35 @@ const IndustrialForm = () => {
             }
         };
         fetchData();
-    }, [editId]);
+    }, [editId]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // ── Auto-geocode from typed address ───────────────────────────────────────
     useEffect(() => {
         const detect = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
                 const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
                 const coords = await geocodeAddress(addr);
-                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
+                if (coords) {
+                    setFormData(prev => ({
+                        ...prev,
+                        latitude: coords.lat.toString(),
+                        longitude: coords.lng.toString(),
+                    }));
+                }
             }
         };
         const t = setTimeout(detect, 1000);
         return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    // ── Handlers ──────────────────────────────────────────────────────────────
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name as keyof FieldErrors]) {
+            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
     };
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -219,25 +247,28 @@ const IndustrialForm = () => {
         setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
+    const removeNewImg = (i: number) => {
         setSelectedImages(p => p.filter((_, idx) => idx !== i));
         setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
+    const removeExistingImg = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
+    // ── GPS location ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
-        if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); setLocationLoading(false); return; }
+        setLocationLoading(true); setError(''); setLocationWarning('');
+        setFieldErrors(prev => ({ ...prev, location: undefined }));
+        if (!navigator.geolocation) {
+            setError('Geolocation is not supported by your browser');
+            setLocationLoading(false);
+            return;
+        }
         navigator.geolocation.getCurrentPosition(
-            async (pos) => {
+            async pos => {
                 isGPSDetected.current = true;
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy;
-                if (accuracy > 500) {
-                    setLocationWarning(`⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Please verify and correct the address if needed.`);
+                if (pos.coords.accuracy > 500) {
+                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify address.`);
                 }
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
@@ -255,27 +286,52 @@ const IndustrialForm = () => {
                 } catch (e) { console.error(e); }
                 setLocationLoading(false);
             },
-            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
+            err => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
+    // ── Validation ────────────────────────────────────────────────────────────
+    const validate = (): FieldErrors => {
+        const errs: FieldErrors = {};
+        if (!formData.serviceName.trim()) errs.serviceName = 'Service name is required';
+        if (!formData.phone.trim()) {
+            errs.phone = 'Phone number is required';
+        } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+            errs.phone = 'Enter a valid 10-digit Indian mobile number';
+        }
+        if (!formData.description.trim()) errs.description = 'Description is required';
+        if (!formData.serviceCharge) errs.serviceCharge = 'Service charge is required';
+        if (!formData.latitude || !formData.longitude) errs.location = 'Please provide a valid location';
+        return errs;
+    };
+
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
+        setError(''); setSuccessMessage('');
+
+        const errs = validate();
+        if (Object.keys(errs).length > 0) {
+            setFieldErrors(errs);
+            setError('Please fix the errors below before submitting');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
         setLoading(true);
-        setError('');
-        setSuccessMessage('');
         try {
             let uid = formData.userId;
-            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
+            if (!uid) {
+                uid = resolveUserId();
+                if (uid) setFormData(prev => ({ ...prev, userId: uid }));
+            }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-            if (!formData.serviceName || !formData.subCategory || !formData.description)
-                throw new Error('Please fill in all required fields (Service Name, Service Type, Description)');
-            if (!formData.serviceCharge) throw new Error('Please enter service charge');
-            if (!formData.latitude || !formData.longitude) throw new Error('Please provide a valid location');
 
             if (isEditMode && editId) {
+                // phone is now a valid optional field in updateIndustrialService payload
                 const res = await updateIndustrialService(editId, {
                     serviceName: formData.serviceName,
+                    phone: formData.phone.trim(),
                     description: formData.description,
                     category: formData.category,
                     subCategory: formData.subCategory,
@@ -292,9 +348,11 @@ const IndustrialForm = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to update service');
                 setSuccessMessage('Service updated successfully!');
             } else {
+                // phone is now a valid optional field in addIndustrialService payload
                 const res = await addIndustrialService({
                     userId: uid,
                     serviceName: formData.serviceName,
+                    phone: formData.phone.trim(),
                     description: formData.description,
                     category: formData.category,
                     subCategory: formData.subCategory,
@@ -313,21 +371,24 @@ const IndustrialForm = () => {
             }
 
             setTimeout(() => {
-                setAccountType("worker");
-                navigate("/my-business");
+                setAccountType('worker');
+                navigate('/my-business');
             }, 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
+            console.error('Submit error:', err);
             setError(err.message || 'Failed to submit form');
-        } finally { setLoading(false); }
+        } finally {
+            setLoading(false);
+        }
     };
 
+    // ── Loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
+                    <p className="text-base text-gray-500">Loading...</p>
                 </div>
             </div>
         );
@@ -335,77 +396,107 @@ const IndustrialForm = () => {
 
     const totalImages = selectedImages.length + existingImages.length;
 
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
+                <div className="max-w-lg mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
-                        className="p-2 -ml-2 rounded-full transition hover:bg-gray-50"
+                        className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+                        aria-label="Go back"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
+                        <h1 className="text-xl font-bold text-gray-900 leading-tight">
                             {isEditMode ? 'Update Industrial Service' : 'Add Industrial Service'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
+                        <p className="text-sm text-gray-400 mt-0.5">
                             {isEditMode ? 'Update your service details' : 'Create new industrial service listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
+                    <div className="w-3 h-3 rounded-full bg-[#00598a]" />
                 </div>
             </div>
 
             {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-10">
 
+                {/* Global error banner */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
-                    </div>
-                )}
-                {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
-                        ✓ {successMessage}
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex gap-2.5">
+                        <span className="text-red-500 shrink-0 mt-0.5 text-lg">⚠️</span>
+                        <div>
+                            <p className="text-base font-semibold text-red-800 mb-0.5">Please fix the following</p>
+                            <p className="text-sm text-red-600">{error}</p>
+                        </div>
                     </div>
                 )}
 
-                {/* 1. BASIC INFO */}
-                <SectionCard title="Basic Information">
+                {/* Success banner */}
+                {successMessage && (
+                    <div className="p-4 rounded-xl bg-[#00598a] border border-[#004a75] text-white flex items-center gap-2">
+                        <span className="text-xl">✓</span>
+                        <p className="text-base font-medium">{successMessage}</p>
+                    </div>
+                )}
+
+                {/* ── 1. Basic Information ── */}
+                <Card>
+                    <CardTitle title="Basic Information" />
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
                         <input
                             type="text"
                             name="serviceName"
                             value={formData.serviceName}
-                            onChange={handleInputChange}
+                            onChange={handleChange}
                             placeholder="e.g., Packers & Movers"
-                            className={inputBase}
+                            className={fieldErrors.serviceName ? inputErr : inputBase}
                         />
+                        <FieldError msg={fieldErrors.serviceName} />
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>Service Type</FieldLabel>
+                    <div>
+                        <FieldLabel required>Service Type</FieldLabel>
+                        <SelectWrap>
                             <select
                                 name="subCategory"
                                 value={formData.subCategory}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
+                                onChange={handleChange}
+                                className={inputBase + ' appearance-none pr-10'}
                             >
                                 {industrialTypes.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
-                        </div>
+                        </SelectWrap>
                     </div>
-                </SectionCard>
+                </Card>
 
-                {/* 2. PRICING DETAILS */}
-                <SectionCard title="Pricing Details">
+                {/* ── 2. Contact Information ── */}
+                <Card>
+                    <CardTitle title="Contact Information" />
+                    <div>
+                        <FieldLabel required>Phone</FieldLabel>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
+                            placeholder="Enter 10-digit mobile number"
+                            maxLength={10}
+                            className={fieldErrors.phone ? inputErr : inputBase}
+                        />
+                        <FieldError msg={fieldErrors.phone} />
+                    </div>
+                </Card>
+
+                {/* ── 3. Pricing Details ── */}
+                <Card>
+                    <CardTitle title="Pricing Details" />
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
@@ -413,121 +504,71 @@ const IndustrialForm = () => {
                                 type="number"
                                 name="serviceCharge"
                                 value={formData.serviceCharge}
-                                onChange={handleInputChange}
+                                onChange={handleChange}
                                 placeholder="5000"
                                 min="0"
-                                className={inputBase}
+                                className={fieldErrors.serviceCharge ? inputErr : inputBase}
                             />
+                            <FieldError msg={fieldErrors.serviceCharge} />
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
-                            <select
-                                name="chargeType"
-                                value={formData.chargeType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {chargeTypeOptions.map(t => (
-                                    <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>
-                                ))}
-                            </select>
+                            <SelectWrap>
+                                <select
+                                    name="chargeType"
+                                    value={formData.chargeType}
+                                    onChange={handleChange}
+                                    className={inputBase + ' appearance-none pr-10'}
+                                >
+                                    {chargeTypeOptions.map(t => (
+                                        <option key={t} value={t}>
+                                            {t.replace(/\b\w/g, c => c.toUpperCase())}
+                                        </option>
+                                    ))}
+                                </select>
+                            </SelectWrap>
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
+                    {/* Availability toggle */}
+                    <div className="flex items-center justify-between py-1">
+                        <span className="text-base font-semibold text-gray-800">Currently Available</span>
                         <button
                             type="button"
                             onClick={() => setIsAvailable(!isAvailable)}
-                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
-                            style={{ backgroundColor: isAvailable ? BRAND : '#d1d5db' }}
+                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
+                                isAvailable ? 'bg-[#00598a]' : 'bg-gray-300'
+                            }`}
                         >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
+                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                                isAvailable ? 'translate-x-6' : 'translate-x-1'
+                            }`} />
                         </button>
                     </div>
-                </SectionCard>
+                </Card>
 
-                {/* 3. SERVICE DESCRIPTION */}
-                <SectionCard title="Service Description">
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Describe your service in detail..."
-                        className={inputBase + ' resize-none'}
-                    />
-                </SectionCard>
-
-                {/* 4. LOCATION DETAILS */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: BRAND }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
-                        >
-                            {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
-                            }
-                        </button>
-                    }
-                >
-                    {locationWarning && (
-                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
-                        </div>
-                    )}
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
-                        </div>
-                        <div>
-                            <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
-                        </div>
+                {/* ── 4. Service Description ── */}
+                <Card>
+                    <CardTitle title="Service Description" />
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            rows={4}
+                            placeholder="Describe your service in detail..."
+                            className={(fieldErrors.description ? inputErr : inputBase) + ' resize-none'}
+                        />
+                        <FieldError msg={fieldErrors.description} />
                     </div>
+                </Card>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
-                        </div>
-                        <div>
-                            <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
-                        </div>
-                    </div>
+                {/* ── 5. Service Photos ── */}
+                <Card>
+                    <CardTitle title="Service Photos (Optional)" />
 
-                    {/* Tip box */}
-                    <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
-                        <p className={`${typography.body.small}`} style={{ color: BRAND }}>
-                            📍 <span className="font-medium">Tip:</span> Click Auto Detect or enter your address manually above.
-                        </p>
-                    </div>
-
-                    {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected: </span>
-                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                            </p>
-                        </div>
-                    )}
-                </SectionCard>
-
-                {/* 5. SERVICE PHOTOS */}
-                <SectionCard title="Service Photos (Optional)">
+                    {/* Upload zone */}
                     <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
                             type="file"
@@ -537,30 +578,25 @@ const IndustrialForm = () => {
                             className="hidden"
                             disabled={totalImages >= 5}
                         />
-                        <div
-                            className="border-2 border-dashed rounded-2xl p-8 text-center transition"
-                            style={
-                                totalImages >= 5
-                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
-                            }
-                        >
+                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
+                            totalImages >= 5
+                                ? 'border-gray-200 bg-gray-50'
+                                : 'border-[#7ab3cc] bg-[#f0f7fb] hover:border-[#00598a] hover:bg-[#e8f2f8]'
+                        }`}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                <div className="w-16 h-16 rounded-full bg-[#e8f2f8] flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-[#00598a]" />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {totalImages >= 5
-                                            ? 'Maximum limit reached (5 images)'
-                                            : 'Tap to upload service photos'}
+                                    <p className="text-base font-semibold text-gray-700">
+                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload service photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                    <p className="text-sm text-gray-400 mt-1">
                                         Max 5 images · 5 MB each · JPG, PNG, WEBP
                                     </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                    {totalImages > 0 && (
+                                        <p className="text-sm font-semibold text-[#00598a] mt-1">
+                                            {totalImages}/5 uploaded ✓
                                         </p>
                                     )}
                                 </div>
@@ -568,62 +604,150 @@ const IndustrialForm = () => {
                         </div>
                     </label>
 
+                    {/* Thumbnail grid */}
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                                <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeExistingImg(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
-                                        style={{ backgroundColor: BRAND }}>
+                                    <span className="absolute bottom-1.5 left-1.5 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full font-medium">
                                         Saved
                                     </span>
                                 </div>
                             ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
+                            {imagePreviews.map((src, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
+                                    <button
+                                        type="button"
+                                        onClick={() => removeNewImg(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                    <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
                                         New
                                     </span>
                                 </div>
                             ))}
                         </div>
                     )}
-                </SectionCard>
+                </Card>
+
+                {/* ── 6. Location Details ── */}
+                <Card>
+                    <CardTitle
+                        title="Location Details"
+                        action={
+                            <button
+                                type="button"
+                                onClick={getCurrentLocation}
+                                disabled={locationLoading}
+                                className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg bg-[#00598a] hover:bg-[#004a75] text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                {locationLoading
+                                    ? <><span className="animate-spin text-sm">⌛</span> Detecting…</>
+                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>
+                                }
+                            </button>
+                        }
+                    />
+
+                    {locationWarning && (
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3.5 flex items-start gap-2">
+                            <span className="text-yellow-600 shrink-0">⚠️</span>
+                            <p className="text-sm text-yellow-800">{locationWarning}</p>
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                        {[
+                            { name: 'area', label: 'Area', placeholder: 'Area name' },
+                            { name: 'city', label: 'City', placeholder: 'City' },
+                            { name: 'state', label: 'State', placeholder: 'State' },
+                            { name: 'pincode', label: 'PIN Code', placeholder: 'PIN code' },
+                        ].map(field => (
+                            <div key={field.name}>
+                                <FieldLabel required>{field.label}</FieldLabel>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    value={(formData as any)[field.name]}
+                                    onChange={handleChange}
+                                    placeholder={field.placeholder}
+                                    className={inputBase}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Location validation error */}
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3.5">
+                            <p className="text-sm text-red-600 flex items-center gap-1.5">⚠️ {fieldErrors.location}</p>
+                        </div>
+                    )}
+
+                    {/* GPS tip */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="rounded-xl p-3.5 bg-[#e8f2f8] border border-[#b3d4e8]">
+                            <p className="text-sm text-[#00598a]">
+                                📍 <span className="font-semibold">Tip:</span> Click Auto Detect or enter your address manually above.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Location confirmed */}
+                    {formData.latitude && formData.longitude && (
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3.5">
+                            <p className="text-sm text-green-800">
+                                <span className="font-semibold">✓ Location detected: </span>
+                                <span className="font-mono text-xs ml-1">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
+                            </p>
+                        </div>
+                    )}
+                </Card>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
+                <div className="flex gap-3 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
-                        disabled={loading}
+                        disabled={loading || !!successMessage}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                        className="flex-1 py-4 rounded-xl font-bold text-base text-white bg-[#00598a] hover:bg-[#004a75] flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                     >
+                        {loading && (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        )}
                         {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                            ? (isEditMode ? 'Updating…' : 'Creating…')
+                            : successMessage
+                                ? '✓ Done'
+                                : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
+
                     <button
                         onClick={() => window.history.back()}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className="px-8 py-4 rounded-xl font-bold text-base text-white bg-[#00598a] hover:bg-[#004a75] transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>
                 </div>
+
             </div>
         </div>
     );

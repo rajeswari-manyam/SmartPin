@@ -105,7 +105,14 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+className="
+bg-white rounded-2xl overflow-hidden
+shadow-sm border border-gray-100
+cursor-pointer
+transition-all duration-200 ease-out
+hover:shadow-xl hover:-translate-y-1
+hover:border-[#00598a]
+"
             >
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
@@ -113,11 +120,11 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                         <img
                             src={imageUrls[0]}
                             alt={beauty.name}
-                            className="w-full h-full object-cover"
+                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-rose-50">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/10">
                             <span className="text-6xl">💅</span>
                         </div>
                     )}
@@ -133,7 +140,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-rose-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00598a]" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -160,7 +167,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
 
                     {/* Category pill + Active status */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-full truncate">
+                        <span className="flex-1 text-center text-sm font-medium text-[#00598a] bg-[#00598a]/10 border border-[#00598a]/20 px-3 py-1.5 rounded-full truncate">
                             {beauty.category || "Beauty & Wellness"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -182,7 +189,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                     {!description && servicesList.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {servicesList.slice(0, 3).map((svc, idx) => (
-                                <span key={idx} className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200">
+                                <span key={idx} className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-#00598a-200">
                                     {svc}
                                 </span>
                             ))}
@@ -203,7 +210,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                             </span>
                         )}
                         {beauty.serviceCharge && (
-                            <span className="ml-auto text-sm font-bold text-rose-700">
+                            <span className="ml-auto text-sm font-bold text-[#00598a]">
                                 ₹{beauty.serviceCharge}+
                             </span>
                         )}

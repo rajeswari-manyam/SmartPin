@@ -24,14 +24,12 @@ const getHomeSubcategories = () => {
         : ['Maid Services', 'Cook', 'Electrician', 'Carpenter', 'Plumber'];
 };
 
-// ── Shared input: #00598a focus ring ─────────────────────────────────────────
 const inputBase =
     `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in #00598a
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
@@ -40,7 +38,6 @@ const selectStyle = {
     paddingRight: '2.5rem',
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
@@ -87,6 +84,7 @@ const HomePersonalForm = () => {
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: localStorage.getItem('userName') || '',
+        phone: '',          // ← NEW
         serviceName: '',
         serviceType: defaultType,
         specializations: '',
@@ -116,6 +114,7 @@ const HomePersonalForm = () => {
                 setFormData((prev) => ({
                     ...prev,
                     userId: prev.userId,
+                    phone: data.phone || '',    // ← NEW
                     serviceName: data.title || '',
                     serviceType: data.subcategory || defaultType,
                     specializations: Array.isArray(data.description)
@@ -217,14 +216,23 @@ const HomePersonalForm = () => {
         setError('');
         setSuccessMessage('');
         try {
-            if (!formData.serviceName || !formData.specializations || !formData.servicecharges)
-                throw new Error('Please fill in all required fields (Name, Specializations, Charges)');
+            if (!formData.serviceName.trim())
+                throw new Error('Service provider name is required.');
+            if (!formData.phone.trim())
+                throw new Error('Phone number is required.');
+            if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim()))
+                throw new Error('Please enter a valid phone number.');
+            if (!formData.specializations.trim())
+                throw new Error('Specializations are required.');
+            if (!formData.servicecharges)
+                throw new Error('Service charges are required.');
             if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
+                throw new Error('Please provide a valid location.');
 
-            const payload: CreateJobPayload = {
+            const payload: CreateJobPayload & { phone?: string } = {
                 userId: formData.userId,
                 name: formData.name,
+                phone: formData.phone.trim(),   // ← NEW
                 title: formData.serviceName,
                 description: formData.specializations,
                 category: 'home-personal',
@@ -245,9 +253,9 @@ const HomePersonalForm = () => {
             if (isEditMode && editId) {
                 await updateJob(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/my-business'), 1500);
+                setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createJob(payload);
+                await createJob(payload as CreateJobPayload);
                 setSuccessMessage('Service created successfully!');
                 setTimeout(() => navigate('/listed-jobs'), 1500);
             }
@@ -317,7 +325,7 @@ const HomePersonalForm = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
+                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND }}>
                         ✓ {successMessage}
                     </div>
                 )}
@@ -337,7 +345,22 @@ const HomePersonalForm = () => {
                     </div>
                 </SectionCard>
 
-                {/* 2. SERVICE TYPE */}
+                {/* 2. CONTACT INFORMATION (Phone) — NEW */}
+                <SectionCard title="Contact Information">
+                    <div>
+                        <FieldLabel required>Phone Number</FieldLabel>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="Enter phone number"
+                            className={inputBase}
+                        />
+                    </div>
+                </SectionCard>
+
+                {/* 3. SERVICE TYPE */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Type</FieldLabel>
@@ -355,7 +378,7 @@ const HomePersonalForm = () => {
                     </div>
                 </SectionCard>
 
-                {/* 3. SPECIALIZATIONS */}
+                {/* 4. SPECIALIZATIONS */}
                 <SectionCard title="Specializations & Skills">
                     <div>
                         <FieldLabel required>Your Specializations</FieldLabel>
@@ -398,7 +421,7 @@ const HomePersonalForm = () => {
                     )}
                 </SectionCard>
 
-                {/* 4. SERVICE CHARGES */}
+                {/* 5. SERVICE CHARGES */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Charges (₹)</FieldLabel>
@@ -418,7 +441,7 @@ const HomePersonalForm = () => {
                     </div>
                 </SectionCard>
 
-                {/* 5. LOCATION */}
+                {/* 6. LOCATION */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -478,7 +501,7 @@ const HomePersonalForm = () => {
                     )}
                 </SectionCard>
 
-                {/* 6. PHOTOS */}
+                {/* 7. PHOTOS */}
                 <SectionCard title="Service Photos (Optional)">
                     <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
@@ -524,31 +547,19 @@ const HomePersonalForm = () => {
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
-                                        Saved
-                                    </span>
+                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
                                 </div>
                             ))}
                         </div>

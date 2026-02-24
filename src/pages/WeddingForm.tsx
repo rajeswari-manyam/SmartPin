@@ -10,7 +10,6 @@ const chargeTypeOptions = [
     { value: 'per event', label: 'per event' },
     { value: 'per day', label: 'per day' },
     { value: 'per hour', label: 'per hour' },
-  
     { value: 'custom', label: 'custom' }
 ];
 
@@ -56,7 +55,7 @@ const selectStyle = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="ml-1" style={{ color: '' }}>*</span>}
+        {children}{required && <span className="ml-1 text-red-500">*</span>}
     </label>
 );
 
@@ -110,6 +109,7 @@ const WeddingForm: React.FC = () => {
 
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
+        phone: '',                          // ✅ NEW
         serviceName: '',
         subCategory: defaultCategory,
         description: '',
@@ -143,6 +143,7 @@ const WeddingForm: React.FC = () => {
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
+                    phone: data.phone || '',                // ✅ NEW
                     serviceName: data.serviceName || '',
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
@@ -181,6 +182,14 @@ const WeddingForm: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    // ── Phone handler: digits only, max 10 ───────────────────────────────────
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setFormData(prev => ({ ...prev, phone: val }));
+    };
+
+    const isPhoneValid = (phone: string) => /^[6-9]\d{9}$/.test(phone);
 
     // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -253,6 +262,10 @@ const WeddingForm: React.FC = () => {
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
+
+            // ── Validation ──────────────────────────────────────────────────
+            if (!formData.phone.trim()) throw new Error('Please enter your phone number');
+            if (!isPhoneValid(formData.phone)) throw new Error('Please enter a valid 10-digit mobile number starting with 6–9');
             if (!formData.serviceName.trim()) throw new Error('Please enter service name');
             if (!formData.description.trim()) throw new Error('Please enter a description');
             if (!formData.serviceCharge.trim()) throw new Error('Please enter service charge');
@@ -262,6 +275,7 @@ const WeddingForm: React.FC = () => {
 
             const fd = new FormData();
             fd.append('userId', uid);
+            fd.append('phone', formData.phone);             // ✅ NEW
             fd.append('serviceName', formData.serviceName);
             fd.append('description', formData.description);
             fd.append('subCategory', formData.subCategory);
@@ -319,7 +333,7 @@ const WeddingForm: React.FC = () => {
                 <div className="max-w-2xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
-                        className="p-2 -ml-2 hover:bg-[#00598a]/100 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -341,17 +355,24 @@ const WeddingForm: React.FC = () => {
 
                 {/* Alerts */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-500 mt-0.5">⚠️</span>
+                            <div>
+                                <p className="font-semibold text-red-800 text-sm mb-0.5">Error</p>
+                                <p className="text-red-700 text-sm">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: '#00598a', borderColor: '#004a75', border: '1px solid' }}>
-                        ✓ {successMessage}
+                    <div className="p-4 rounded-xl text-white text-sm font-medium flex items-center gap-2" style={{ backgroundColor: '#00598a' }}>
+                        <span>✓</span>
+                        <p>{successMessage}</p>
                     </div>
                 )}
 
-                {/* 1. BASIC INFO */}
+                {/* ─── 1. BASIC INFO ─── */}
                 <SectionCard title="Basic Information">
                     <div>
                         <FieldLabel required>Service Name</FieldLabel>
@@ -378,7 +399,53 @@ const WeddingForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* 2. SERVICE DETAILS */}
+                {/* ─── 2. PHONE NUMBER ─── */}
+                <SectionCard>
+                    <div>
+                        <FieldLabel required>Phone Number</FieldLabel>
+                        <div className="relative">
+                            {/* +91 prefix */}
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span className="text-gray-600 font-medium text-sm">+91</span>
+                                <span className="ml-2 h-5 w-px bg-gray-300" />
+                            </div>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handlePhoneChange}
+                                placeholder="9876543210"
+                                maxLength={10}
+                                inputMode="numeric"
+                                className={inputBase + ' pl-16'}
+                            />
+                            {/* Live validation icon */}
+                            {formData.phone.length > 0 && (
+                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                    {isPhoneValid(formData.phone)
+                                        ? <span className="text-green-500 text-lg font-bold">✓</span>
+                                        : <span className="text-red-400 text-lg font-bold">✗</span>
+                                    }
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Hint text */}
+                        {formData.phone.length === 0 && (
+                            <p className="mt-1.5 text-xs text-gray-400">Enter your 10-digit mobile number</p>
+                        )}
+                        {formData.phone.length > 0 && !isPhoneValid(formData.phone) && (
+                            <p className="mt-1.5 text-xs text-red-500">
+                                Must be 10 digits starting with 6, 7, 8, or 9
+                            </p>
+                        )}
+                        {formData.phone.length > 0 && isPhoneValid(formData.phone) && (
+                            <p className="mt-1.5 text-xs text-green-600">✓ Valid mobile number</p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 3. SERVICE DETAILS ─── */}
                 <SectionCard title="Service Details">
                     <FieldLabel required>Description</FieldLabel>
                     <textarea
@@ -391,7 +458,7 @@ const WeddingForm: React.FC = () => {
                     />
                 </SectionCard>
 
-                {/* 3. PRICING */}
+                {/* ─── 4. PRICING ─── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -421,15 +488,14 @@ const WeddingForm: React.FC = () => {
                             </select>
                         </div>
                     </div>
-                    {/* Tip box */}
                     <div className="rounded-xl p-3" style={{ backgroundColor: '#e8f2f8', border: '1px solid #b3d4e8' }}>
-                        <p className={`${typography.body.small}`} style={{ color: '#00598a' }}>
+                        <p className="text-sm" style={{ color: '#00598a' }}>
                             💡 <span className="font-medium">Tip:</span> Choose the pricing model that best fits your service
                         </p>
                     </div>
                 </SectionCard>
 
-                {/* 4. LOCATION */}
+                {/* ─── 5. LOCATION ─── */}
                 <SectionCard
                     title="Service Location"
                     action={
@@ -437,13 +503,10 @@ const WeddingForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: '#00598a' }}
-                            onMouseEnter={e => !locationLoading && ((e.target as HTMLElement).style.backgroundColor = '#004a75')}
-                            onMouseLeave={e => !locationLoading && ((e.target as HTMLElement).style.backgroundColor = '#00598a')}
+                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-all disabled:opacity-60 disabled:cursor-not-allowed bg-[#00598a] hover:bg-[#004a75] active:bg-[#003d5c]"
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
+                                ? <><span className="animate-spin text-xs">⌛</span>Detecting...</>
                                 : <><MapPin className="w-4 h-4" />Auto Detect</>
                             }
                         </button>
@@ -452,7 +515,7 @@ const WeddingForm: React.FC = () => {
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
+                            <p className="text-sm text-yellow-800">{locationWarning}</p>
                         </div>
                     )}
                     <div className="grid grid-cols-2 gap-3">
@@ -475,26 +538,25 @@ const WeddingForm: React.FC = () => {
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g. 560041" className={inputBase} />
                         </div>
                     </div>
-
-                    {/* Tip box */}
                     <div className="rounded-xl p-3" style={{ backgroundColor: '#e8f2f8', border: '1px solid #b3d4e8' }}>
-                        <p className={`${typography.body.small}`} style={{ color: '#00598a' }}>
+                        <p className="text-sm" style={{ color: '#00598a' }}>
                             📍 <span className="font-medium">Tip:</span> Click "Auto Detect" or enter your service area manually.
                         </p>
                     </div>
-
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
+                            <p className="text-sm text-green-800">
                                 <span className="font-semibold">✓ Location detected: </span>
-                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                <span className="font-mono text-xs">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* 5. PORTFOLIO PHOTOS */}
-                <SectionCard title="Portfolio Photos (Optional)">
+                {/* ─── 6. PORTFOLIO PHOTOS ─── */}
+                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
                     <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input
                             type="file"
@@ -505,21 +567,22 @@ const WeddingForm: React.FC = () => {
                             disabled={totalImages >= 5}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${totalImages >= 5 ? 'border-gray-200 bg-gray-50' : ''
-                                }`}
-                            style={totalImages < 5 ? { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' } : {}}
+                            className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors"
+                            style={
+                                totalImages >= 5
+                                    ? { borderColor: '#d1d5db', backgroundColor: '#f9fafb' }
+                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
+                            }
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#d0e8f2' }}>
                                     <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload photos'}
+                                    <p className="font-medium text-gray-700 text-sm">
+                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : `Tap to upload photos (${5 - totalImages} slots left)`}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
-                                    </p>
+                                    <p className="text-gray-500 text-xs mt-1">Max 5 images · 5 MB each · JPG, PNG, WEBP</p>
                                     {selectedImages.length > 0 && (
                                         <p className="text-sm font-medium mt-1" style={{ color: '#00598a' }}>
                                             {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
@@ -530,16 +593,15 @@ const WeddingForm: React.FC = () => {
                         </div>
                     </label>
 
-                    {/* Image previews */}
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
                         <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
+                                <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -549,12 +611,12 @@ const WeddingForm: React.FC = () => {
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
+                                <div key={`new-${i}`} className="relative aspect-square group">
                                     <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: '#00598a' }} />
                                     <button
                                         type="button"
                                         onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -573,21 +635,37 @@ const WeddingForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''
-                            } ${typography.body.base}`}
-                        style={{ backgroundColor: '#00598a' }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#004a75')}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#00598a')}
+                        className={`
+                            flex-1 px-6 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a75] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'opacity-60 cursor-not-allowed' : ''}
+                        `}
                     >
                         {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
+                            ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <span className="animate-spin">⏳</span>
+                                    {isEditMode ? 'Updating...' : 'Creating...'}
+                                </span>
+                            )
+                            : (isEditMode ? 'Update Service' : 'Create Service')
+                        }
                     </button>
                     <button
                         onClick={() => window.history.back()}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border border-gray-300 hover:bg-[#00598a]/100 active:bg-gray-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`
+                            px-8 py-3.5 rounded-xl font-medium
+                            text-[#00598a] bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a75] active:text-white
+                            transition-all
+                            ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
                     >
                         Cancel
                     </button>

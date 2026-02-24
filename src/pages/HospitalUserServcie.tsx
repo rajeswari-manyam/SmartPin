@@ -87,11 +87,10 @@ const HospitalUserService: React.FC<HospitalUserServiceProps> = ({
         const isActive = hospital.status !== false;
 
         return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
-            >
-                {/* ── Image ── */}
+          <div
+    key={id}
+    className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-lg hover:border-[#00598a] hover:-translate-y-1"
+> {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img

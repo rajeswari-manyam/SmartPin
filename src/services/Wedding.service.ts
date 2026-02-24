@@ -14,7 +14,7 @@ export interface WeddingWorker {
   subCategory?: string;
   category?: string;
   services?: string[];
-  phone?: string;
+  phone?: string;           // ✅ already present — used by phone field
   experience?: number;
   serviceCharge?: number;
   chargeType?: string;
@@ -220,10 +220,7 @@ export const getUserWeddingServices = async (
 ): Promise<{ success: boolean; count?: number; data?: WeddingWorker[] }> => {
   if (!userId) {
     console.error("❌ getUserWeddingServices: userId is required");
-    return {
-      success: false,
-      data: [],
-    };
+    return { success: false, data: [] };
   }
 
   try {
@@ -250,113 +247,54 @@ export const getUserWeddingServices = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error("❌ API Error Response:", errorText);
-      console.error("❌ Response status:", response.status);
 
-      // Handle different error codes
       if (response.status === 404) {
         console.warn("⚠️ Endpoint not found or no services for this user");
-        return {
-          success: false,
-          data: [],
-          count: 0
-        };
+        return { success: false, data: [], count: 0 };
       } else if (response.status === 500) {
         console.error("⚠️ Server error");
-        return {
-          success: false,
-          data: [],
-        };
+        return { success: false, data: [] };
       }
 
-      return {
-        success: false,
-        data: [],
-      };
+      return { success: false, data: [] };
     }
 
     const contentType = response.headers.get("content-type");
-    console.log("📋 Content-Type:", contentType);
-
     if (!contentType || !contentType.includes("application/json")) {
       console.error("❌ Response is not JSON");
-      const text = await response.text();
-      console.error("❌ Response text:", text);
-      return {
-        success: false,
-        data: [],
-      };
+      return { success: false, data: [] };
     }
 
     const data = await response.json();
     console.log("✅ API Response data:", data);
-    console.log("✅ Data type:", typeof data);
-    console.log("✅ Is array:", Array.isArray(data));
 
-    // Handle multiple possible response structures
     let servicesData: WeddingWorker[] = [];
 
     if (Array.isArray(data)) {
-      console.log("✅ Direct array response");
       servicesData = data;
     } else if (data && Array.isArray(data.data)) {
-      console.log("✅ Nested data.data response");
       servicesData = data.data;
     } else if (data && data.success && Array.isArray(data.data)) {
-      console.log("✅ Success wrapper response");
       servicesData = data.data;
     } else if (data && Array.isArray(data.services)) {
-      console.log("✅ Nested data.services response");
       servicesData = data.services;
     } else if (data && typeof data === 'object') {
-      console.warn("⚠️ Unexpected response structure:", data);
-      // Try to find any array in the response
       const keys = Object.keys(data);
-      console.log("📋 Response keys:", keys);
       for (const key of keys) {
         if (Array.isArray(data[key])) {
           servicesData = data[key];
-          console.log(`✅ Found array at key: ${key}`);
           break;
         }
       }
     }
 
     console.log("═══════════════════════════════════════");
-    console.log("📊 FINAL RESULTS:");
-    console.log("   - Services found:", servicesData.length);
-
-    if (servicesData.length > 0) {
-      console.log("   - First service:", servicesData[0]);
-      servicesData.forEach((s, i) => {
-        console.log(`   ${i + 1}. ${s.serviceName} (${s.subCategory})`);
-      });
-    } else {
-      console.warn("⚠️ NO SERVICES RETURNED FROM API");
-      console.log("🔍 Possible reasons:");
-      console.log("   1. No services exist for this userId in database");
-      console.log("   2. UserId doesn't match any records");
-      console.log("   3. Services exist but API is filtering them out");
-      console.log("🧪 Test manually:");
-      console.log(`   GET ${url}`);
-    }
+    console.log("📊 FINAL RESULTS — Services found:", servicesData.length);
     console.log("═══════════════════════════════════════");
 
-    return {
-      success: true,
-      data: servicesData,
-      count: servicesData.length
-    };
+    return { success: true, data: servicesData, count: servicesData.length };
   } catch (error) {
     console.error("❌ getUserWeddingServices exception:", error);
-    console.error("❌ Error details:", {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      userId
-    });
-
-    // Return empty array instead of throwing to prevent app crash
-    return {
-      success: false,
-      data: [],
-    };
+    return { success: false, data: [] };
   }
 };

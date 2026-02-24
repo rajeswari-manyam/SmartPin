@@ -24,6 +24,8 @@ const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
     gift: NearByHandMadeGifts,
 };
 
+const BRAND = '#00598a';
+
 // ============================================================================
 // HELPERS
 // ============================================================================
@@ -34,7 +36,7 @@ const resolveCardKey = (subcategory?: string): CardKey => {
     if (n.includes("painting") || n.includes("painter")) return "painting";
     if (n.includes("mural") || n.includes("wall")) return "mural";
     if (n.includes("gift") || n.includes("handmade")) return "gift";
-    return "craft"; // default
+    return "craft";
 };
 
 const getDisplayTitle = (subcategory?: string): string => {
@@ -73,6 +75,8 @@ const ArtServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [showCallPopup, setShowCallPopup] = useState(false);
+    const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
 
     // ── Get user location ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -110,7 +114,7 @@ const ArtServicesList: React.FC = () => {
             } finally { setLoading(false); }
         };
         fetchNearby();
-    }, [userLocation]); // ✅ no subcategory filter — matches RealEstate
+    }, [userLocation]);
 
     const handleView = (art: any) => navigate(`/art-services/details/${art._id || art.id}`);
     const handleAddPost = () => navigate(subcategory ? `/add-art-service-form?subcategory=${subcategory}` : "/add-art-service-form");
@@ -118,10 +122,9 @@ const ArtServicesList: React.FC = () => {
         if (art.latitude && art.longitude) window.open(`https://www.google.com/maps/dir/?api=1&destination=${art.latitude},${art.longitude}`, "_blank");
         else if (art.area || art.city) window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([art.area, art.city, art.state].filter(Boolean).join(", "))}`, "_blank");
     };
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
     // ============================================================================
-    // REAL API CARD — matches RealEstate card style exactly
+    // REAL API CARD
     // ============================================================================
     const renderArtCard = (art: CreativeArtWorker) => {
         const id = art._id || "";
@@ -137,11 +140,11 @@ const ArtServicesList: React.FC = () => {
 
         return (
             <div key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 hover:border-[#00598a]"
                 onClick={() => handleView(art)}>
 
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-amber-600/5 to-amber-600/10 overflow-hidden">
+                <div className="relative h-48 bg-gray-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img src={imageUrls[0]} alt={art.name || "Art Service"} className="w-full h-full object-cover"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -153,7 +156,8 @@ const ArtServicesList: React.FC = () => {
 
                     {/* Live Data — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-amber-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: BRAND }}>
                             Live Data
                         </span>
                     </div>
@@ -191,12 +195,12 @@ const ArtServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-amber-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: BRAND }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
 
-                    {/* Charge row — mirrors RealEstate bedrooms+price row */}
+                    {/* Charge row */}
                     <div className="flex items-center justify-between pt-1 border-t border-gray-100">
                         <div className="flex items-center gap-3">
                             {art.experience != null && (
@@ -209,7 +213,7 @@ const ArtServicesList: React.FC = () => {
                         {art.serviceCharge != null && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase">{art.chargeType || 'Charge'}</p>
-                                <p className="text-base font-bold text-amber-600">₹{art.serviceCharge}</p>
+                                <p className="text-base font-bold" style={{ color: BRAND }}>₹{art.serviceCharge}</p>
                             </div>
                         )}
                     </div>
@@ -219,17 +223,27 @@ const ArtServicesList: React.FC = () => {
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{art.description}</p>
                     )}
 
-                    {/* Directions + Call — matches RealEstate button row */}
+                    {/* Directions + Call */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(art); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-amber-600 text-amber-600 rounded-lg font-medium text-sm hover:bg-amber-50 transition-colors">
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 rounded-lg font-medium text-sm transition-colors"
+                            style={{ borderColor: BRAND, color: BRAND }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#f0f7fb')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                             <span>📍</span> Directions
                         </button>
                         <button
-                            onClick={e => { e.stopPropagation(); art.phone && openCall(art.phone); }}
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (art.phone) {
+                                    setSelectedPhone(art.phone);
+                                    setShowCallPopup(true);
+                                }
+                            }}
                             disabled={!art.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${art.phone ? 'bg-amber-600 text-white hover:bg-amber-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-opacity ${!art.phone ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'text-white hover:opacity-90'}`}
+                            style={art.phone ? { backgroundColor: BRAND } : {}}>
                             <span>📞</span> Call
                         </button>
                     </div>
@@ -238,18 +252,18 @@ const ArtServicesList: React.FC = () => {
         );
     };
 
-    // ── DUMMY CARDS — always renders first (matches RealEstate) ──────────────
+    // ── DUMMY CARDS ──────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── NEARBY SERVICES — renders second (matches RealEstate) ────────────────
+    // ── NEARBY SERVICES ──────────────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BRAND }} />
                 </div>
             );
         }
@@ -266,7 +280,8 @@ const ArtServicesList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-amber-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: BRAND }}>
                         {nearbyArts.length}
                     </span>
                 </div>
@@ -278,10 +293,10 @@ const ArtServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND (matches RealEstate exactly)
+    // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-amber-50/30 to-white">
+        <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -292,17 +307,21 @@ const ArtServicesList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find creative & art services near you</p>
                     </div>
-                    <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a]">
+                    <button
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: BRAND }}>
                         + Add Listing
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-amber-600/10 border border-amber-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-amber-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-amber-700">Getting your location...</span>
+                    <div className="border rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: '#eef5fa', borderColor: '#c2dae8' }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: BRAND, borderTopColor: 'transparent' }} />
+                        <span className="text-sm font-medium" style={{ color: BRAND }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -323,6 +342,39 @@ const ArtServicesList: React.FC = () => {
 
                 {/* ✅ 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
+
+                {/* Call Popup */}
+                {showCallPopup && selectedPhone && (
+                    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-xl">
+                            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                                Call Service Provider
+                            </h3>
+                            <p className="text-sm text-gray-600 mb-4">
+                                Phone Number:
+                                <span className="block mt-1 text-lg font-bold" style={{ color: BRAND }}>
+                                    {selectedPhone}
+                                </span>
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        window.location.href = `tel:${selectedPhone}`;
+                                        setShowCallPopup(false);
+                                    }}
+                                    className="flex-1 py-2.5 rounded-lg font-medium text-white transition-opacity hover:opacity-90"
+                                    style={{ backgroundColor: BRAND }}>
+                                    📞 Call Now
+                                </button>
+                                <button
+                                    onClick={() => setShowCallPopup(false)}
+                                    className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
             </div>
         </div>

@@ -1,4 +1,4 @@
-// src/services/IndustrialService.service.ts — FIXED STANDALONE (no Hospital imports)
+// src/services/IndustrialService.service.ts
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
@@ -8,6 +8,7 @@ export interface IndustrialWorker {
   _id?: string;
   userId?: string;
   serviceName?: string;
+  phone?: string;           // ← ADDED
   description?: string;
   category?: string;
   subCategory?: string;
@@ -23,7 +24,6 @@ export interface IndustrialWorker {
   availability?: boolean;
   rating?: number;
   status?: boolean;
-  phone?: string;
   createdAt?: string;
   updatedAt?: string;
   [key: string]: any;
@@ -40,13 +40,13 @@ export interface IndustrialWorkerResponse {
 
 /**
  * Add a new industrial service
- * Matches the API curl exactly:
- *   POST /addIndustrialService  (multipart/form-data)
+ * POST /addIndustrialService  (multipart/form-data)
  */
 export const addIndustrialService = async (
   payload: {
     userId: string;
     serviceName: string;
+    phone?: string;           // ← ADDED
     description: string;
     category: string;
     subCategory: string;
@@ -66,6 +66,7 @@ export const addIndustrialService = async (
 
     formData.append("userId", payload.userId);
     formData.append("serviceName", payload.serviceName);
+    if (payload.phone) formData.append("phone", payload.phone); // ← ADDED
     formData.append("description", payload.description);
     formData.append("category", payload.category);
     formData.append("subCategory", payload.subCategory);
@@ -80,7 +81,6 @@ export const addIndustrialService = async (
 
     if (payload.images && payload.images.length > 0) {
       payload.images.forEach((file) => {
-        // ✅ Append with filename — matches the API curl exactly
         formData.append("images", file, file.name);
       });
     }
@@ -90,7 +90,7 @@ export const addIndustrialService = async (
     const response = await fetch(`${API_BASE_URL}/addIndustrialService`, {
       method: "POST",
       body: formData,
-      // ✅ Do NOT set Content-Type header — browser sets it automatically with boundary
+      // ✅ Do NOT set Content-Type — browser sets it automatically with boundary
     });
 
     const text = await response.text();
@@ -214,6 +214,7 @@ export const updateIndustrialService = async (
   serviceId: string,
   payload: {
     serviceName?: string;
+    phone?: string;           // ← ADDED
     description?: string;
     category?: string;
     subCategory?: string;
@@ -234,6 +235,7 @@ export const updateIndustrialService = async (
     const formData = new FormData();
 
     if (payload.serviceName !== undefined) formData.append("serviceName", payload.serviceName);
+    if (payload.phone !== undefined) formData.append("phone", payload.phone); // ← ADDED
     if (payload.description !== undefined) formData.append("description", payload.description);
     if (payload.category !== undefined) formData.append("category", payload.category);
     if (payload.subCategory !== undefined) formData.append("subCategory", payload.subCategory);

@@ -1,18 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    Briefcase, Plus, MapPin, Calendar, IndianRupee,
+    Plus, MapPin, Calendar, IndianRupee,
     Clock, ChevronRight, ChevronLeft, Loader2, Users, MoreVertical,
-    Pencil, Trash2
+    Pencil, Trash2, Briefcase
 } from "lucide-react";
 
+import JobIcon from "../assets/icons/ListedJobs.png";
 import { getUserJobs, getConfirmedWorkersCount, deleteJob, API_BASE_URL } from "../services/api.service";
+import typography, { fontWeight } from "../styles/typography";
+
+// ── Brand Color ───────────────────────────────────────────────────────────────
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a75";
 
 interface ListedJobsProps {
     userId: string;
 }
 
-// ── Resolve image URLs ────────────────────────────────────────────────────────
 const resolveImageUrl = (path?: string): string | null => {
     if (!path || typeof path !== "string") return null;
     const cleaned = path.trim();
@@ -30,72 +35,35 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     if (validImages.length === 0) {
         return (
             <div className="w-full h-full flex items-center justify-center">
-                <Briefcase size={36} className="text-[#00598a]/50" />
+                <Briefcase size={36} style={{ color: `${BRAND}80` }} />
             </div>
         );
     }
 
-    const prev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrentIndex((i) => (i === 0 ? validImages.length - 1 : i - 1));
-    };
-
-    const next = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setCurrentIndex((i) => (i === validImages.length - 1 ? 0 : i + 1));
-    };
+    const prev = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((i) => (i === 0 ? validImages.length - 1 : i - 1)); };
+    const next = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((i) => (i === validImages.length - 1 ? 0 : i + 1)); };
 
     return (
         <div className="relative w-full h-full overflow-hidden">
-            {/* Sliding images */}
-            <div
-                className="flex h-full transition-transform duration-300 ease-in-out"
-                style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-            >
+            <div className="flex h-full transition-transform duration-300 ease-in-out" style={{ transform: `translateX(-${currentIndex * 100}%)` }}>
                 {validImages.map((url, i) => (
-                    <img
-                        key={i}
-                        src={url}
-                        alt={`${title} ${i + 1}`}
-                        className="w-full h-full object-cover flex-shrink-0"
-                        style={{ minWidth: "100%" }}
-                    />
+                    <img key={i} src={url} alt={`${title} ${i + 1}`} className="w-full h-full object-cover flex-shrink-0" style={{ minWidth: "100%" }} />
                 ))}
             </div>
-
-            {/* Left / Right arrows — only if more than 1 image */}
             {validImages.length > 1 && (
                 <>
-                    <button
-                        onClick={prev}
-                        className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center
-                            bg-black/40 hover:bg-black/65 text-white rounded-full transition active:scale-90 z-10"
-                    >
+                    <button onClick={prev} className="absolute left-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/65 text-white rounded-full transition active:scale-90 z-10">
                         <ChevronLeft size={15} />
                     </button>
-                    <button
-                        onClick={next}
-                        className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center
-                            bg-black/40 hover:bg-black/65 text-white rounded-full transition active:scale-90 z-10"
-                    >
+                    <button onClick={next} className="absolute right-1.5 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center bg-black/40 hover:bg-black/65 text-white rounded-full transition active:scale-90 z-10">
                         <ChevronRight size={15} />
                     </button>
-
-                    {/* Dot indicators */}
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-10">
                         {validImages.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
-                                className={`rounded-full transition-all ${i === currentIndex
-                                    ? "w-3 h-1.5 bg-white"
-                                    : "w-1.5 h-1.5 bg-white/50"
-                                    }`}
-                            />
+                            <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
+                                className={`rounded-full transition-all ${i === currentIndex ? "w-3 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"}`} />
                         ))}
                     </div>
-
-                    {/* Counter badge top-center */}
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/40 text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10 pointer-events-none">
                         {currentIndex + 1} / {validImages.length}
                     </div>
@@ -105,61 +73,84 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     );
 };
 
-// ── 3-Dot Dropdown Menu ───────────────────────────────────────────────────────
+// ── Dropdown Item ─────────────────────────────────────────────────────────────
+const DropdownItem: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    onClick: (e: React.MouseEvent) => void;
+    danger?: boolean;
+}> = ({ icon, label, onClick, danger }) => {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <button
+            onClick={onClick}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 transition-all duration-200 ${typography.misc.badge}`}
+            style={{
+                backgroundColor: hovered ? (danger ? "#ef4444" : BRAND) : "transparent",
+                color: hovered ? "#ffffff" : danger ? "#ef4444" : "#374151",
+            }}
+        >
+            <span style={{ color: hovered ? "#ffffff" : danger ? "#ef4444" : "#6b7280", display: "flex" }}>
+                {icon}
+            </span>
+            {label}
+        </button>
+    );
+};
+
+// ── 3-Dot Dropdown ────────────────────────────────────────────────────────────
 const JobActionDropdown: React.FC<{
     onEdit: () => void;
     onDelete: () => void;
-}> = ({ onEdit, onDelete }) => {
+    onMenuEnter: () => void;
+    onMenuLeave: () => void;
+}> = ({ onEdit, onDelete, onMenuEnter, onMenuLeave }) => {
     const [open, setOpen] = useState(false);
+    const [btnHovered, setBtnHovered] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) {
-                setOpen(false);
-            }
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
         };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
     }, []);
 
     return (
-        <div ref={ref} className="relative">
+        <div
+            ref={ref}
+            className="relative"
+            onMouseEnter={(e) => { e.stopPropagation(); setBtnHovered(true); onMenuEnter(); }}
+            onMouseLeave={(e) => { e.stopPropagation(); setBtnHovered(false); onMenuLeave(); }}
+        >
             <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setOpen((prev) => !prev);
+                onClick={(e) => { e.stopPropagation(); setOpen((prev) => !prev); }}
+                className="w-8 h-8 flex items-center justify-center rounded-full shadow transition-all duration-200 active:scale-95"
+                style={{
+                    backgroundColor: btnHovered ? BRAND : "rgba(255,255,255,0.92)",
+                    color: btnHovered ? "#ffffff" : "#4b5563",
                 }}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white text-gray-600 shadow transition active:scale-95"
             >
                 <MoreVertical size={16} />
             </button>
 
             {open && (
                 <div className="absolute right-0 top-9 z-50 w-36 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setOpen(false);
-                            onEdit();
-                        }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-[#00598a]/10 hover:text-[#00598a] transition"
-                    >
-                        <Pencil size={14} />
-                        Edit
-                    </button>
+                    <DropdownItem
+                        icon={<Pencil size={14} />}
+                        label="Edit"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
+                    />
                     <div className="h-px bg-gray-100" />
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            setOpen(false);
-                            onDelete();
-                        }}
-                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-[#00598a]/60 transition"
-                    >
-                        <Trash2 size={14} />
-                        Delete
-                    </button>
+                    <DropdownItem
+                        icon={<Trash2 size={14} />}
+                        label="Delete"
+                        danger
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
+                    />
                 </div>
             )}
         </div>
@@ -174,12 +165,14 @@ const MyJobCard: React.FC<{
     onDelete: (id: string) => void;
 }> = ({ job, onViewApplicants, onEdit, onDelete }) => {
     const [applicantCount, setApplicantCount] = useState<number | null>(null);
+    const [cardHovered, setCardHovered] = useState(false);
+    const [dropdownActive, setDropdownActive] = useState(false);
+
+    const isHovered = cardHovered && !dropdownActive;
 
     useEffect(() => {
         if (job._id) {
-            getConfirmedWorkersCount(job._id)
-                .then(setApplicantCount)
-                .catch(() => setApplicantCount(0));
+            getConfirmedWorkersCount(job._id).then(setApplicantCount).catch(() => setApplicantCount(0));
         }
     }, [job._id]);
 
@@ -190,16 +183,31 @@ const MyJobCard: React.FC<{
     const images: string[] = Array.isArray(job.images) ? job.images : [];
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-
-            {/* ── Image Carousel ── */}
-            <div className="relative h-36 bg-gradient-to-br from-[#00598a]/10 to-[#00598a]/10 flex-shrink-0">
+        <div
+            onMouseEnter={() => setCardHovered(true)}
+            onMouseLeave={() => { setCardHovered(false); setDropdownActive(false); }}
+            className="bg-white rounded-2xl overflow-hidden flex flex-col transition-all duration-300 ease-in-out cursor-pointer"
+            style={{
+                border: isHovered ? `2px solid ${BRAND}` : "2px solid #f3f4f6",
+                boxShadow: isHovered
+                    ? `0 8px 30px rgba(0,89,138,0.18), 0 2px 8px rgba(0,89,138,0.10)`
+                    : "0 1px 3px rgba(0,0,0,0.06)",
+                transform: isHovered ? "translateY(-4px) scale(1.01)" : "translateY(0) scale(1)",
+            }}
+        >
+            {/* ── Image area ── */}
+            <div className="relative h-36 flex-shrink-0" style={{ background: `linear-gradient(135deg, ${BRAND}1A, ${BRAND}0D)` }}>
                 <ImageCarousel images={images} title={job.title || job.category} />
 
-                {/* Job type badge — bottom-left (above dots) */}
+                {/* Job type badge */}
                 <div className="absolute top-2 left-2 z-10">
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold
-                        ${job.jobType === "FULL_TIME" ? "bg-green-500 text-white" : "bg-[#00598a] text-white"}`}>
+                    <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${typography.misc.badge}`}
+                        style={{
+                            backgroundColor: job.jobType === "FULL_TIME" ? "#22c55e" : BRAND,
+                            color: "#ffffff",
+                        }}
+                    >
                         <Clock size={9} />
                         {job.jobType === "FULL_TIME" ? "Full Time" : "Part Time"}
                     </span>
@@ -207,7 +215,10 @@ const MyJobCard: React.FC<{
 
                 {/* Duration badge */}
                 <div className="absolute bottom-7 left-2 z-10">
-                    <span className="inline-flex items-center gap-1 bg-[#00598a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    <span
+                        className={`inline-flex items-center gap-1 text-white px-2 py-0.5 rounded-full ${typography.misc.badge}`}
+                        style={{ backgroundColor: BRAND }}
+                    >
                         <Calendar size={9} />
                         {duration} day{duration !== 1 ? "s" : ""}
                     </span>
@@ -215,45 +226,57 @@ const MyJobCard: React.FC<{
 
                 {/* Applicants badge */}
                 <div className="absolute bottom-7 right-2 z-10">
-                    <span className="inline-flex items-center gap-1 bg-white/90 text-gray-700 text-xs font-bold px-2 py-0.5 rounded-full shadow">
+                    <span className={`inline-flex items-center gap-1 bg-white/90 text-gray-700 px-2 py-0.5 rounded-full shadow ${typography.misc.badge}`}>
                         <Users size={9} className="text-orange-500" />
                         {applicantCount ?? "—"} applied
                     </span>
                 </div>
 
-                {/* 3-Dot Action Dropdown — top-right, above carousel counter */}
+                {/* 3-Dot */}
                 <div className="absolute top-2 right-2 z-20">
                     <JobActionDropdown
                         onEdit={() => onEdit(job._id)}
                         onDelete={() => onDelete(job._id)}
+                        onMenuEnter={() => setDropdownActive(true)}
+                        onMenuLeave={() => setDropdownActive(false)}
                     />
                 </div>
             </div>
 
-            {/* Body */}
+            {/* ── Body ── */}
             <div className="p-3 flex flex-col flex-1">
                 <div className="flex flex-wrap gap-1 mb-1.5">
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#00598a]/10 text-[#00598a] border border-[#00598a]/20 font-medium">
+                    <span
+                        className={`px-2 py-0.5 rounded-full border transition-all duration-300 ${typography.misc.badge}`}
+                        style={{
+                            backgroundColor: isHovered ? BRAND : `${BRAND}14`,
+                            color: isHovered ? "#ffffff" : BRAND,
+                            borderColor: isHovered ? BRAND : `${BRAND}33`,
+                        }}
+                    >
                         {job.category}
                     </span>
                     {job.subcategory && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200 font-medium">
+                        <span className={`px-2 py-0.5 rounded-full bg-gray-50 text-gray-500 border border-gray-200 ${typography.misc.badge}`}>
                             {job.subcategory}
                         </span>
                     )}
                 </div>
 
-                <h3 className="text-sm font-bold text-gray-900 line-clamp-1 mb-1">
+                <h3
+                    className={`line-clamp-1 mb-1 transition-colors duration-300 ${typography.card.subtitle} ${fontWeight.bold}`}
+                    style={{ color: isHovered ? BRAND : "#111827" }}
+                >
                     {job.title || job.category}
                 </h3>
 
-                <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-                    <MapPin size={10} className="flex-shrink-0" />
+                <div className={`flex items-center gap-1 text-gray-400 mb-1 ${typography.body.xs}`}>
+                    <MapPin size={10} className="flex-shrink-0" style={{ color: isHovered ? BRAND : undefined }} />
                     <span className="line-clamp-1">{locationStr}</span>
                 </div>
 
-                <div className="flex items-center gap-1 text-xs text-gray-400 mb-3">
-                    <Calendar size={10} className="flex-shrink-0" />
+                <div className={`flex items-center gap-1 text-gray-400 mb-3 ${typography.body.xs}`}>
+                    <Calendar size={10} className="flex-shrink-0" style={{ color: isHovered ? BRAND : undefined }} />
                     <span>
                         {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                         {" – "}
@@ -263,14 +286,24 @@ const MyJobCard: React.FC<{
 
                 <div className="flex-1" />
 
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <div className="flex items-center gap-0.5 text-green-600 font-extrabold text-base">
+                <div
+                    className="flex items-center justify-between pt-2 border-t transition-colors duration-300"
+                    style={{ borderColor: isHovered ? `${BRAND}26` : "#f3f4f6" }}
+                >
+                    <div className={`flex items-center gap-0.5 text-green-600 ${fontWeight.extrabold} text-base`}>
                         <IndianRupee size={12} className="mt-0.5" />
                         {parseFloat(job.servicecharges || "0").toLocaleString("en-IN")}
                     </div>
+
+                    {/* ── View Applicants Button — brand colored ── */}
                     <button
                         onClick={() => onViewApplicants(job._id)}
-                        className="flex items-center gap-1 bg-orange-500 :bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition active:scale-95"
+                        className={`flex items-center gap-1 text-white px-3 py-1.5 rounded-xl transition-all duration-200 active:scale-95 ${typography.misc.badge}`}
+                        style={{
+                            backgroundColor: "#f97316", // orange-500 — kept as design intent
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#ea6c0a")}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#f97316")}
                     >
                         Applicants <ChevronRight size={12} />
                     </button>
@@ -286,6 +319,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
     const [myJobs, setMyJobs] = useState<any[]>([]);
     const [loadingMyJobs, setLoadingMyJobs] = useState(true);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [postBtnHovered, setPostBtnHovered] = useState(false);
 
     useEffect(() => {
         if (!userId) return;
@@ -328,16 +362,32 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                 <div className="flex items-center justify-between">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
-                            <Briefcase className="w-6 h-6 text-[#00598a]" />
-                            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Find Jobs</h1>
+                            <img
+                                src={JobIcon}
+                                alt="My Jobs"
+                                className="w-7 h-7 object-contain"
+                                style={{
+                                    filter: "invert(27%) sepia(69%) saturate(548%) hue-rotate(168deg) brightness(87%) contrast(101%)",
+                                }}
+                            />
+                            <h1 className={`text-gray-900 ${typography.heading.h4}`}>My Jobs</h1>
                         </div>
-                        <p className="text-sm text-gray-500">
-                            Discover available service jobs in your area.
-                        </p>
+                        <p className={`text-gray-500 ${typography.body.small}`}>Manage your posted jobs and view applicants.</p>
                     </div>
+
+                    {/* ── Post Job Button — brand #00598a ── */}
                     <button
                         onClick={() => navigate("/post-job")}
-                        className="inline-flex items-center gap-1.5 bg-[#00598a] hover:bg-[#00598a] text-white text-sm font-bold px-4 py-2 rounded-xl transition active:scale-95"
+                        onMouseEnter={() => setPostBtnHovered(true)}
+                        onMouseLeave={() => setPostBtnHovered(false)}
+                        className={`inline-flex items-center gap-1.5 text-white px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${typography.nav.button} ${fontWeight.bold}`}
+                        style={{
+                            backgroundColor: postBtnHovered ? BRAND_DARK : BRAND,
+                            boxShadow: postBtnHovered
+                                ? "0 6px 20px rgba(0,89,138,0.40)"
+                                : "0 2px 6px rgba(0,89,138,0.20)",
+                            transform: postBtnHovered ? "translateY(-2px)" : "translateY(0)",
+                        }}
                     >
                         <Plus size={16} /> Post Job
                     </button>
@@ -346,9 +396,12 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                 {/* ── My Posted Jobs ── */}
                 <div>
                     <div className="flex items-center gap-2 mb-3">
-                        <h2 className="text-lg font-bold text-gray-800">My Posted Jobs</h2>
+                        <h2 className={`text-gray-800 ${typography.heading.h5}`}>My Posted Jobs</h2>
                         {!loadingMyJobs && (
-                            <span className="text-xs bg-[#00598a]/10 text-[#00598a] font-bold px-2 py-0.5 rounded-full">
+                            <span
+                                className={`px-2 py-0.5 rounded-full ${typography.misc.badge} ${fontWeight.bold}`}
+                                style={{ backgroundColor: `${BRAND}1A`, color: BRAND }}
+                            >
                                 {myJobs.length}
                             </span>
                         )}
@@ -356,16 +409,21 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
 
                     {loadingMyJobs ? (
                         <div className="flex justify-center items-center py-10">
-                            <Loader2 className="w-8 h-8 animate-spin text-[#00598a]" />
+                            <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
                         </div>
                     ) : myJobs.length === 0 ? (
                         <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
                             <Briefcase size={36} className="text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500 font-medium mb-1">No jobs posted yet</p>
-                            <p className="text-xs text-gray-400 mb-4">Post your first job to find workers near you</p>
+                            <p className={`text-gray-500 mb-1 ${typography.body.small} ${fontWeight.medium}`}>No jobs posted yet</p>
+                            <p className={`text-gray-400 mb-4 ${typography.body.xs}`}>Post your first job to find workers near you</p>
+
+                            {/* ── Empty-state Post Button — brand #00598a ── */}
                             <button
                                 onClick={() => navigate("/post-job")}
-                                className="inline-flex items-center gap-1.5 bg-[#00598a] text-white text-sm font-bold px-4 py-2 rounded-xl"
+                                className={`inline-flex items-center gap-1.5 text-white px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${typography.body.small} ${fontWeight.bold}`}
+                                style={{ backgroundColor: BRAND }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = BRAND)}
                             >
                                 <Plus size={14} /> Post a Job
                             </button>

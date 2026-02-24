@@ -78,7 +78,10 @@ const AgricultureServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-
+const [callPopup, setCallPopup] = useState<{
+    open: boolean;
+    phone?: string;
+}>({ open: false });
     // ── Get user location ─────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -178,11 +181,16 @@ const AgricultureServicesList: React.FC = () => {
         }
 
         return (
-            <div
-                key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
-                onClick={() => handleView(service)}
-            >
+          <div
+    key={id}
+    onClick={() => handleView(service)}
+    className="
+        bg-white rounded-xl border border-gray-100 overflow-hidden flex flex-col cursor-pointer
+        shadow-sm
+        transition-all duration-300 ease-out
+        hover:shadow-xl hover:-translate-y-1 hover:border-[#1A5F9E]/40
+    "
+>
                 {/* ── Image ── */}
                 <div className="relative h-48 bg-gradient-to-br from-[#1A5F9E]/5 to-[#1A5F9E]/10 overflow-hidden">
                     {imageUrls.length > 0 ? (
@@ -298,16 +306,22 @@ const AgricultureServicesList: React.FC = () => {
                         >
                             <span>📍</span> Directions
                         </button>
-                        <button
-                            onClick={e => { e.stopPropagation(); service.phone && openCall(service.phone); }}
-                            disabled={!service.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                ? 'bg-[#1A5F9E] text-white hover:bg-[#154a7e]'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
-                        >
-                            <span>📞</span> Call
-                        </button>
+                      <button
+    onClick={(e) => {
+        e.stopPropagation();
+        if (service.phone) {
+            setCallPopup({ open: true, phone: service.phone });
+        }
+    }}
+    disabled={!service.phone}
+    className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors
+        ${service.phone
+            ? "bg-[#1A5F9E] text-white hover:bg-[#154a7e]"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
+>
+    <span>📞</span> Call
+</button>
                     </div>
                 </div>
             </div>
@@ -399,6 +413,45 @@ const AgricultureServicesList: React.FC = () => {
                     </div>
                 )}
 
+        {/* ✅ CALL POPUP — MUST BE HERE */}
+        {callPopup.open && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+                <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                        Call Service Provider
+                    </h3>
+
+                    <p className="text-sm text-gray-600 mb-4">
+                        Phone Number
+                    </p>
+
+                    <div className="bg-gray-100 rounded-lg p-3 text-center text-lg font-bold text-[#1A5F9E] mb-5">
+                        📞 {callPopup.phone}
+                    </div>
+
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => setCallPopup({ open: false })}
+                            className="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100"
+                        >
+                            Cancel
+                        </button>
+
+                        <button
+                            onClick={() => {
+                                window.location.href = `tel:${callPopup.phone}`;
+                                setCallPopup({ open: false });
+                            }}
+                            className="flex-1 px-4 py-2 rounded-lg bg-[#1A5F9E] text-white hover:bg-[#154a7e]"
+                        >
+                            Call Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
+
                 {/* ✅ 1. DUMMY CARDS FIRST */}
                 <div className="space-y-4">
                     {renderDummyCards()}
@@ -407,8 +460,7 @@ const AgricultureServicesList: React.FC = () => {
                 {/* ✅ 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
-            </div>
-        </div>
+    </div>
     );
 };
 

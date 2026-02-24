@@ -99,12 +99,13 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[200]"
+                className="fixed inset-0 w-screen h-screen bg-black/40 backdrop-blur-sm z-[2000]"
                 onClick={onClose}
+                style={{ backdropFilter: "blur(3px)" }}
             />
 
             {/* Modal */}
-            <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-[2001] w-screen h-screen flex items-center justify-center p-4">
                 <div
                     className="bg-white w-full max-w-2xl min-h-[520px] rounded-2xl shadow-2xl relative"
                     onClick={(e) => e.stopPropagation()}

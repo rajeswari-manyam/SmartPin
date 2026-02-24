@@ -11,7 +11,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { useAccount } from "../context/AccountContext";
 
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Service', 'Fixed Rate', 'Per Month'];
@@ -34,7 +34,7 @@ const getCorporateSubcategories = () => {
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
+    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -102,12 +102,14 @@ const CorporateForm: React.FC = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-     const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
+
     const corporateCategories = getCorporateSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || corporateCategories[0] || 'Background Verification';
 
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
+        phone: '',
         serviceName: '',
         subCategory: defaultCategory,
         description: '',
@@ -140,6 +142,7 @@ const CorporateForm: React.FC = () => {
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
+                    phone: data.phone || '',
                     serviceName: data.serviceName || '',
                     subCategory: data.subCategory || defaultCategory,
                     description: data.description || '',
@@ -198,6 +201,14 @@ const CorporateForm: React.FC = () => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
+
+    // ── Phone input handler (digits only, max 10) ────────────────────────────
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setFormData(prev => ({ ...prev, phone: val }));
+    };
+
+    const isPhoneValid = (phone: string) => /^[6-9]\d{9}$/.test(phone);
 
     // ── Image helpers ────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,6 +311,8 @@ const CorporateForm: React.FC = () => {
         setSuccessMessage('');
 
         try {
+            if (!formData.phone.trim()) throw new Error('Please enter your phone number');
+            if (!isPhoneValid(formData.phone)) throw new Error('Please enter a valid 10-digit Indian mobile number (starting with 6–9)');
             if (!formData.serviceName.trim()) throw new Error('Please enter service name');
             if (!formData.description.trim()) throw new Error('Please enter a description');
             if (!formData.serviceCharge.trim()) throw new Error('Please enter service charge');
@@ -309,6 +322,7 @@ const CorporateForm: React.FC = () => {
 
             const payload: AddCorporateServicePayload | UpdateCorporateServicePayload = {
                 userId: formData.userId,
+                phone: formData.phone,
                 serviceName: formData.serviceName,
                 description: formData.description,
                 subCategory: formData.subCategory,
@@ -330,14 +344,9 @@ const CorporateForm: React.FC = () => {
                 setSuccessMessage('Service created successfully!');
             }
 
-                        // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
             setTimeout(() => {
-
                 setAccountType("worker");
-
                 navigate("/my-business");
-
             }, 1500);
 
         } catch (err: any) {
@@ -431,7 +440,58 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CATEGORY ─── */}
+                {/* ─── 2. PHONE NUMBER ─── */}
+                <SectionCard>
+                    <div>
+                        <FieldLabel required>Phone Number</FieldLabel>
+                        <div className="relative">
+                            {/* +91 prefix badge */}
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                                <span className="text-gray-600 font-medium text-sm">+91</span>
+                                <span className="ml-2 h-5 w-px bg-gray-300" />
+                            </div>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handlePhoneChange}
+                                placeholder="9876543210"
+                                maxLength={10}
+                                inputMode="numeric"
+                                className={inputBase + ' pl-16'}
+                            />
+                            {/* Validation icon on right */}
+                            {formData.phone.length > 0 && (
+                                <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                                    {isPhoneValid(formData.phone) ? (
+                                        <span className="text-green-500 text-lg">✓</span>
+                                    ) : (
+                                        <span className="text-red-400 text-lg">✗</span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Inline hint messages */}
+                        {formData.phone.length === 0 && (
+                            <p className={`mt-1.5 ${typography.body.small} text-gray-400`}>
+                                Enter your 10-digit mobile number
+                            </p>
+                        )}
+                        {formData.phone.length > 0 && !isPhoneValid(formData.phone) && (
+                            <p className={`mt-1.5 ${typography.body.small} text-red-500`}>
+                                Must be 10 digits starting with 6, 7, 8, or 9
+                            </p>
+                        )}
+                        {formData.phone.length > 0 && isPhoneValid(formData.phone) && (
+                            <p className={`mt-1.5 ${typography.body.small} text-green-600`}>
+                                ✓ Valid mobile number
+                            </p>
+                        )}
+                    </div>
+                </SectionCard>
+
+                {/* ─── 3. CATEGORY ─── */}
                 <SectionCard>
                     <div>
                         <FieldLabel required>Service Category</FieldLabel>
@@ -455,7 +515,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. DESCRIPTION ─── */}
+                {/* ─── 4. DESCRIPTION ─── */}
                 <SectionCard title="Service Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -470,7 +530,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. PRICING ─── */}
+                {/* ─── 5. PRICING ─── */}
                 <SectionCard title="Pricing Details">
                     <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -508,7 +568,7 @@ const CorporateForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. LOCATION ─── */}
+                {/* ─── 6. LOCATION ─── */}
                 <SectionCard
                     title="Service Location"
                     action={
@@ -517,7 +577,7 @@ const CorporateForm: React.FC = () => {
                             size="sm"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="!py-1.5 !px-3 !bg-[#00598a] hover:!bg-[#004a73] !text-white"
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
@@ -575,7 +635,7 @@ const CorporateForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 6. PHOTOS ─── */}
+                {/* ─── 7. PHOTOS ─── */}
                 <SectionCard title={`Service Photos (${totalImages}/5)`}>
                     <label className="cursor-pointer block">
                         <input
@@ -653,8 +713,13 @@ const CorporateForm: React.FC = () => {
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading ? '#00598a' : '#00598a' }}
+                        className={`
+                            flex-1 px-6 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}
+                        `}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -669,7 +734,15 @@ const CorporateForm: React.FC = () => {
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`
+                            px-8 py-3.5 rounded-xl font-medium text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all
+                            ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
                     >
                         Cancel
                     </button>

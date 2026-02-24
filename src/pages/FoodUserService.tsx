@@ -87,21 +87,32 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
         const priceRange = (service as any).priceRange || (service as any).minPrice;
 
         return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
-            >
+          <div
+    key={id}
+    className="
+        bg-white rounded-2xl overflow-hidden
+        border border-gray-100
+        shadow-sm
+        transition-all duration-300 ease-out
+        hover:-translate-y-1
+        hover:shadow-lg
+        hover:border-[#00598a]
+    "
+>
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
-                        <img
-                            src={imageUrls[0]}
-                            alt={service.name || "Food Service"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
+                       <img
+    src={imageUrls[0]}
+    alt={service.name || "Food Service"}
+    className="
+        w-full h-full object-cover
+        transition-transform duration-500
+        group-hover:scale-105
+    "
+/>
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-orange-500/5">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5">
                             <span className="text-6xl">🍽️</span>
                         </div>
                     )}
@@ -117,7 +128,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00598a]" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -144,7 +155,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
 
                     {/* Type pill + Active status — side by side */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-orange-500 bg-orange-500/8 border border-orange-500/20 px-3 py-1.5 rounded-full truncate">
+                        <span className="flex-1 text-center text-sm font-medium text-[#00598a] bg-[#00598a]/8 border border-[#00598a]/20 px-3 py-1.5 rounded-full truncate">
                             {service.type || "Food & Catering"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -161,7 +172,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                     {cuisines.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {cuisines.slice(0, 3).map((cuisine, idx) => (
-                                <span key={idx} className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span key={idx} className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20">
                                     {cuisine}
                                 </span>
                             ))}
@@ -175,7 +186,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                     {cuisines.length === 0 && menuCategories.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {menuCategories.slice(0, 3).map((cat, idx) => (
-                                <span key={idx} className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span key={idx} className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20">
                                     {cat}
                                 </span>
                             ))}
@@ -192,7 +203,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                                 💰 ₹{priceRange}
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 bg-orange-50 border border-orange-200 text-orange-600 text-sm font-semibold px-3 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 bg-[#00598a]/10 border border-[#00598a]/20 text-[#00598a] text-sm font-semibold px-3 py-1 rounded-full">
                                 🍽️ {service.type || "Food Service"}
                             </span>
                         )}
@@ -235,7 +246,7 @@ const FoodUserService: React.FC<FoodUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-food-service-form")}
-                        className="gap-1.5 bg-orange-500 hover:bg-orange-600"
+                        className="gap-1.5 bg-[#00598a] hover:bg-[#004266]"
                     >
                         + Add Food Service
                     </Button>

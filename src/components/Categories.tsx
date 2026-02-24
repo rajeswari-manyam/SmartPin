@@ -63,9 +63,7 @@ const iconMap: Record<number, string> = {
 };
 
 // 🎨 Theme colors
-const BORDER_COLOR = "#00598a";
-const ICON_BG_COLOR = "#00598a"; // 🔵 icons color
-const TEXT_COLOR = "#00598a"; // 🟢 text color
+const BRAND_COLOR = "#00598a";
 const PAGE_BG_COLOR = "#F8FAFC";
 
 const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
@@ -102,37 +100,46 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
                             onClick={() => handleCategoryClick(category.id)}
                             className="
                                 group rounded-3xl p-6 bg-white
-                                border transition-all duration-300 ease-out
-                                hover:-translate-y-1 hover:shadow-xl
+                                border-2 border-[#00598a]
+                                transition-all duration-300 ease-out
+                                hover:-translate-y-1 hover:shadow-xl hover:bg-[#00598a]
                                 cursor-pointer
                             "
                             style={{
                                 minHeight: "160px",
-                                borderColor: BORDER_COLOR,
                             }}
                         >
                             <div className="flex flex-col items-center justify-center h-full space-y-4">
 
-                                {/* Icon */}
+                                {/* Icon Container */}
                                 <div
-                                    className="w-20 h-20 rounded-full flex items-center justify-center"
-                                    style={{
-                                        backgroundColor: ICON_BG_COLOR,
-                                        border: `2px solid ${BORDER_COLOR}`,
-                                    }}
+                                    className="
+                                        w-20 h-20 rounded-full flex items-center justify-center
+                                        bg-[#00598a] border-2 border-[#00598a]
+                                        transition-all duration-300
+                                        group-hover:bg-white
+                                    "
                                 >
                                     <img
                                         src={iconMap[category.id]}
                                         alt={category.name}
-                                        className="w-10 h-10"
-                                        style={{ filter: "brightness(0) invert(1)" }}
+                                        className="
+                                            w-10 h-10 object-contain
+                                            transition-all duration-300
+                                            brightness-0 invert
+                                            group-hover:brightness-100 group-hover:invert-0
+                                        "
                                     />
                                 </div>
 
                                 {/* Text */}
                                 <p
-                                    className="text-sm text-center font-semibold"
-                                    style={{ color: TEXT_COLOR }}
+                                    className="
+                                        text-sm text-center font-semibold
+                                        text-[#00598a]
+                                        transition-colors duration-300
+                                        group-hover:text-white
+                                    "
                                 >
                                     {category.name}
                                 </p>

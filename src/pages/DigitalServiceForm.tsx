@@ -20,14 +20,12 @@ const getDigitalServiceSubcategories = () => {
     return digitalCategory ? digitalCategory.items.map((item: any) => item.name) : [];
 };
 
-// ── Shared input: #00598a focus ring ─────────────────────────────────────────
 const inputBase =
     `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in #00598a
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
@@ -36,7 +34,6 @@ const selectStyle = {
     paddingRight: '2.5rem'
 };
 
-// ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
@@ -109,6 +106,7 @@ const DigitalServiceForm: React.FC = () => {
 
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
+        phone: '',              // ← NEW
         serviceName: '',
         description: '',
         category: 'Tech & Digital Services',
@@ -140,6 +138,7 @@ const DigitalServiceForm: React.FC = () => {
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
+                    phone: (data as any).phone || '',   // ← NEW
                     serviceName: data.name || '',
                     description: data.bio || '',
                     subCategory: data.category || defaultType,
@@ -253,13 +252,18 @@ const DigitalServiceForm: React.FC = () => {
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
-            if (!formData.serviceName || !formData.description)
+            if (!formData.serviceName.trim() || !formData.description.trim())
                 throw new Error('Please fill in all required fields (Service Name, Description)');
+            if (!formData.phone.trim())
+                throw new Error('Phone number is required.');
+            if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim()))
+                throw new Error('Please enter a valid phone number.');
             if (!formData.latitude || !formData.longitude)
                 throw new Error('Please provide a valid location');
 
             const fd = new FormData();
             fd.append('userId', uid);
+            fd.append('phone', formData.phone.trim());      // ← NEW
             fd.append('serviceName', formData.serviceName);
             fd.append('description', formData.description);
             fd.append('category', formData.category);
@@ -383,7 +387,22 @@ const DigitalServiceForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* 2. SERVICE DETAILS */}
+                {/* 2. CONTACT INFORMATION (Phone) — NEW */}
+                <SectionCard title="Contact Information">
+                    <div>
+                        <FieldLabel required>Phone Number</FieldLabel>
+                        <input
+                            type="tel"
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleInputChange}
+                            placeholder="Enter phone number"
+                            className={inputBase}
+                        />
+                    </div>
+                </SectionCard>
+
+                {/* 3. SERVICE DETAILS */}
                 <SectionCard title="Service Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -428,7 +447,7 @@ const DigitalServiceForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* 3. LOCATION */}
+                {/* 4. LOCATION */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -486,7 +505,7 @@ const DigitalServiceForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* 4. PHOTOS */}
+                {/* 5. PHOTOS */}
                 <SectionCard title={`Service Photos (${totalImagesCount}/5)`}>
                     <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input

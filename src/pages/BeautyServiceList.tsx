@@ -104,7 +104,8 @@ const BeautyServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-
+   const [showCallPopup, setShowCallPopup] = useState(false);
+const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
     // ── Get user location on mount ───────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -197,7 +198,10 @@ const BeautyServicesList: React.FC = () => {
         }
     };
 
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
+  const openCallPopup = (phone: string) => {
+  setSelectedPhone(phone);
+  setShowCallPopup(true);
+};
 
     // ── Render single live API card ──────────────────────────────────────────
     const renderBeautyCard = (worker: BeautyWorker) => {
@@ -215,7 +219,13 @@ const BeautyServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+              className="
+bg-white rounded-xl shadow-sm
+hover:shadow-xl hover:-translate-y-1
+transition-all duration-200
+overflow-hidden flex flex-col cursor-pointer
+border border-gray-100 hover:border-[#00598a]
+"
                 onClick={() => handleView(worker)}
             >
                 {/* Image */}
@@ -225,7 +235,7 @@ const BeautyServicesList: React.FC = () => {
                             className="w-full h-full object-cover"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/10">
                             <span className="text-5xl">{getCategoryIcon(subcategory)}</span>
                         </div>
                     )}
@@ -316,12 +326,17 @@ const BeautyServicesList: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-rose-600 text-rose-600 rounded-lg font-medium text-sm hover:bg-rose-50 transition-colors active:bg-rose-100"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-rose-600 text-rose-600 rounded-lg font-medium text-sm hover:bg-#00598a-50 transition-colors active:bg-rose-100"
                         >
                             <span>📍</span> Directions
                         </button>
                         <button
-                            onClick={e => { e.stopPropagation(); worker.phone && openCall(worker.phone); }}
+onClick={e => {
+  e.stopPropagation();
+  if (worker.phone) {
+    openCallPopup(worker.phone);
+  }
+}}
                             disabled={!worker.phone}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${worker.phone
                                 ? "bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700"
@@ -388,6 +403,7 @@ const BeautyServicesList: React.FC = () => {
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-rose-50/30 to-white">
+  <div className={showCallPopup ? "blur-sm pointer-events-none select-none" : ""}></div>
             <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
 
                 {/* Header */}
@@ -402,7 +418,7 @@ const BeautyServicesList: React.FC = () => {
                         </div>
                     </div>
                     <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white">
+                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white">
                         + Add Post
                     </Button>
                 </div>
@@ -424,7 +440,49 @@ const BeautyServicesList: React.FC = () => {
                         <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
+             {showCallPopup && selectedPhone && (
+  <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    
+    {/* Overlay */}
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setShowCallPopup(false)}
+    />
 
+    {/* Popup */}
+    <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-2xl">
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Call Beauty Service
+      </h3>
+
+      <p className="text-sm text-gray-600 mb-4">
+        Phone Number
+        <span className="block mt-1 text-xl font-bold text-[#00598a]">
+          {selectedPhone}
+        </span>
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => {
+            window.location.href = `tel:${selectedPhone}`;
+            setShowCallPopup(false);
+          }}
+          className="flex-1 bg-[#00598a] text-white py-2.5 rounded-lg font-medium hover:bg-[#00598a]"
+        >
+          📞 Call Now
+        </button>
+
+        <button
+          onClick={() => setShowCallPopup(false)}
+          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-[#00598a]/10"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
                 {/* Dummy nearby cards */}
                 {shouldShowNearbyCards(subcategory) && renderCardsSection()}
 

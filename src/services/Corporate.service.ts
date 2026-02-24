@@ -42,11 +42,9 @@ export interface ApiResponse<T = any> {
 
 /* ================= PAYLOAD TYPES ================= */
 
-// Images removed from payload types — passed as separate File[] arg to keep
-// scalar data and binary files cleanly separated (same pattern as Beauty service)
-
 export interface AddCorporateServicePayload {
   userId: string;
+  phone: string;          // ✅ NEW
   serviceName: string;
   description: string;
   subCategory: string;
@@ -62,6 +60,7 @@ export interface AddCorporateServicePayload {
 
 export interface UpdateCorporateServicePayload {
   userId: string;
+  phone: string;          // ✅ NEW
   serviceName: string;
   description: string;
   subCategory: string;
@@ -77,11 +76,6 @@ export interface UpdateCorporateServicePayload {
 
 /* ================= ADD CORPORATE SERVICE ================= */
 
-/**
- * Add a corporate service.
- * Scalar fields go in payload; image File objects passed separately.
- * Backend expects: formdata.append("images", file)  — plain "images" key, no "[]"
- */
 export const addCorporateService = async (
   payload: AddCorporateServicePayload,
   imageFiles?: File[]
@@ -91,6 +85,7 @@ export const addCorporateService = async (
 
     // ── Scalar fields ────────────────────────────────────────────────────────
     formData.append("userId",        payload.userId);
+    formData.append("phone",         payload.phone);           // ✅ NEW
     formData.append("serviceName",   payload.serviceName);
     formData.append("description",   payload.description);
     formData.append("subCategory",   payload.subCategory);
@@ -103,14 +98,13 @@ export const addCorporateService = async (
     formData.append("state",         payload.state);
     formData.append("pincode",       payload.pincode);
 
-    // ── Image files — plain "images" key, matching backend ───────────────────
+    // ── Image files ───────────────────────────────────────────────────────
     if (imageFiles && imageFiles.length > 0) {
       imageFiles.forEach((file) => {
         formData.append("images", file, file.name);
       });
     }
 
-    // Do NOT set Content-Type — browser adds multipart boundary automatically
     const response = await fetch(`${API_BASE_URL}/addCorporateService`, {
       method: "POST",
       body: formData,
@@ -132,11 +126,6 @@ export const addCorporateService = async (
 
 /* ================= UPDATE CORPORATE SERVICE ================= */
 
-/**
- * Update a corporate service by ID.
- * New image File objects passed separately — existing server images are
- * preserved by the backend automatically (no re-upload needed).
- */
 export const updateCorporateService = async (
   corporateId: string,
   payload: UpdateCorporateServicePayload,
@@ -149,6 +138,7 @@ export const updateCorporateService = async (
 
     // ── Scalar fields ────────────────────────────────────────────────────────
     formData.append("userId",        payload.userId);
+    formData.append("phone",         payload.phone);           // ✅ NEW
     formData.append("serviceName",   payload.serviceName);
     formData.append("description",   payload.description);
     formData.append("subCategory",   payload.subCategory);
@@ -161,7 +151,7 @@ export const updateCorporateService = async (
     formData.append("state",         payload.state);
     formData.append("pincode",       payload.pincode);
 
-    // ── New image files only — plain "images" key, matching backend ──────────
+    // ── New image files ───────────────────────────────────────────────────
     if (imageFiles && imageFiles.length > 0) {
       imageFiles.forEach((file) => {
         formData.append("images", file, file.name);

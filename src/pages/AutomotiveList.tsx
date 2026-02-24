@@ -91,7 +91,8 @@ const ensureStringArray = (input: unknown): string[] => {
 const AutomotiveList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
-
+const [showCallPopup, setShowCallPopup] = useState(false);
+const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [nearbyServices, setNearbyServices] = useState<AutomotiveService[]>([]);
@@ -267,11 +268,17 @@ const AutomotiveList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+        className="
+bg-white rounded-xl shadow-sm
+hover:shadow-lg hover:-translate-y-1
+transition-all duration-200
+overflow-hidden flex flex-col cursor-pointer
+border border-gray-100 hover:border-[#00598a]
+"
                 onClick={() => handleView(automotive)}
             >
                 {/* ── Image Section ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-#00598a-50 to-#00598a-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -289,7 +296,7 @@ const AutomotiveList: React.FC = () => {
 
                     {/* Live Data Badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-#00598a-600 text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
@@ -317,7 +324,7 @@ const AutomotiveList: React.FC = () => {
 
                     {/* Distance */}
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-#00598a-600 flex items-center gap-1">
                             <span>📍</span>
                             {distance} away
                         </p>
@@ -350,7 +357,7 @@ const AutomotiveList: React.FC = () => {
                     {/* Business Type Badge */}
                     {automotive.businessType && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md border border-blue-200 font-medium">
+                            <span className="inline-flex items-center gap-1 text-xs bg-[#00598a]/10 text-[#00598a] px-2.5 py-1 rounded-md border border-[#00598a]/20 font-medium">
                                 🚗 {automotive.businessType}
                             </span>
                         </div>
@@ -380,7 +387,7 @@ const AutomotiveList: React.FC = () => {
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                    <span className="text-xs text-#00598a-600 font-medium px-1 py-1">
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -395,19 +402,22 @@ const AutomotiveList: React.FC = () => {
                                 e.stopPropagation();
                                 openDirections(automotive);
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors active:bg-blue-100"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-#00598a-600 text-#00598a-600 rounded-lg font-medium text-sm hover:bg-#00598a-50 transition-colors active:bg-#00598a-100"
                         >
                             <span>📍</span>
                             Directions
                         </button>
                         <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                automotive.phone && openCall(automotive.phone);
-                            }}
+                          onClick={(e) => {
+    e.stopPropagation();
+    if (automotive.phone) {
+        setSelectedPhone(automotive.phone);
+        setShowCallPopup(true);
+    }
+}}
                             disabled={!automotive.phone}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${automotive.phone
-                                ? "bg-green-500 text-white hover:bg-green-600 active:bg-green-700"
+                                ?"bg-[#00598a] text-white hover:bg-[#00446a] active:bg-[#003355]"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                         >
@@ -451,7 +461,7 @@ const AutomotiveList: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-#00598a-600 text-white text-sm font-bold rounded-full px-2.5">
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -468,7 +478,8 @@ const AutomotiveList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
+<div className="min-h-screen bg-gray-50">
+  <div className={showCallPopup ? "blur-sm pointer-events-none select-none" : ""}></div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* ── Header ── */}
@@ -494,9 +505,9 @@ const AutomotiveList: React.FC = () => {
 
                 {/* ── Location Status ── */}
                 {fetchingLocation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="bg-#00598a-50 border border-#00598a-200 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-#00598a-600 border-t-transparent rounded-full" />
+                        <span className="text-sm text-#00598a-700">Getting your location...</span>
                     </div>
                 )}
 
@@ -505,7 +516,49 @@ const AutomotiveList: React.FC = () => {
                         <p className="text-yellow-700 text-sm">{locationError}</p>
                     </div>
                 )}
+{showCallPopup && selectedPhone && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    
+    {/* Overlay */}
+    <div
+      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+      onClick={() => setShowCallPopup(false)}
+    />
 
+    {/* Popup */}
+    <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-2xl animate-scaleIn">
+      <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        Call Automotive Service
+      </h3>
+
+      <p className="text-sm text-gray-600 mb-4">
+        Phone Number
+        <span className="block mt-1 text-xl font-bold text-[#00598a]">
+          {selectedPhone}
+        </span>
+      </p>
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => {
+            window.location.href = `tel:${selectedPhone}`;
+            setShowCallPopup(false);
+          }}
+          className="flex-1 bg-[#00598a] text-white py-2.5 rounded-lg font-medium hover:bg-[#00446a]"
+        >
+          📞 Call Now
+        </button>
+
+        <button
+          onClick={() => setShowCallPopup(false)}
+          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
                 {/* ── API Error ── */}
                 {error && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">

@@ -4,7 +4,6 @@ import FoodServiceAPI from "../services/FoodService.service";
 import type { FoodService } from "../services/FoodService.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
-import { MoreVertical } from "lucide-react";
 
 // ── Nearby dummy cards ────────────────────────────────────────────────────────
 import NearbyBakersCard from "../components/cards/Restarents/NearByBackersCard";
@@ -71,44 +70,6 @@ const getIcon = (type?: string, icon?: string): string => {
 };
 
 // ============================================================================
-// ACTION DROPDOWN
-// ============================================================================
-const ActionDropdown: React.FC<{
-    serviceId: string;
-    onEdit: (id: string, e: React.MouseEvent) => void;
-    onDelete: (id: string, e: React.MouseEvent) => void;
-}> = ({ serviceId, onEdit, onDelete }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className="relative" onClick={e => e.stopPropagation()}>
-            <button
-                onClick={e => { e.stopPropagation(); setIsOpen(!isOpen); }}
-                className="p-2 hover:bg-white/80 bg-white/60 backdrop-blur-sm rounded-full transition shadow-sm"
-            >
-                <MoreVertical size={18} className="text-gray-700" />
-            </button>
-            {isOpen && (
-                <>
-                    <div className="fixed inset-0 z-10" onClick={e => { e.stopPropagation(); setIsOpen(false); }} />
-                    <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[140px] z-20">
-                        <button onClick={e => { onEdit(serviceId, e); setIsOpen(false); }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-orange-50 flex items-center gap-2 text-orange-600 font-medium">
-                            ✏️ Edit
-                        </button>
-                        <div className="border-t border-gray-100" />
-                        <button onClick={e => { onDelete(serviceId, e); setIsOpen(false); }}
-                            className="w-full px-4 py-2.5 text-left text-sm hover:bg-red-50 flex items-center gap-2 text-red-600 font-medium">
-                            🗑️ Delete
-                        </button>
-                    </div>
-                </>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 const FoodServicesList: React.FC = () => {
@@ -121,6 +82,7 @@ const FoodServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [phoneModal, setPhoneModal] = useState<{ name: string; phone: string } | null>(null);
 
     // ── Get user location ─────────────────────────────────────────────────────
     useEffect(() => {
@@ -142,7 +104,6 @@ const FoodServicesList: React.FC = () => {
         const fetchNearby = async () => {
             setLoading(true); setError("");
             try {
-                // GET /getNearby?latitude=X&longitude=Y
                 const res = await fetch(
                     `${API_BASE_URL}/getNearby?latitude=${userLocation.latitude}&longitude=${userLocation.longitude}`,
                     { method: "GET", redirect: "follow" }
@@ -166,27 +127,6 @@ const FoodServicesList: React.FC = () => {
     const handleView = (service: FoodService) => navigate(`/food-services/details/${service._id}`);
     const handleAddPost = () => navigate("/add-food-service-form");
 
-    const handleEdit = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        navigate(`/add-food-service-form/${id}`);
-    };
-
-    const handleDelete = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        if (!window.confirm("Are you sure you want to delete this service?")) return;
-        try {
-            const res = await FoodServiceAPI.deleteFoodService(id);
-            if (res.success) {
-                setNearbyServices(prev => prev.filter(s => s._id !== id));
-            } else {
-                alert(res.error || "Failed to delete service");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Failed to delete service");
-        }
-    };
-
     const openDirections = (service: FoodService) => {
         if (service.latitude && service.longitude) {
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`, "_blank");
@@ -196,115 +136,151 @@ const FoodServicesList: React.FC = () => {
         }
     };
 
+    const handleCall = (service: FoodService, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const phone = (service as any).phone;
+        const name = service.name || "Service";
+        if (phone) {
+            setPhoneModal({ name, phone });
+        } else {
+            setPhoneModal({ name, phone: "" });
+        }
+    };
+
     // ============================================================================
-    // NEARBY API CARD — mirrors RealEstateList renderRealEstateCard
+    // NEARBY API CARD — matches screenshot style
     // ============================================================================
     const renderNearbyCard = (service: FoodService) => {
         const id = service._id || "";
         const location = [service.area, service.city].filter(Boolean).join(", ") || "Location not set";
         const imageUrls = ((service as any).images || []).filter(Boolean) as string[];
         const icon = getIcon(service.type, service.icon);
+        const isOpen = service.status;
 
         let distance: string | null = null;
         if (userLocation && service.latitude && service.longitude) {
-            const d = calculateDistance(userLocation.latitude, userLocation.longitude, parseFloat(service.latitude), parseFloat(service.longitude));
+            const d = calculateDistance(
+                userLocation.latitude, userLocation.longitude,
+                parseFloat(service.latitude), parseFloat(service.longitude)
+            );
             distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col cursor-pointer border border-gray-100 active:scale-[0.98] transition-all duration-300 hover:shadow-2xl hover:shadow-[#00598a]/20 hover:-translate-y-2 hover:border-[#00598a]/40"
                 onClick={() => handleView(service)}
             >
-                {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-orange-500/5 to-orange-500/10 overflow-hidden">
+                {/* ── Image Section ── */}
+                <div className="relative h-52 bg-gray-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
-                        <img src={imageUrls[0]} alt={service.name} className="w-full h-full object-cover"
-                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        <img
+                            src={imageUrls[0]}
+                            alt={service.name}
+                            className="w-full h-full object-cover"
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-orange-50">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5">
                             <span className="text-5xl">{icon}</span>
                         </div>
                     )}
 
                     {/* Live Data badge — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-orange-500 text-white text-xs font-bold rounded-md shadow-md">
-                            Live Data
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#00598a] text-white text-xs font-bold rounded-lg shadow">
+                            ☁️ Live Data
                         </span>
                     </div>
 
-                    {/* Status — top right */}
+                    {/* Open/Closed badge — top right */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${service.status ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
-                            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
-                            {service.status ? "Open" : "Closed"}
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg shadow ${
+                            isOpen ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                        }`}>
+                            {isOpen ? (
+                                <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                            ) : (
+                                <span className="w-2 h-2 rounded-full bg-white/80 inline-block" />
+                            )}
+                            {isOpen ? "Open" : "Closed"}
                         </span>
                     </div>
 
-                    {/* Action Dropdown */}
-                    <div className="absolute bottom-3 right-3 z-10" onClick={e => e.stopPropagation()}>
-                        <ActionDropdown serviceId={id} onEdit={handleEdit} onDelete={handleDelete} />
+                    {/* Service type — bottom left of image */}
+                    <div className="absolute bottom-3 left-3 z-10">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-black/60 text-white text-xs font-medium rounded-lg backdrop-blur-sm">
+                            {icon} {service.type || "Restaurant"}
+                        </span>
                     </div>
 
+                    {/* Image count — bottom right */}
                     {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 left-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
+                        <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-md">
                             1 / {imageUrls.length}
                         </div>
                     )}
                 </div>
 
-                {/* ── Body ── */}
-                <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                {/* ── Card Body ── */}
+                <div className="p-4 flex flex-col gap-2">
+
+                    {/* Name */}
+                    <h2 className="text-lg font-bold text-gray-900 line-clamp-1">
                         {service.name || "Unnamed Service"}
                     </h2>
 
-                    <p className="text-sm text-gray-500 flex items-start gap-1.5">
-                        <span className="shrink-0 mt-0.5">📍</span>
-                        <span className="line-clamp-1">{location}</span>
+                    {/* Location */}
+                    <p className="text-sm text-gray-500 flex items-center gap-1">
+                        📍 <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {distance && (
-                        <p className="text-sm font-semibold text-orange-500 flex items-center gap-1">
-                            📍 {distance} away
-                        </p>
-                    )}
-
-                    {/* Type + Rating */}
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-                            <span>{icon}</span> {service.type}
-                        </span>
-                        {service.rating && (
-                            <span className="text-sm text-yellow-600 font-semibold flex items-center gap-1">
-                                ⭐ {service.rating.toFixed(1)}
-                                {service.user_ratings_total ? ` (${service.user_ratings_total})` : ""}
+                    {/* State + Pincode chips */}
+                    <div className="flex flex-wrap gap-2">
+                        {service.state && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg">
+                                🏛 {service.state}
+                            </span>
+                        )}
+                        {service.pincode && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-lg">
+                                ✉️ {service.pincode}
+                            </span>
+                        )}
+                        {distance && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#00598a]/10 text-[#00598a] text-xs font-semibold rounded-lg">
+                                📍 {distance}
                             </span>
                         )}
                     </div>
 
-                    {/* Pincode */}
-                    {service.pincode && (
-                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                            📮 Pincode: {service.pincode}
+                    {/* Rating */}
+                    {service.rating && (
+                        <p className="text-sm text-yellow-600 font-semibold flex items-center gap-1">
+                            ⭐ {service.rating.toFixed(1)}
+                            {service.user_ratings_total ? ` (${service.user_ratings_total} reviews)` : ""}
                         </p>
                     )}
 
-                    {/* Directions + View Details */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 mt-1">
+                    {/* ── Action Buttons — Directions + Call ── */}
+                    <div className="grid grid-cols-2 gap-2 pt-2">
+                        {/* Directions — outlined brand color */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-orange-500 text-orange-500 rounded-lg font-medium text-sm hover:bg-orange-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-[#00598a] text-[#00598a] rounded-xl font-semibold text-sm hover:bg-[#00598a] hover:text-white transition-all duration-200 active:scale-95"
                         >
-                            <span>📍</span> Directions
+                            <span>➤</span> Directions
                         </button>
+
+                        {/* Call — solid green */}
                         <button
-                            onClick={e => { e.stopPropagation(); handleView(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-orange-500 text-white rounded-lg font-medium text-sm hover:bg-orange-600 transition-colors"
+                            onClick={e => handleCall(service, e)}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-500 text-white rounded-xl font-semibold text-sm hover:bg-green-600 transition-all duration-200 active:scale-95"
                         >
-                            <span>👁️</span> Details
+                            📞 Call
                         </button>
                     </div>
                 </div>
@@ -324,7 +300,7 @@ const FoodServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00598a]" />
                 </div>
             );
         }
@@ -341,8 +317,8 @@ const FoodServicesList: React.FC = () => {
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h2 className="text-xl font-bold text-gray-800">Nearby Food Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-orange-500 text-white text-sm font-bold rounded-full px-2.5">
+                    <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-gray-200 text-gray-700 text-sm font-bold rounded-full px-2.5">
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -357,28 +333,44 @@ const FoodServicesList: React.FC = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-orange-50/30 to-white">
+        <>
+        <div className="min-h-screen bg-gray-50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                            {getDisplayTitle(subcategory)}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1">Find food services near you</p>
+                {/* Header — title left, create button right (matches hospital page) */}
+                <div className="flex items-start justify-between gap-4 mb-2">
+                    {/* Left: back + title */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => window.history.back()}
+                            className="p-2 rounded-full hover:bg-gray-100 transition shrink-0"
+                        >
+                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                                {getDisplayTitle(subcategory)}
+                            </h1>
+                            <p className="text-xs text-gray-500">Manage Restaurants &amp; Food services</p>
+                        </div>
                     </div>
-                    <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white">
-                        + Add Post
-                    </Button>
+
+                    {/* Right: Create button — top right corner */}
+                    <button
+                        onClick={handleAddPost}
+                        className="shrink-0 flex items-center gap-2 px-5 py-3 bg-[#00598a] hover:bg-[#004a75] text-white font-semibold text-sm rounded-xl shadow-md transition-colors duration-200 active:scale-95 whitespace-nowrap"
+                    >
+                        + Create {getDisplayTitle(subcategory)} &amp; Food Service
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-orange-500/10 border border-orange-500/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full" />
-                        <span className="text-sm text-orange-700">Getting your location...</span>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full" />
+                        <span className="text-sm text-[#00598a]">Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -392,16 +384,99 @@ const FoodServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
+                {/* 1. DUMMY CARDS */}
                 {renderDummyCards() && (
                     <div className="space-y-4">{renderDummyCards()}</div>
                 )}
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA */}
                 {userLocation && !fetchingLocation && renderNearbySection()}
 
             </div>
         </div>
+
+        {/* ── Phone Number Modal ── */}
+        {phoneModal && (
+            <div
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                onClick={() => setPhoneModal(null)}
+            >
+                <div
+                    className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                    onClick={e => e.stopPropagation()}
+                >
+                    {/* Modal Header */}
+                    <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="w-11 h-11 rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: '#e8f2f8' }}>
+                                <span className="text-xl">📞</span>
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-base leading-tight">
+                                    {phoneModal.name}
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-0.5">Contact Information</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Phone Number Display */}
+                    <div className="px-6 py-5">
+                        {phoneModal.phone ? (
+                            <>
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                    Phone Number
+                                </p>
+                                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                                    <span className="text-xl font-bold text-gray-900 tracking-wide">
+                                        {phoneModal.phone}
+                                    </span>
+                                    <button
+                                        onClick={() => navigator.clipboard?.writeText(phoneModal.phone)}
+                                        className="p-1.5 hover:bg-gray-200 rounded-lg transition text-gray-500 text-xs"
+                                        title="Copy"
+                                    >
+                                        📋
+                                    </button>
+                                </div>
+
+                                {/* Action buttons */}
+                                <div className="grid grid-cols-2 gap-3 mt-4">
+                                    <button
+                                        onClick={() => setPhoneModal(null)}
+                                        className="py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition"
+                                    >
+                                        Close
+                                    </button>
+                                    <a
+                                        href={`tel:${phoneModal.phone}`}
+                                        className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm text-center transition flex items-center justify-center gap-1.5"
+                                    >
+                                        📞 Call Now
+                                    </a>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="text-center py-4">
+                                    <span className="text-4xl">😕</span>
+                                    <p className="mt-3 text-gray-500 font-medium">No phone number available for this service.</p>
+                                </div>
+                                <button
+                                    onClick={() => setPhoneModal(null)}
+                                    className="w-full mt-4 py-3 rounded-xl bg-[#00598a] text-white font-semibold text-sm transition hover:bg-[#004a75]"
+                                >
+                                    Close
+                                </button>
+                            </>
+                        )}
+                    </div>
+                </div>
+            </div>
+        )}
+        </>
     );
 };
 

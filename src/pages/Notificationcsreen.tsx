@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 
-/* ================= TYPES ================= */
 
 interface Notification {
     id: number;

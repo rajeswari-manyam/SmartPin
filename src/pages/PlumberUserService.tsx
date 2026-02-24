@@ -185,16 +185,23 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
         const location = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Location not set";
 
         return (
-            <div
+         <div
                 key={id}
-                className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col relative"
+                className="bg-white rounded-2xl shadow-sm hover:shadow-xl hover:border-[#00598a] hover:ring-1 hover:ring-[#00598a]/20 transition-all duration-300 overflow-hidden flex flex-col relative cursor-pointer group"
                 style={{ border: "1px solid #e5e7eb" }}
             >
-                <div className="relative">
-                    <JobImage images={job.images} title={job.title} />
+                {/* Image Section with overlay on hover */}
+                <div className="relative overflow-hidden">
+                    <div className="transform transition-transform duration-300 group-hover:scale-105">
+                        <JobImage images={job.images} title={job.title} />
+                    </div>
+                    
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-[#00598a]/0 group-hover:bg-[#00598a]/5 transition-colors duration-300 pointer-events-none" />
+                    
                     {job.subcategory && (
-                        <div className="absolute top-2 left-2">
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full shadow">
+                        <div className="absolute top-2 left-2 transform transition-transform duration-300 group-hover:-translate-y-0.5">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-blue-600 text-white px-2 py-0.5 rounded-full shadow group-hover:bg-[#00598a] transition-colors duration-300">
                                 🔧 {job.subcategory}
                             </span>
                         </div>
@@ -206,7 +213,7 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
                             </span>
                         </div>
                     )}
-                    <div className="absolute top-2 right-2 z-10">
+                    <div className="absolute top-2 right-2 z-10 opacity-90 group-hover:opacity-100 transition-opacity duration-300">
                         <ActionDropdown
                             onEdit={(e: React.MouseEvent) => { e.stopPropagation(); navigate(`/add-plumber-service-form?id=${id}`); }}
                             onDelete={(e: React.MouseEvent) => { e.stopPropagation(); handleDelete(id); }}
@@ -214,21 +221,23 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
                     </div>
                 </div>
 
-                <div className="p-4 flex flex-col flex-1 gap-2.5">
-                    <h2 className="text-base font-bold text-gray-900 truncate">
+                <div className="p-4 flex flex-col flex-1 gap-2.5 group-hover:bg-gradient-to-b group-hover:from-white group-hover:to-[#00598a]/[0.02] transition-colors duration-300">
+                    <h2 className="text-base font-bold text-gray-900 truncate group-hover:text-[#00598a] transition-colors duration-300">
                         {job.title || "Unnamed Service"}
                     </h2>
-                    <p className="text-xs text-gray-500 flex items-start gap-1">
+                    <p className="text-xs text-gray-500 flex items-start gap-1 group-hover:text-gray-600 transition-colors duration-300">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
                     {job.description && (
-                        <p className="text-xs text-gray-600 line-clamp-2">{job.description}</p>
+                        <p className="text-xs text-gray-600 line-clamp-2 group-hover:text-gray-700 transition-colors duration-300">
+                            {job.description}
+                        </p>
                     )}
-                    <div className="flex items-center justify-between py-2 border-t border-gray-100 mt-1">
+                    <div className="flex items-center justify-between py-2 border-t border-gray-100 mt-1 group-hover:border-[#00598a]/10 transition-colors duration-300">
                         <div>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-wide">Duration</p>
-                            <p className="text-xs font-semibold text-gray-800">
+                            <p className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-[#00598a]/60 transition-colors duration-300">Duration</p>
+                            <p className="text-xs font-semibold text-gray-800 group-hover:text-[#00598a] transition-colors duration-300">
                                 {job.startDate ? new Date(job.startDate).toLocaleDateString("en-IN") : "—"}
                                 {" – "}
                                 {job.endDate ? new Date(job.endDate).toLocaleDateString("en-IN") : "—"}
@@ -236,8 +245,8 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
                         </div>
                         {job.servicecharges && (
                             <div className="text-right">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wide">Charges</p>
-                                <p className="text-base font-extrabold text-green-600">₹{job.servicecharges}</p>
+                                <p className="text-[10px] text-gray-400 uppercase tracking-wide group-hover:text-[#00598a]/60 transition-colors duration-300">Charges</p>
+                                <p className="text-base font-extrabold text-green-600 group-hover:scale-105 transition-transform duration-300 origin-right">₹{job.servicecharges}</p>
                             </div>
                         )}
                     </div>
@@ -246,16 +255,15 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
                             variant="outline"
                             size="sm"
                             onClick={() => openDirections(job)}
-                            className="flex-1 justify-center gap-1 border-gray-300 text-gray-700 hover:bg-[#00598a]/100 text-xs"
+                            className="flex-1 justify-center gap-1 border-gray-300 text-gray-700 hover:bg-[#00598a] hover:text-white hover:border-[#00598a] text-xs transition-all duration-300"
                         >
                             📍 Directions
                         </Button>
-                        {/* ✅ FIXED: calls handleViewDetails which uses onViewDetails prop */}
                         <Button
                             variant="primary"
                             size="sm"
                             onClick={() => handleViewDetails(job)}
-                            className="flex-1 justify-center gap-1 text-xs"
+                            className="flex-1 justify-center gap-1 text-xs bg-[#00598a] hover:bg-[#004a73] border-[#00598a] hover:border-[#004a73] transition-all duration-300"
                             disabled={deletingId === id}
                         >
                             👁️ View Details
@@ -268,15 +276,15 @@ const PlumberUserService: React.FC<PlumberUserServiceProps> = ({
 
     if (loading) {
         return (
-            <div>
-                {!hideHeader && (
-                    <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
-                        <span>🔧</span> Plumber Services
-                    </h2>
-                )}
-                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-                </div>
+             <div>
+            {!hideHeader && (
+                <h2 className={`${typography.heading.h5} text-gray-800 mb-3 flex items-center gap-2`}>
+                    <span>🔧</span> Plumber Services ({filteredJobs.length})
+                </h2>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {filteredJobs.map(renderJobCard)}
+            </div>
             </div>
         );
     }

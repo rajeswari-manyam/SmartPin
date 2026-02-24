@@ -104,10 +104,17 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
         const icon = getCategoryIcon(category);
 
         return (
-            <div
-                key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
-            >
+          <div
+    key={id}
+    className="
+        bg-white rounded-2xl overflow-hidden
+        border border-gray-100 shadow-sm
+        transition-all duration-300 ease-out
+        hover:border-[#00598a]
+        hover:shadow-[0_8px_30px_rgba(0,89,138,0.25)]
+        hover:-translate-y-1
+    "
+>
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
@@ -118,7 +125,7 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-600/5">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5">
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
@@ -134,7 +141,7 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00598a]" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -161,7 +168,7 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
 
                     {/* Category pill + Availability status — side by side */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-blue-700 bg-blue-600/8 border border-blue-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span className="flex-1 text-center text-sm font-medium text-[#00598a] bg-[#00598a]/10 border border-[#00598a]/20 px-3 py-1.5 rounded-full truncate">
                             {category || "Business"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -183,17 +190,17 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
                     {!description && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {service.experience && (
-                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20">
                                     💼 {service.experience} yrs exp
                                 </span>
                             )}
                             {service.chargeType && (
-                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20">
                                     {service.chargeType}
                                 </span>
                             )}
                             {servicesArr.slice(0, 2).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span key={idx} className="text-xs bg-[#00598a]/10 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20">
                                     {s}
                                 </span>
                             ))}
@@ -221,7 +228,7 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
                         )}
 
                         {service.serviceCharge && (
-                            <span className="ml-auto text-sm font-bold text-blue-700">
+                            <span className="ml-auto text-sm font-bold text-[#00598a]">
                                 ₹{service.serviceCharge}{service.chargeType ? `/${service.chargeType}` : ""}
                             </span>
                         )}
@@ -255,7 +262,7 @@ const BusinessUserService: React.FC<BusinessUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-business-service-form")}
-                        className="gap-1.5 bg-blue-600 hover:bg-blue-700"
+                        className="gap-1.5 bg-[#00598a] hover:bg-[#00476d]"
                     >
                         + Add Business Service
                     </Button>

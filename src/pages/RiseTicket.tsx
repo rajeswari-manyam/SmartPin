@@ -16,12 +16,10 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
     const [currentUserId, setCurrentUserId] = useState<string>('');
     const [currentUserRole, setCurrentUserRole] = useState<'User' | 'Worker'>('User');
 
-    // Get user data from props or localStorage
     useEffect(() => {
         if (propUserId) {
             setCurrentUserId(propUserId);
         } else {
-            // Try to get from localStorage
             try {
                 const storedUser = localStorage.getItem('user');
                 if (storedUser) {
@@ -33,7 +31,6 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                 console.error('Error reading user from localStorage:', error);
             }
         }
-
         if (propUserRole) {
             setCurrentUserRole(propUserRole);
         }
@@ -51,13 +48,12 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // Update formData when userId or userRole changes
     useEffect(() => {
         if (currentUserId) {
             setFormData((prev: CreateTicketPayload) => ({
                 ...prev,
                 raisedById: currentUserId,
-                raisedByRole: currentUserRole
+                raisedByRole: currentUserRole,
             }));
         }
     }, [currentUserId, currentUserRole]);
@@ -76,7 +72,6 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
             setError('User ID is required. Please log in again.');
             return;
         }
-
         if (!formData.subject.trim() || !formData.description.trim()) {
             setError('Please fill in all required fields');
             return;
@@ -91,17 +86,10 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
             console.log('Ticket created:', response);
             setSuccess(true);
 
-            // Reset form after successful submission
+            // Navigate to view-tickets after successful submission
             setTimeout(() => {
-                setFormData({
-                    raisedById: currentUserId,
-                    raisedByRole: currentUserRole,
-                    subject: '',
-                    description: '',
-                    priority: 'MEDIUM',
-                });
-                setSuccess(false);
-            }, 3000);
+                navigate('/view-tickets');
+            }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to create ticket. Please try again.');
             console.error('Error creating ticket:', err);
@@ -110,49 +98,43 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
         }
     };
 
-    const handleViewTickets = () => {
-        navigate('/view-tickets');
-    };
-
-    const priorityColors = {
-        LOW: 'bg-green-100 text-green-800 border-green-300',
-        MEDIUM: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-        HIGH: 'bg-red-100 text-red-800 border-red-300',
-    };
+    const priorityOptions = [
+        { level: 'LOW' as const, activeClass: 'bg-green-50 text-green-700 border-green-400' },
+        { level: 'MEDIUM' as const, activeClass: 'bg-amber-50 text-amber-700 border-amber-400' },
+        { level: 'HIGH' as const, activeClass: 'bg-red-50 text-red-700 border-red-400' },
+    ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen bg-gray-50 py-10 px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mx-auto">
-                {/* View Tickets Button - Top Right Corner */}
-                <div className="flex justify-end mb-6">
+
+                {/* Top Row: Heading left, View Tickets button right */}
+                <div className="flex items-center justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 leading-tight">
+                            Create Support Ticket
+                        </h1>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Submit your issue and we'll get back to you soon.
+                        </p>
+                    </div>
                     <button
-                        onClick={handleViewTickets}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-[#00598a]/100 transition font-semibold shadow-md hover:shadow-lg"
+                        onClick={() => navigate('/view-tickets')}
+                        className="flex items-center gap-2 px-5 py-2.5 text-white rounded-lg font-semibold shadow-md hover:opacity-90 transition-opacity text-sm"
+                        style={{ backgroundColor: '#00598a' }}
                     >
-                        <Eye className="w-5 h-5" />
+                        <Eye className="w-4 h-4" />
                         View Tickets
                     </button>
                 </div>
 
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Create Support Ticket</h1>
-                    <p className="text-gray-600">We're here to help. Submit your issue and we'll get back to you soon.</p>
-                </div>
-
-                {/* Debug Info (Remove in production) */}
-                {process.env.NODE_ENV === 'development' && (
-                    <div className="mb-4 p-3 bg-gray-100 rounded-lg text-xs">
-                        <strong>Debug Info:</strong> User ID: {currentUserId || 'Not set'} | Role: {currentUserRole}
-                    </div>
-                )}
-
                 {/* Form Card */}
-                <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
                     <div className="space-y-6">
-                        {/* User Role Selection */}
+
+                        {/* I am a */}
                         <div>
-                            <label htmlFor="raisedByRole" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="raisedByRole" className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 I am a <span className="text-red-500">*</span>
                             </label>
                             <select
@@ -160,7 +142,10 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                                 name="raisedByRole"
                                 value={formData.raisedByRole}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 bg-white focus:outline-none focus:ring-2 focus:border-transparent transition"
+                                style={{ '--tw-ring-color': '#00598a' } as React.CSSProperties}
+                                onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #00598a33')}
+                                onBlur={e => (e.target.style.boxShadow = '')}
                             >
                                 <option value="User">User</option>
                                 <option value="Worker">Worker</option>
@@ -169,7 +154,7 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
 
                         {/* Subject */}
                         <div>
-                            <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="subject" className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 Subject <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -179,25 +164,30 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                                 value={formData.subject}
                                 onChange={handleInputChange}
                                 placeholder="Brief description of your issue"
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none transition"
+                                onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #00598a33', e.target.style.borderColor = '#00598a')}
+                                onBlur={e => (e.target.style.boxShadow = '', e.target.style.borderColor = '')}
                             />
                         </div>
 
                         {/* Priority */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 Priority <span className="text-red-500">*</span>
                             </label>
                             <div className="grid grid-cols-3 gap-3">
-                                {(['LOW', 'MEDIUM', 'HIGH'] as const).map((level) => (
+                                {priorityOptions.map(({ level, activeClass }) => (
                                     <button
                                         key={level}
                                         type="button"
-                                        onClick={() => setFormData((prev: CreateTicketPayload) => ({ ...prev, priority: level }))}
-                                        className={`px-4 py-3 rounded-lg border-2 font-semibold transition ${formData.priority === level
-                                                ? priorityColors[level]
-                                                : 'bg-white text-gray-600 border-gray-300 hover:border-[#00598a]/100'
-                                            }`}
+                                        onClick={() =>
+                                            setFormData((prev: CreateTicketPayload) => ({ ...prev, priority: level }))
+                                        }
+                                        className={`px-4 py-3 rounded-lg border-2 font-semibold text-sm transition-all ${
+                                            formData.priority === level
+                                                ? activeClass
+                                                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+                                        }`}
                                     >
                                         {level}
                                     </button>
@@ -207,7 +197,7 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
 
                         {/* Description */}
                         <div>
-                            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-1.5">
                                 Description <span className="text-red-500">*</span>
                             </label>
                             <textarea
@@ -217,9 +207,11 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                                 onChange={handleInputChange}
                                 rows={6}
                                 placeholder="Please provide detailed information about your issue..."
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition resize-none"
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none transition resize-none"
+                                onFocus={e => (e.target.style.boxShadow = '0 0 0 2px #00598a33', e.target.style.borderColor = '#00598a')}
+                                onBlur={e => (e.target.style.boxShadow = '', e.target.style.borderColor = '')}
                             />
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-xs text-gray-400 mt-1 text-right">
                                 {formData.description.length} characters
                             </p>
                         </div>
@@ -227,8 +219,8 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                         {/* Error Message */}
                         {error && (
                             <div className="flex items-center gap-2 p-4 bg-red-50 border border-red-200 rounded-lg">
-                                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                                <p className="text-sm text-red-800">{error}</p>
+                                <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                <p className="text-sm text-red-700">{error}</p>
                             </div>
                         )}
 
@@ -236,8 +228,8 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                         {success && (
                             <div className="flex items-center gap-2 p-4 bg-green-50 border border-green-200 rounded-lg">
                                 <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                                <p className="text-sm text-green-800">
-                                    Ticket created successfully! We'll get back to you soon.
+                                <p className="text-sm text-green-700">
+                                    Ticket created successfully! Redirecting...
                                 </p>
                             </div>
                         )}
@@ -247,7 +239,10 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                             type="button"
                             onClick={handleSubmit}
                             disabled={loading || !currentUserId}
-                            className="w-full bg-indigo-600 hover:bg-[#00598a]/100 disabled:bg-indigo-400 text-white font-semibold py-3 px-6 rounded-lg transition flex items-center justify-center gap-2"
+                            className="w-full text-white font-semibold py-3 px-6 rounded-lg transition-opacity flex items-center justify-center gap-2 disabled:opacity-50"
+                            style={{ backgroundColor: '#00598a' }}
+                            onMouseEnter={e => !loading && ((e.target as HTMLElement).style.opacity = '0.9')}
+                            onMouseLeave={e => ((e.target as HTMLElement).style.opacity = '1')}
                         >
                             {loading ? (
                                 <>
@@ -262,10 +257,10 @@ const CreateTicketScreen: React.FC<CreateTicketScreenProps> = ({
                 </div>
 
                 {/* Info Box */}
-                <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-sm text-blue-800">
-                        <strong>Note:</strong> Our support team typically responds within 24-48 hours.
-                        For urgent issues, please mark the priority as HIGH.
+                <div className="mt-5 rounded-lg p-4 border" style={{ backgroundColor: '#f0f7fc', borderColor: '#bee3f8' }}>
+                    <p className="text-sm" style={{ color: '#005580' }}>
+                        <strong>Note:</strong> Our support team typically responds within 24–48 hours.
+                        For urgent issues, please mark the priority as <strong>HIGH</strong>.
                     </p>
                 </div>
             </div>

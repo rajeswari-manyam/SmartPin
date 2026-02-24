@@ -19,6 +19,109 @@ import NearbyNursingServiceCard from "../components/cards/Hospital&HealthCare/Ne
 import NearbyDiagnosticLabsCard from "../components/cards/Hospital&HealthCare/NearByDiagnosticlabs";
 
 // ============================================================================
+// PHONE POPUP MODAL
+// ============================================================================
+interface PhonePopupProps {
+    hospital: Hospital;
+    onClose: () => void;
+    onCall: (phone: string) => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ hospital, onClose, onCall }) => {
+    // Close on backdrop click
+    const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) onClose();
+    };
+
+    // Close on Escape key
+    useEffect(() => {
+        const handler = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4"
+            onClick={handleBackdropClick}
+        >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-[fadeInScale_0.2s_ease-out]">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-[#00598a] to-[#004a73] px-6 py-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <span className="text-xl">🏥</span>
+                        </div>
+                        <div>
+                            <p className="text-white font-semibold text-sm leading-tight line-clamp-1">
+                                {hospital.name || hospital.hospitalType || "Hospital"}
+                            </p>
+                            <p className="text-white/70 text-xs">
+                                {[hospital.area, hospital.city].filter(Boolean).join(", ") || "Location not set"}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center text-white text-lg font-bold"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="px-6 py-5 space-y-4">
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                        Contact Number
+                    </p>
+
+                    <div className="bg-[#00598a]/5 border border-[#00598a]/20 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">📞</span>
+                            <span className="text-xl font-bold text-gray-800 tracking-wide">
+                                {hospital.phone}
+                            </span>
+                        </div>
+                        {/* Copy button */}
+                        <button
+                            onClick={() => {
+                                navigator.clipboard?.writeText(hospital.phone || "");
+                            }}
+                            title="Copy number"
+                            className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors flex items-center justify-center text-gray-500 text-sm"
+                        >
+                            📋
+                        </button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2.5 border-2 border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                onCall(hospital.phone!);
+                                onClose();
+                            }}
+                            className="px-4 py-2.5 bg-[#00598a] text-white rounded-xl font-medium text-sm hover:bg-[#004a73] active:bg-[#003d60] transition-colors flex items-center justify-center gap-2 shadow-md shadow-[#00598a]/30"
+                        >
+                            <span>📞</span>
+                            Call Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
 // SUBCATEGORY → CARD COMPONENT MAP
 // ============================================================================
 type CardKey =
@@ -115,6 +218,9 @@ const HospitalServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+
+    // ── Phone popup state ──
+    const [phonePopupHospital, setPhonePopupHospital] = useState<Hospital | null>(null);
 
     // ── Get user's location on component mount ──
     useEffect(() => {
@@ -237,11 +343,10 @@ const HospitalServicesList: React.FC = () => {
     };
 
     const getImageUrls = (images?: string[]): string[] => {
-        // Backend already provides full URLs, so just filter out empty values
         return (images || []).filter(Boolean) as string[];
     };
 
-    // ── Render Hospital Card (Matching Dummy Card Style) ──
+    // ── Render Hospital Card ──
     const renderHospitalCard = (hospital: Hospital) => {
         const id = hospital._id || hospital.id || "";
         const location = [hospital.area, hospital.city].filter(Boolean).join(", ") || "Location not set";
@@ -266,34 +371,37 @@ const HospitalServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-2xl hover:shadow-[#00598a]/20 transition-all duration-300 overflow-hidden flex flex-col cursor-pointer border border-gray-100 hover:border-[#00598a] hover:-translate-y-1 group"
                 onClick={() => handleView(hospital)}
             >
-                {/* Image Section - Fixed height like dummy cards */}
-                <div className="relative h-48 bg-gradient-to-br from-[#1A5F9E]/5 to-[#1A5F9E]/10 overflow-hidden">
+                {/* Image Section */}
+                <div className="relative h-48 bg-gradient-to-br from-[#00598a]/5 to-[#00598a]/10 overflow-hidden">
+                    {/* Top accent bar that slides in on hover */}
+                    <div className="absolute inset-x-0 top-0 h-1 bg-[#00598a] z-10 scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left" />
+
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={hospital.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                             onError={(e) => {
                                 (e.target as HTMLImageElement).style.display = "none";
                             }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <span className="text-5xl">🏥</span>
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-[#00598a]/5 transition-colors duration-300">
+                            <span className="text-5xl group-hover:scale-110 transition-transform duration-300 inline-block">🏥</span>
                         </div>
                     )}
 
-                    {/* Live Data Badge - Top Left */}
+                    {/* Live Data Badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-[#1A5F9E] text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-[#00598a] text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
 
-                    {/* Image Counter - Bottom Right */}
+                    {/* Image Counter */}
                     {imageUrls.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
                             1 / {imageUrls.length}
@@ -301,28 +409,28 @@ const HospitalServicesList: React.FC = () => {
                     )}
                 </div>
 
-                {/* Body - Consistent padding like dummy cards */}
+                {/* Body */}
                 <div className="p-4 flex flex-col gap-2.5">
                     {/* Title */}
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
+                    <h2 className="text-lg font-semibold text-gray-900 group-hover:text-[#00598a] transition-colors duration-200 line-clamp-1 leading-tight">
                         {hospital.name || hospital.hospitalType || "Unnamed Hospital"}
                     </h2>
 
-                    {/* Location with pin icon */}
+                    {/* Location */}
                     <div className="flex items-start gap-1.5">
                         <span className="text-gray-400 text-sm mt-0.5 flex-shrink-0">📍</span>
                         <p className="text-sm text-gray-600 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Distance - Prominent styling */}
+                    {/* Distance */}
                     {distance && (
-                        <p className="text-sm font-semibold text-[#1A5F9E] flex items-center gap-1">
+                        <p className="text-sm font-semibold text-[#00598a] flex items-center gap-1">
                             <span>📍</span>
                             {distance} away
                         </p>
                     )}
 
-                    {/* Description - Consistent text size */}
+                    {/* Description */}
                     {hospital.description && (
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                             {hospital.description}
@@ -340,7 +448,7 @@ const HospitalServicesList: React.FC = () => {
                     {/* Hospital Type Badge */}
                     {hospital.hospitalType && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-[#1A5F9E]/5 text-[#1A5F9E] px-2.5 py-1 rounded-md border border-[#1A5F9E]/20 font-medium">
+                            <span className="inline-flex items-center gap-1 text-xs bg-[#00598a]/5 text-[#00598a] px-2.5 py-1 rounded-md border border-[#00598a]/20 font-medium group-hover:bg-[#00598a]/10 transition-colors duration-200">
                                 ⭐ {hospital.hospitalType}
                             </span>
                         </div>
@@ -367,13 +475,13 @@ const HospitalServicesList: React.FC = () => {
                                 {servicesList.slice(0, 3).map((service, idx) => (
                                     <span
                                         key={`${id}-${idx}`}
-                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200"
+                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200 group-hover:border-[#00598a]/20 group-hover:bg-[#00598a]/5 group-hover:text-[#00598a] transition-colors duration-200"
                                     >
                                         {service}
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-[#1A5F9E] font-medium px-1 py-1">
+                                    <span className="text-xs text-[#00598a] font-medium px-1 py-1">
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -381,32 +489,55 @@ const HospitalServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Action Buttons - Grid layout matching dummy cards */}
+                    {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        {/* Directions Button */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
                                 openDirections(hospital);
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-[#1A5F9E] text-[#1A5F9E] rounded-lg font-medium text-sm hover:bg-[#1A5F9E]/5 transition-colors active:bg-[#1A5F9E]/10"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-[#00598a] text-[#00598a] rounded-lg font-medium text-sm hover:bg-[#00598a] hover:text-white transition-all duration-200 active:scale-95"
                         >
                             <span>📍</span>
                             Directions
                         </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                hospital.phone && openCall(hospital.phone);
-                            }}
-                            disabled={!hospital.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${hospital.phone
-                                ? "bg-[#1A5F9E] text-white hover:bg-[#154a7e] active:bg-[#0f365d]"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+
+                        {/* Call Button — shows popup with phone number */}
+                        <div className="relative group/call">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (hospital.phone) {
+                                        setPhonePopupHospital(hospital);
+                                    }
+                                }}
+                                disabled={!hospital.phone}
+                                className={`w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 active:scale-95 ${
+                                    hospital.phone
+                                        ? "bg-[#00598a] text-white hover:bg-[#004a73] hover:shadow-lg hover:shadow-[#00598a]/30 hover:-translate-y-0.5"
+                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
-                        >
-                            <span>📞</span>
-                            Call
-                        </button>
+                            >
+                                <span>📞</span>
+                                Call
+                            </button>
+
+                            {/* Hover tooltip showing phone number */}
+                            {hospital.phone && (
+                                <div
+                                    className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover/call:opacity-100 transition-opacity duration-200 pointer-events-none z-20 shadow-lg"
+                                    style={{ backgroundColor: "#00598a" }}
+                                >
+                                    <span className="font-semibold">{hospital.phone}</span>
+                                    {/* Arrow */}
+                                    <div
+                                        className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                                        style={{ borderTopColor: "#00598a" }}
+                                    />
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -444,12 +575,12 @@ const HospitalServicesList: React.FC = () => {
                 {/* Header */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-[#1A5F9E] text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-[#00598a] text-white text-sm font-bold rounded-full px-2.5">
                         {nearbyServices.length}
                     </span>
                 </div>
 
-                {/* Cards Grid - Match dummy cards layout */}
+                {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {nearbyServices.map(renderHospitalCard)}
                 </div>
@@ -462,6 +593,15 @@ const HospitalServicesList: React.FC = () => {
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* ── Phone Popup Modal ── */}
+            {phonePopupHospital && (
+                <PhonePopup
+                    hospital={phonePopupHospital}
+                    onClose={() => setPhonePopupHospital(null)}
+                    onCall={openCall}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -475,7 +615,7 @@ const HospitalServicesList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white"
+                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#004a73] text-white"
                     >
                         + Create Hospitals & Healthcare Service
                     </Button>
@@ -483,9 +623,9 @@ const HospitalServicesList: React.FC = () => {
 
                 {/* Location Status */}
                 {fetchingLocation && (
-                    <div className="bg-[#1A5F9E]/10 border border-[#1A5F9E]/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-[#1A5F9E] border-t-transparent rounded-full"></div>
-                        <span className="text-sm text-[#1A5F9E]">Getting your location...</span>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full"></div>
+                        <span className="text-sm text-[#00598a]">Getting your location...</span>
                     </div>
                 )}
 

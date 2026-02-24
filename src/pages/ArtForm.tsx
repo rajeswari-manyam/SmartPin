@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addCreativeArtService, updateCreativeArtService, getCreativeArtServiceById } from "../services/Creative.service";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
@@ -23,9 +22,11 @@ const getCreativeArtSubcategories = () => {
 // ============================================================================
 // SHARED INPUT CLASSES
 // ============================================================================
+const BRAND = '#00598a';
+
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-amber-500 focus:border-amber-500 ` +
+    `focus:outline-none focus:border-[#00598a] focus:ring-1 focus:ring-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -388,60 +389,54 @@ const ArtForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. SERVICE NAME ─────────────────────────────────────── */}
+                {/* ─── 1. SERVICE NAME + CATEGORY (two columns) ────────────── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Artist / Service Name</FieldLabel>
-                        <input
-                            type="text" name="name" value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Studio Artworks, Creative Designs"
-                            className={fieldErrors.name ? inputError : inputBase}
-                        />
-                        {fieldErrors.name && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.name}</p>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Artist / Service Name</FieldLabel>
+                            <input
+                                type="text" name="name" value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Studio Artworks, Creative Designs"
+                                className={fieldErrors.name ? inputError : inputBase}
+                            />
+                            {fieldErrors.name && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.name}</p>
+                            )}
+                        </div>
+                        <div>
+                            <FieldLabel required>Category</FieldLabel>
+                            <select
+                                name="subCategory" value={formData.subCategory}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {artCategories.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                            </p>
+                        </div>
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT INFORMATION ──────────────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel" name="phone" value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            maxLength={10}
-                            className={fieldErrors.phone ? inputError : inputBase}
-                        />
-                        {fieldErrors.phone && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.phone}</p>
-                        )}
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. CATEGORY ─────────────────────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Category</FieldLabel>
-                        <select
-                            name="subCategory" value={formData.subCategory}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={selectStyle}
-                        >
-                            {artCategories.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                        <p className={`${typography.body.xs} text-gray-400 mt-1`}>
-                            Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
-                        </p>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. PRICING ──────────────────────────────────────────── */}
-                <SectionCard title="Pricing Details">
-                    <div className="grid grid-cols-2 gap-3">
+                {/* ─── 2. CONTACT + PRICING (two columns) ──────────────────── */}
+                <SectionCard title="Contact & Pricing">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel" name="phone" value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                maxLength={10}
+                                className={fieldErrors.phone ? inputError : inputBase}
+                            />
+                            {fieldErrors.phone && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.phone}</p>
+                            )}
+                        </div>
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
@@ -453,6 +448,10 @@ const ArtForm: React.FC = () => {
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.serviceCharge}</p>
                             )}
                         </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Empty left column to align Charge Type under Service Charge */}
+                        <div className="hidden md:block" />
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <select
@@ -467,7 +466,7 @@ const ArtForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 5. DESCRIPTION ──────────────────────────────────────── */}
+                {/* ─── 3. DESCRIPTION (full width) ─────────────────────────── */}
                 <SectionCard title="Service Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -483,19 +482,20 @@ const ArtForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 6. LOCATION ─────────────────────────────────────────── */}
+                {/* ─── 4. LOCATION (two columns) ───────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
-                        <Button
-                            variant="success" size="sm"
+                        <button
+                            type="button"
                             onClick={getCurrentLocation} disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
+                            style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>}
-                        </Button>
+                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                : <><MapPin className="w-4 h-4" /> Auto Detect</>}
+                        </button>
                     }
                 >
                     {locationWarning && (
@@ -506,7 +506,7 @@ const ArtForm: React.FC = () => {
                     )}
 
                     {/* Area + City */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area}
@@ -524,7 +524,7 @@ const ArtForm: React.FC = () => {
                     </div>
 
                     {/* State + PIN Code */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state}
@@ -570,17 +570,18 @@ const ArtForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ─────────────────────────────────── */}
+                {/* ─── 5. PORTFOLIO PHOTOS ─────────────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect}
                             className="hidden" disabled={totalImages >= 5} />
                         <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
                             ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-amber-300 hover:border-amber-400 hover:bg-amber-50 cursor-pointer'}`}>
+                            : 'hover:opacity-90 cursor-pointer'}`}
+                            style={totalImages < 5 ? { borderColor: '#00598a', backgroundColor: '#f0f7fb' } : {}}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-amber-600" />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -601,12 +602,12 @@ const ArtForm: React.FC = () => {
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-amber-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`} style={{ backgroundColor: BRAND }}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-amber-400" />
+                                    <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
@@ -622,7 +623,8 @@ const ArtForm: React.FC = () => {
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit} disabled={loading || !!successMessage} type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed bg-amber-400' : 'bg-amber-600 hover:bg-amber-700'}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                        style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">

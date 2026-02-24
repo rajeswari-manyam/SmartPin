@@ -139,7 +139,6 @@ import Fabricators from "../assets/icons/Fabricators.png";
 import Stadium from "../assets/icons/Stadiums.png";
 import IndorePlayarea from "../assets/icons/IndoorPlayAreas.png";
 import SportsClub from "../assets/icons/SportsClubs.png";
-import Gyms from "../assets/icons/Fitness.png";
 
 // Courier & Logistics
 import Courier from "../assets/icons/CourierOffices.png";
@@ -159,7 +158,6 @@ import Washmen from "../assets/icons/Watchmen.png";
 import ConstructionLabours from "../assets/icons/ConstrucationLabor.png";
 
 // Agriculture
-import VeterinaryDoctors from "../assets/icons/PetHospitals.png";
 import WeddingPlanners from "../assets/icons/WeddingPlanners.png";
 import Fertilizer from "../assets/icons/FertilizerShops.png";
 import Tractor from "../assets/icons/TractorRental.png";
@@ -167,204 +165,226 @@ import SeedsShop from "../assets/icons/SeedsShops.png";
 import WaterPumpRepair from "../assets/icons/WaterPumpRepai.png";
 import FarmingTools from "../assets/icons/FarmingTools.png";
 
-// Wedding Services
-// NOTE: Using closest available icons for remapped names
+// Wedding & Art
 import FlowerDecoration from "../assets/icons/FlowerDecoration.png";
-
-// Art & Craft
-// NOTE: Using closest available icons as placeholders for missing PNGs
-// Replace these with proper icons once added to /assets/icons/
 import WallMurals from "../assets/icons/WallMurals.png";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Travel & Accommodation (categoryId: 4)
+// These PNG files don't exist yet — reusing closest available icons.
+// ⚠️  Replace with proper icons once added to /assets/icons/
+// ─────────────────────────────────────────────────────────────────────────────
+const LodgeIcon        = HouseKeeping;        // placeholder → add Lodge.png
+const BusTicketIcon    = Transport;           // placeholder → add BusTicket.png
+const TrainTicketIcon  = Transport;           // placeholder → add TrainTicket.png
+const BikeRentalIcon   = BikeRepair;          // placeholder → add BikeRental.png
+const TaxiServiceIcon  = Automobile;          // placeholder → add TaxiService.png
+const TravelAgencyIcon = EventPlanner;        // placeholder → add TravelAgency.png
+const GuestHouseIcon   = HouseKeeping;        // placeholder → add GuestHouse.png
+const ResortsIcon      = SpaMassageCentresIcon; // placeholder → add Resorts.png
+const HotelIcon        = HospitalsIcon;       // placeholder → add Hotel.png
 
 // 👇 export map — keys must match item.name values in subcategories.json
 export const SUBCATEGORY_ICONS: Record<string, string> = {
 
     // ── Food (categoryId: 1) ──────────────────────────────────────────────
-    "Restaurants": RestaurantsIcon,
-    "Cafes": CafesIcon,
-    "Bakeries": BakeriesIcon,
-    "Street Food": StreetFoodIcon,
-    "Juice Shops": JuiceIcon,
-    "Sweet Shops": SweetShopsIcon,
-    "Ice Cream Parlours": IceCreamIcon,
-    "Catering Services": CateringIcon,
-    "Food Delivery": FoodDeliveryIcon,
-    "Mess Services": MessServiceIcon,
+    "Restaurants":          RestaurantsIcon,
+    "Cafes":                CafesIcon,
+    "Bakeries":             BakeriesIcon,
+    "Street Food":          StreetFoodIcon,
+    "Juice Shops":          JuiceIcon,
+    "Sweet Shops":          SweetShopsIcon,
+    "Ice Cream Parlours":   IceCreamIcon,
+    "Catering Services":    CateringIcon,
+    "Food Delivery":        FoodDeliveryIcon,
+    "Mess Services":        MessServiceIcon,
 
     // ── Healthcare (categoryId: 2) ────────────────────────────────────────
-    "Hospitals": HospitalsIcon,
-    "Clinics": ClinicsIcon,
-    "Dental Clinics": DentalIcon,
-    "Eye Hospitals": EyeHopsital,
-    "Dermatologists": DermatologistsIcon,
-    "Diagnostic Labs": DiagnosticLabsIcon,
-    "Blood Banks": BloodBanksIcon,
-    "Ambulance Services": AmbulanceServicesIcon,
-    "Physiotherapy Centres": PhysiotherapyCentresIcon,
-    "Nursing Services": NursingServicesIcon,
-    "Vet Hospitals": VetHospitalsIcon,
-    "Medical Shops": MedicalShopsIcon,
+    "Hospitals":                HospitalsIcon,
+    "Clinics":                  ClinicsIcon,
+    "Dental Clinics":           DentalIcon,
+    "Eye Hospitals":            EyeHopsital,
+    "Dermatologists":           DermatologistsIcon,
+    "Diagnostic Labs":          DiagnosticLabsIcon,
+    "Blood Banks":              BloodBanksIcon,
+    "Ambulance Services":       AmbulanceServicesIcon,
+    "Physiotherapy Centres":    PhysiotherapyCentresIcon,
+    "Nursing Services":         NursingServicesIcon,
+    "Vet Hospitals":            VetHospitalsIcon,
+    "Medical Shops":            MedicalShopsIcon,
 
     // ── Plumbers & Home Repair (categoryId: 3) ───────────────────────────
-    "Plumbers": PlumbersIcon,
-    "Electricians": ElectriciansIcon,
-    "Carpenters": CarpentersIcon,
-    "Painters": PaintersIcon,
-    "AC Repair": AcRepairIcon,
-    "Fridge Repair": FridgeRepairIcon,
-    "Washing Machine Repair": WashingMachineRepairIcon,
-    "Water Purifier Service": WaterPurifierIcon,
-    "Gas Stove Repair": GasStoveRepairIcon,
+    "Plumbers":                 PlumbersIcon,
+    "Electricians":             ElectriciansIcon,
+    "Carpenters":               CarpentersIcon,
+    "Painters":                 PaintersIcon,
+    "AC Repair":                AcRepairIcon,
+    "Fridge Repair":            FridgeRepairIcon,
+    "Washing Machine Repair":   WashingMachineRepairIcon,
+    "Water Purifier Service":   WaterPurifierIcon,
+    "Gas Stove Repair":         GasStoveRepairIcon,
     "Solar Panel Installation": SolarPanelIcon,
 
     // ── Travel & Accommodation (categoryId: 4) ───────────────────────────
-    // Add icons here once available
+    "Hotels":               HotelIcon,
+    "Hotel":                HotelIcon,
+    "Resorts":              ResortsIcon,
+    "Lodges":               LodgeIcon,
+    "Lodge":                LodgeIcon,
+    "Guest Houses":         GuestHouseIcon,
+    "Guest House":          GuestHouseIcon,
+    "Travel Agencies":      TravelAgencyIcon,
+    "Travel Agency":        TravelAgencyIcon,
+    "Taxi Services":        TaxiServiceIcon,
+    "Taxi Service":         TaxiServiceIcon,
+    "Vehicle Rentals":      BikeRentalIcon,
+    "Bike Rental":          BikeRentalIcon,
+    "Bus Ticket Booking":   BusTicketIcon,
+    "Bus Ticket":           BusTicketIcon,
+    "Train Ticket Booking": TrainTicketIcon,
+    "Train Ticket":         TrainTicketIcon,
 
     // ── Beauty & Wellness (categoryId: 5) ────────────────────────────────
-    "Beauty Parlours": BeautyIcon,
-    "Salons": SalonsIcon,
-    "Spa & Massage Centres": SpaMassageCentresIcon,
-    "Makeup Artists": MakeupArtistsIcon,
-    "Mehendi Artists": MehendiArtistsIcon,
-    "Fitness Centres": FitnessCentresIcon,
-    "Yoga Centres": YogaCentresIcon,
-    "Skin Clinics": SkinClinicsIcon,
-    "Tattoo Studios": TattooStudiosIcon,
+    "Beauty Parlours":      BeautyIcon,
+    "Salons":               SalonsIcon,
+    "Spa & Massage Centres":SpaMassageCentresIcon,
+    "Makeup Artists":       MakeupArtistsIcon,
+    "Mehendi Artists":      MehendiArtistsIcon,
+    "Fitness Centres":      FitnessCentresIcon,
+    "Yoga Centres":         YogaCentresIcon,
+    "Skin Clinics":         SkinClinicsIcon,
+    "Tattoo Studios":       TattooStudiosIcon,
 
     // ── Real Estate (categoryId: 6) ───────────────────────────────────────
-    "Property Dealers": PropertyIcon,
-    "Rent Lease Listings": RentIcon,
-    "Builders Developers": BuildersIcon,
-    "Interior Designers": InteriorIcon,
+    "Property Dealers":         PropertyIcon,
+    "Rent Lease Listings":      RentIcon,
+    "Builders Developers":      BuildersIcon,
+    "Interior Designers":       InteriorIcon,
     "Construction Contractors": ConstructionIcon,
 
     // ── Shopping & Retail (categoryId: 7) ────────────────────────────────
-    "Supermarkets": SuperMarket,
-    "Clothing Stores": ClothsStore,
-    "Shoe Shops": ShoeStore,
-    "Mobile Stores": MobileStore,
-    "Electronics Shops": ElectronicsStore,
+    "Supermarkets":     SuperMarket,
+    "Clothing Stores":  ClothsStore,
+    "Shoe Shops":       ShoeStore,
+    "Mobile Stores":    MobileStore,
+    "Electronics Shops":ElectronicsStore,
     "Furniture Stores": FurnitureStore,
     "Jewellery Stores": JewelryStore,
     "Stationery Shops": Stationary,
-    "Gift Shops": GiftShop,
-    "Optical Shops": OpticalShopIcon,
+    "Gift Shops":       GiftShop,
+    "Optical Shops":    OpticalShopIcon,
 
     // ── Education & Training (categoryId: 8) ─────────────────────────────
-    "Schools": School,
-    "Colleges": College,
-    "Coaching Centres": Coaching,
-    "Tuition Teachers": Tution,
+    "Schools":                      School,
+    "Colleges":                     College,
+    "Coaching Centres":             Coaching,
+    "Tuition Teachers":             Tution,
     "Computer Training Institutes": ComputerTraining,
-    "Music & Dance Classes": MusicalInstitute,
-    "Spoken English Classes": SpokenEnglish,
-    "Driving Schools": DrivingSchool,
-    "Skill Development Centres": SkillDevelopment,
+    "Music & Dance Classes":        MusicalInstitute,
+    "Spoken English Classes":       SpokenEnglish,
+    "Driving Schools":              DrivingSchool,
+    "Skill Development Centres":    SkillDevelopment,
 
     // ── Automotive (categoryId: 9) ────────────────────────────────────────
-    "Car Repair ": CarRepair,          // ⚠️ trailing space kept to match JSON
-    "Bike Repair": BikeRepair,
-    "Car Wash": CarWash,
-    "Bike Wash": BikeWash,
-    "Automobile Spare Parts": Automobile,
-    "Towing Services": Towing,
+    "Car Repair ":              CarRepair,   // ⚠️ trailing space kept to match JSON
+    "Car Repair":               CarRepair,
+    "Bike Repair":              BikeRepair,
+    "Car Wash":                 CarWash,
+    "Bike Wash":                BikeWash,
+    "Automobile Spare Parts":   Automobile,
+    "Towing Services":          Towing,
 
     // ── Home & Personal Services (categoryId: 10) ─────────────────────────
-    "Maid Services": MaidService,
-    "Cook Services": Cook,
-    "Babysitters": BabySitters,
-    "Elderly Care": ElderCare,
-    "Laundry Services": LaundaryService,
-    "House Keeping Services": HouseKeeping,
-    "Water Can Supply": WaterCanService,
+    "Maid Services":            MaidService,
+    "Cook Services":            Cook,
+    "Babysitters":              BabySitters,
+    "Elderly Care":             ElderCare,
+    "Laundry Services":         LaundaryService,
+    "House Keeping Services":   HouseKeeping,
+    "Water Can Supply":         WaterCanService,
 
     // ── Business & Professional Services (categoryId: 11) ─────────────────
-    "Chartered Accountant": ChartedAccountant,
-    "Lawyers": Lawyer,
-    "Notary": Notary,
-    "Insurance Agents": Insurance,
-    "Marketing Agencies": MarketingAgency,
-    "Printing & Xerox Shops": PrintingPress,
-    "Printing & Publishing Services": PlublishingHouse,
-    "Event Planners": EventPlanner,
-    "Placement Services": PlacementConsultancy,
-    "Registration Consultants": Regristrtaion,
+    "Chartered Accountant":             ChartedAccountant,
+    "Lawyers":                          Lawyer,
+    "Notary":                           Notary,
+    "Insurance Agents":                 Insurance,
+    "Marketing Agencies":               MarketingAgency,
+    "Printing & Xerox Shops":           PrintingPress,
+    "Printing & Publishing Services":   PlublishingHouse,
+    "Event Planners":                   EventPlanner,
+    "Placement Services":               PlacementConsultancy,
+    "Registration Consultants":         Regristrtaion,
 
     // ── IT & Technology (categoryId: 12) ──────────────────────────────────
-    "Mobile Repair": MobileRepair,
-    "Computer & Laptop Repair": ComputerRepair,
-    "CCTV Installation": CCTV,
-    "Software Services": SoftwareService,
-    "Website Development": WebsiteDevelopment,
-    "Internet Website Designers": InternetWebsite,
-    "Graphic Designers": GraphicDesign,
-    "Digital Marketing": DegitalMarketing,
+    "Mobile Repair":                MobileRepair,
+    "Computer & Laptop Repair":     ComputerRepair,
+    "CCTV Installation":            CCTV,
+    "Software Services":            SoftwareService,
+    "Website Development":          WebsiteDevelopment,
+    "Internet Website Designers":   InternetWebsite,
+    "Digital Marketing":            DegitalMarketing,
+    "Graphic Designers":            GraphicDesign,
 
     // ── Pet Services (categoryId: 13) ─────────────────────────────────────
-    "Pet Shops": PetShops,
+    "Pet Shops":    PetShops,
     "Pet Grooming": PetGrooming,
     "Pet Training": PetTraining,
-    "Pet Clinics": PetClinics,
+    "Pet Clinics":  PetClinics,
 
     // ── Party & Event Services (categoryId: 14) ───────────────────────────
-    "DJ Services": DJ,
+    "DJ Services":       DJ,
     "Party Decorations": PartyDecortation,
-    "Mandap Decorations": Mandap,
+    "Mandap Decorations":Mandap,
 
     // ── Industrial Services (categoryId: 15) ──────────────────────────────
-    "Transporters": Transport,
-    "Water Tank Cleaning": WaterTankCleaning,
-    "Borewell Services": BoreWell,
-    "Fabricators": Fabricators,
-    "Machine Repair": MachineRepair,
-    "Scrap Dealers": Scrap,
+    "Transporters":         Transport,
+    "Water Tank Cleaning":  WaterTankCleaning,
+    "Borewell Services":    BoreWell,
+    "Fabricators":          Fabricators,
+    "Machine Repair":       MachineRepair,
+    "Scrap Dealers":        Scrap,
 
     // ── Courier & Logistics (categoryId: 16) ──────────────────────────────
-    "Courier offices": Courier,
-    "Parcel services": Parcel,
-    "Packers": Movers,
+    "Courier offices":  Courier,
+    "Parcel services":  Parcel,
+    "Packers":          Movers,
 
     // ── Sports & Recreation (categoryId: 17) ──────────────────────────────
-    "Gyms": Gyms,
-    "Sports Clubs": SportsClub,
-    "Indoor Play Areas": IndorePlayarea,
-    "Stadiums": Stadium,
+    "Gyms":             FitnessCentresIcon,
+    "Sports Clubs":     SportsClub,
+    "Indoor Play Areas":IndorePlayarea,
+    "Stadiums":         Stadium,
 
     // ── Daily Wages (categoryId: 18) ───────────────────────────────────────
-    "Construction Labor": ConstructionLabours,
-    "Loading Workers": LoadingWorkers,
-    "Cleaning Helpers": CleaningWorkers,
-    "Watchmen": Washmen,
+    "Construction Labor":   ConstructionLabours,
+    "Loading Workers":      LoadingWorkers,
+    "Cleaning Helpers":     CleaningWorkers,
+    "Watchmen":             Washmen,
 
     // ── Agriculture (categoryId: 19) ───────────────────────────────────────
-    "Fertilizer Shops": Fertilizer,
-    "Tractor Rental": Tractor,
-    "Seeds Shops": SeedsShop,
-    "Farming Tools": FarmingTools,
-    "Veterinary Doctors": VeterinaryDoctors,
-    "Water Pump Repair": WaterPumpRepair,
+    "Fertilizer Shops":     Fertilizer,
+    "Tractor Rental":       Tractor,
+    "Seeds Shops":          SeedsShop,
+    "Farming Tools":        FarmingTools,
+    "Veterinary Doctors":   VetHospitalsIcon,
+    "Water Pump Repair":    WaterPumpRepair,
 
     // ── Corporate (categoryId: 20) ─────────────────────────────────────────
-    "Background Verification": BackgroundVerification,
-    "Document Courier": DocumentCourier,
-    "Office Cleaning": OfficeLeaning,
+    "Background Verification":  BackgroundVerification,
+    "Document Courier":         DocumentCourier,
+    "Office Cleaning":          OfficeLeaning,
 
     // ── Art & Craft (categoryId: 21) ───────────────────────────────────────
-    // ⚠️ Add Painting.png, Caricuture.png, HandMadeGifts.png, Crafts.png to
-    //    /assets/icons/ and replace the placeholder imports below.
-   // Art & Craft (categoryId: 21) — reusing existing icons
-"Painting Artists": PaintersIcon,          // reuse Painters icon
-"Caricature Artists": MakeupArtistsIcon,   // reuse Makeup Artists icon  
-"Handmade Gift Designers": GiftShop,       // reuse Gift Shop icon
-"Wall Murals": WallMurals,                 // already exists ✓
-"Craft Training": SkillDevelopment,        // reuse Skill Development icon
+    "Painting Artists":         PaintersIcon,
+    "Caricature Artists":       MakeupArtistsIcon,
+    "Handmade Gift Designers":  GiftShop,
+    "Wall Murals":              WallMurals,
+    "Craft Training":           SkillDevelopment,
 
     // ── Wedding Services (categoryId: 22) ─────────────────────────────────
-    // ⚠️ Add Pandit.png, Sangeet.png to /assets/icons/ and replace placeholders.
-    "Wedding Planners": WeddingPlanners,
-    "Poojari": FlowerDecoration,              // placeholder — replace with Pandit/Poojari icon
-    "Music Team": FlowerDecoration,           // placeholder — replace with Band/Music icon
-    "Flower Decoration": FlowerDecoration,
-    "Sangeet Choreographers": FlowerDecoration, // placeholder — replace with Sangeet icon
+    "Wedding Planners":         WeddingPlanners,
+    "Poojari":                  FlowerDecoration,
+    "Music Team":               FlowerDecoration,
+    "Flower Decoration":        FlowerDecoration,
+    "Sangeet Choreographers":   FlowerDecoration,
 };

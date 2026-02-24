@@ -6,692 +6,559 @@ import {
     getHospitalById,
     CreateHospitalPayload,
 } from '../services/HospitalService.service';
-import Button from '../components/ui/Buttons';
-import typography from '../styles/typography';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
-// ── Pull hospital subcategories from JSON (categoryId 2) ────────────────────
-const getHospitalSubcategories = () => {
-    const hospitalCategory = subcategoriesData.subcategories.find(
-        (cat: any) => cat.categoryId === 2
-    );
-    return hospitalCategory
-        ? hospitalCategory.items.map((item: any) => item.name)
-        : [];
+import { X, Upload, MapPin, Plus, ChevronDown } from 'lucide-react';
+import { useAccount } from '../context/AccountContext';
+import { typography } from '../styles/typography';
+
+const BRAND = '#00598a';
+
+const COMMON_DEPARTMENTS = [
+    'Cardiology','Orthopaedics','Neurology','Dermatology',
+    'Pediatrics','Gynecology','Oncology','ENT','Ophthalmology',
+    'Psychiatry','Urology','Nephrology','Gastroenterology',
+    'Pulmonology','Endocrinology','General Surgery','ICU','Emergency',
+];
+
+const getHospitalSubcategories = (): string[] => {
+    const cat = (subcategoriesData as any).subcategories.find((c: any) => c.categoryId === 2);
+    return cat ? cat.items.map((i: any) => i.name) : ['Hospitals'];
 };
 
-// ============================================================================
-// SHARED INPUT CLASSES - Mobile First
-// ============================================================================
-const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
+const inputCls =
+    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white focus:outline-none focus:border-[#00598a] ' +
+    'focus:ring-1 focus:ring-[#00598a] transition-all';
 
-// ============================================================================
-// REUSABLE LABEL
-// ============================================================================
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
-    </label>
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 ${className}`}>{children}</div>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-        {title && (
-            <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-                {action}
-            </div>
-        )}
-        {children}
+const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h3 className={`${typography.heading.h6} text-gray-900`}>{title}</h3>
+        {action}
     </div>
 );
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
-const HospitalForm = () => {
-    const navigate = useNavigate();
+const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label className={`block ${typography.form.label} font-semibold text-gray-700 mb-2`}>
+        {children}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+);
 
-    // ── URL helpers ──────────────────────────────────────────────────────────
+const HospitalForm: React.FC = () => {
+    const navigate = useNavigate();
+    const { setAccountType } = useAccount();
+
     const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub
-            ? sub.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-            : null;
+    const getSubFromUrl = () => {
+        const s = new URLSearchParams(window.location.search).get('subcategory');
+        return s ? s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    // ── state ────────────────────────────────────────────────────────────────
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
-
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-
     const hospitalTypes = getHospitalSubcategories();
-    const defaultType = getSubcategoryFromUrl() || hospitalTypes[0] || 'Hospitals';
-    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const defaultType = getSubFromUrl() || hospitalTypes[0] || 'Hospitals';
+
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         hospitalName: '',
         hospitalType: defaultType,
-        departments: '',
+        phone: '',
         area: '',
         city: '',
         state: '',
         pincode: '',
         latitude: '',
         longitude: '',
-        services: '',
+        description: '',
     });
 
-    // ── images ───────────────────────────────────────────────────────────────
+    const [deptDropdown, setDeptDropdown] = useState('');
+    const [deptCustom, setDeptCustom] = useState('');
+    const [departmentsList, setDepartmentsList] = useState<string[]>([]);
+    const [serviceInput, setServiceInput] = useState('');
+    const [servicesList, setServicesList] = useState<string[]>([]);
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // ── geo ──────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [loadingData, setLoadingData] = useState(false);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
-    // ── fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
-        const fetchData = async () => {
+        const load = async () => {
             setLoadingData(true);
             try {
-                const response = await getHospitalById(editId);
-                if (!response.success || !response.data)
-                    throw new Error('Hospital not found');
-
-                const data = response.data;
-
-                setFormData((prev) => ({
+                const res = await getHospitalById(editId);
+                if (!res.success || !res.data) throw new Error('Not found');
+                const d = res.data;
+                setFormData(prev => ({
                     ...prev,
-                    userId: prev.userId,
-                    hospitalName: data.hospitalName || '',
-                    hospitalType: data.hospitalType || defaultType,
-                    departments: Array.isArray(data.departments) ? data.departments.join(', ') : (data.departments || ''),
-                    area: data.area || '',
-                    city: data.city || '',
-                    state: data.state || '',
-                    pincode: data.pincode || '',
-                    latitude: data.latitude?.toString() || '',
-                    longitude: data.longitude?.toString() || '',
-                    services: Array.isArray(data.services) ? data.services.join(', ') : (data.services || ''),
+                    hospitalName: d.hospitalName || '',
+                    hospitalType: d.hospitalType || defaultType,
+                    phone: (d as any).phone || '',
+                    area: d.area || '',
+                    city: d.city || '',
+                    state: d.state || '',
+                    pincode: d.pincode || '',
+                    latitude: d.latitude?.toString() || '',
+                    longitude: d.longitude?.toString() || '',
+                    description: (d as any).description || '',
                 }));
-
-                if (data.images && Array.isArray(data.images))
-                    setExistingImages(data.images);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load hospital data');
-            } finally {
-                setLoadingData(false);
-            }
+                if (d.departments) {
+                    const arr = Array.isArray(d.departments)
+                        ? d.departments as string[]
+                        : (d.departments as string).split(',').map((s: string) => s.trim()).filter(Boolean);
+                    setDepartmentsList(arr);
+                }
+                if (d.services) {
+                    const arr = Array.isArray(d.services)
+                        ? d.services as string[]
+                        : (d.services as string).split(',').map((s: string) => s.trim()).filter(Boolean);
+                    setServicesList(arr);
+                }
+                if (Array.isArray(d.images)) setExistingImages(d.images);
+            } catch { setError('Failed to load hospital data'); }
+            finally { setLoadingData(false); }
         };
-        fetchData();
+        load();
     }, [editId]);
 
-    // ── generic input ────────────────────────────────────────────────────────
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-    ) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // ── image helpers ────────────────────────────────────────────────────────
+    const addDeptFromDropdown = (val: string) => {
+        if (!val || departmentsList.includes(val)) { setDeptDropdown(''); return; }
+        setDepartmentsList(prev => [...prev, val]);
+        setDeptDropdown('');
+    };
+    const addCustomDept = () => {
+        const t = deptCustom.trim();
+        if (!t || departmentsList.includes(t)) return;
+        setDepartmentsList(prev => [...prev, t]);
+        setDeptCustom('');
+    };
+    const removeDept = (i: number) => setDepartmentsList(prev => prev.filter((_, idx) => idx !== i));
+
+    const addService = () => {
+        const t = serviceInput.trim();
+        if (!t || servicesList.includes(t)) return;
+        setServicesList(prev => [...prev, t]);
+        setServiceInput('');
+    };
+    const removeService = (i: number) => setServicesList(prev => prev.filter((_, idx) => idx !== i));
+
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) {
-            setError('Maximum 5 images allowed');
-            return;
-        }
-
-        const validFiles = files.slice(0, availableSlots).filter((file) => {
-            if (!file.type.startsWith('image/')) {
-                setError(`${file.name} is not a valid image`);
-                return false;
-            }
-            if (file.size > 5 * 1024 * 1024) {
-                setError(`${file.name} exceeds 5 MB`);
-                return false;
-            }
+        const slots = 5 - (selectedImages.length + existingImages.length);
+        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+        const valid = files.slice(0, slots).filter(f => {
+            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
             return true;
         });
-        if (!validFiles.length) return;
-
-        const newPreviews: string[] = [];
-        validFiles.forEach((file) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length)
-                    setImagePreviews((prev) => [...prev, ...newPreviews]);
+        if (!valid.length) return;
+        const previews: string[] = [];
+        valid.forEach(f => {
+            const r = new FileReader();
+            r.onloadend = () => {
+                previews.push(r.result as string);
+                if (previews.length === valid.length) setImagePreviews(prev => [...prev, ...previews]);
             };
-            reader.readAsDataURL(file);
+            r.readAsDataURL(f);
         });
-        setSelectedImages((prev) => [...prev, ...validFiles]);
+        setSelectedImages(prev => [...prev, ...valid]);
         setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
-        setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
-    };
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
-
-    // ── geolocation ──────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported');
-            setLocationLoading(false);
-            return;
-        }
-
+        setLocationLoading(true); setError('');
+        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
-            async (pos) => {
+            async pos => {
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
-                    const data = await res.json();
-                    if (data.address) {
-                        setFormData((prev) => ({
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                    const d = await res.json();
+                    if (d.address) {
+                        setFormData(prev => ({
                             ...prev,
-                            area: data.address.suburb || data.address.neighbourhood || prev.area,
-                            city: data.address.city || data.address.town || prev.city,
-                            state: data.address.state || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
+                            area: d.address.suburb || d.address.neighbourhood || d.address.road || prev.area,
+                            city: d.address.city || d.address.town || d.address.village || prev.city,
+                            state: d.address.state || prev.state,
+                            pincode: d.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) {
-                    console.error(e);
-                }
+                } catch { }
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+            err => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    // ── submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-        try {
-            if (!formData.hospitalName || !formData.departments || !formData.services)
-                throw new Error(
-                    'Please fill in all required fields (Name, Departments, Services)'
-                );
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
+        setError(''); setSuccessMessage('');
+        if (!formData.hospitalName.trim()) { setError('Hospital/Clinic name is required.'); return; }
+        if (!formData.phone.trim()) { setError('Phone number is required.'); return; }
+        if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim())) { setError('Please enter a valid phone number.'); return; }
+        if (!departmentsList.length) { setError('Please add at least one department.'); return; }
+        if (!servicesList.length) { setError('Please add at least one service.'); return; }
+        if (!formData.area.trim() || !formData.city.trim() || !formData.state.trim() || !formData.pincode.trim()) {
+            setError('Please fill in all location fields.'); return;
+        }
+        if (!/^\d{6}$/.test(formData.pincode.trim())) { setError('PIN code must be exactly 6 digits.'); return; }
+        if (!formData.latitude || !formData.longitude) { setError('Please detect your location.'); return; }
 
+        const deptString = departmentsList.join(',');
+        const servicesString = servicesList.join(',');
+        setLoading(true);
+        try {
             if (isEditMode && editId) {
-                // Update
                 await updateHospital(editId, {
-                    hospitalName: formData.hospitalName,
+                    hospitalName: formData.hospitalName.trim(),
                     hospitalType: formData.hospitalType,
-                    departments: Array.isArray(formData.departments) ? formData.departments.join(', ') : formData.departments,
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
+                    departments: deptString,
+                    area: formData.area.trim(),
+                    city: formData.city.trim(),
+                    state: formData.state.trim(),
+                    pincode: formData.pincode.trim(),
                     latitude: parseFloat(formData.latitude),
                     longitude: parseFloat(formData.longitude),
-                    services: Array.isArray(formData.services) ? formData.services.join(', ') : formData.services,
+                    services: servicesString,
                     images: selectedImages,
+                    ...(formData.phone && { phone: formData.phone.trim() } as any),
                 });
                 setSuccessMessage('Hospital updated successfully!');
-                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-                setTimeout(() => {
-
-                    setAccountType("worker");
-
-                    navigate("/my-business");
-
-                }, 1500);
             } else {
-                // Create
-                const payload: CreateHospitalPayload = {
+                const payload: CreateHospitalPayload & { phone?: string; description?: string } = {
                     userId: formData.userId,
-                    hospitalName: formData.hospitalName,
+                    hospitalName: formData.hospitalName.trim(),
                     hospitalType: formData.hospitalType,
-                    departments: Array.isArray(formData.departments) ? formData.departments.join(', ') : formData.departments,
-                    area: formData.area,
-                    city: formData.city,
-                    state: formData.state,
-                    pincode: formData.pincode,
+                    departments: deptString,
+                    area: formData.area.trim(),
+                    city: formData.city.trim(),
+                    state: formData.state.trim(),
+                    pincode: formData.pincode.trim(),
                     latitude: parseFloat(formData.latitude),
                     longitude: parseFloat(formData.longitude),
-                    services: Array.isArray(formData.services) ? formData.services.join(', ') : formData.services,
+                    services: servicesString,
                     images: selectedImages,
+                    phone: formData.phone.trim(),
+                    description: formData.description.trim(),
                 };
-                await createHospital(payload);
+                await createHospital(payload as any);
                 setSuccessMessage('Hospital created successfully!');
-                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-                setTimeout(() => {
-
-                    setAccountType("worker");
-
-                    navigate("/my-business");
-
-                }, 1500);
             }
+            setTimeout(() => { setAccountType('worker'); navigate('/my-business'); }, 1500);
         } catch (err: any) {
-            setError(err.message || 'Failed to submit form');
+            setError(err.message || 'Failed to submit. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
-    const handleCancel = () => window.history.back();
-
-    // ── loading screen ───────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
-                    <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 mx-auto mb-3" style={{ borderColor: BRAND }} />
+                    <p className={`${typography.body.small} text-gray-500`}>Loading...</p>
                 </div>
             </div>
         );
     }
 
-    // ============================================================================
-    // RENDER - Mobile First Design
-    // ============================================================================
-
-    // Safety check: Ensure departments and services are strings to prevent .trim() crashes
-    const safeDepartments = Array.isArray(formData.departments)
-        ? (formData.departments as string[]).join(', ')
-        : (typeof formData.departments === 'string' ? formData.departments : '');
-
-    const safeServices = Array.isArray(formData.services)
-        ? (formData.services as string[]).join(', ')
-        : (typeof formData.services === 'string' ? formData.services : '');
+    const totalImages = selectedImages.length + existingImages.length;
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* ── Header - Fixed ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+            {/* Sticky Header */}
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
+                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                    <button onClick={() => window.history.back()} className="p-2 rounded-full hover:bg-gray-100 transition">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Hospital' : 'Add New Hospital'}
+                    <div>
+                        <h1 className={`${typography.heading.h5} text-gray-900 leading-tight`}>
+                            {isEditMode ? 'Update Hospital' : 'Add Hospital'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your hospital information' : 'Register your healthcare facility'}
+                        <p className={`${typography.body.xs} text-gray-400 mt-0.5`}>
+                            {isEditMode ? 'Update your healthcare listing' : 'Create new healthcare listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
 
-                {/* ── Alerts ── */}
+                {/* Alerts */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
+                    <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <span className="text-red-500 mt-0.5 flex-shrink-0">✕</span>
+                        <p className={`${typography.form.error}`}>{error}</p>
                     </div>
                 )}
                 {successMessage && (
-                    <div className={`p-4 bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl ${typography.body.small} text-[#00598a]`}>
-                        {successMessage}
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <p className={`${typography.body.small} text-green-700`}>✓ {successMessage}</p>
                     </div>
                 )}
 
-                {/* ─── 1. BASIC INFORMATION ──────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Hospital Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="hospitalName"
-                            value={formData.hospitalName}
-                            onChange={handleInputChange}
-                            placeholder="e.g., Apollo Hospitals"
-                            className={inputBase}
-                        />
+                {/* 1. Hospital Name & Type - Two columns */}
+                <Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Hospital/Clinic Name</FieldLabel>
+                            <input type="text" name="hospitalName" value={formData.hospitalName}
+                                onChange={handleChange} placeholder="Enter hospital/clinic name" className={inputCls} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Type</FieldLabel>
+                            <div className="relative">
+                                <select name="hospitalType" value={formData.hospitalType}
+                                    onChange={handleChange} className={inputCls + ' appearance-none pr-10'}>
+                                    {hospitalTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
-                </SectionCard>
+                </Card>
 
-                {/* ─── 2. HOSPITAL TYPE ───────────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Hospital Type</FieldLabel>
-                        <select
-                            name="hospitalType"
-                            value={formData.hospitalType}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem'
-                            }}
-                        >
-                            {hospitalTypes.map((t) => (
-                                <option key={t} value={t}>
-                                    {t}
-                                </option>
+                {/* 2. Contact Information - Phone only (full width for single field, or add more fields for two columns) */}
+                <Card>
+                    <CardTitle title="Contact Information" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input type="tel" name="phone" value={formData.phone}
+                                onChange={handleChange} placeholder="Enter phone number" className={inputCls} />
+                        </div>
+                        {/* Placeholder for second contact field - can be email or alternate phone */}
+                        <div>
+                            <FieldLabel>Alternate Phone (Optional)</FieldLabel>
+                            <input type="tel" name="altPhone" 
+                                placeholder="Enter alternate phone" className={inputCls} disabled />
+                        </div>
+                    </div>
+                </Card>
+
+                {/* 3. Departments - Full width for complex input */}
+                <Card>
+                    <FieldLabel required>Departments / Specializations</FieldLabel>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <div className="relative">
+                            <select value={deptDropdown} onChange={e => addDeptFromDropdown(e.target.value)}
+                                className={inputCls + ' appearance-none pr-10 text-gray-500'}>
+                                <option value="">Select from common departments</option>
+                                {COMMON_DEPARTMENTS.filter(d => !departmentsList.includes(d)).map(d => (
+                                    <option key={d} value={d}>{d}</option>
+                                ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                        </div>
+                        <div className="flex gap-2">
+                            <input type="text" value={deptCustom} onChange={e => setDeptCustom(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCustomDept())}
+                                placeholder="Or add custom department" className={inputCls} />
+                            <button type="button" onClick={addCustomDept}
+                                className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: BRAND }}>
+                                <Plus className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </div>
+                    {departmentsList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            {departmentsList.map((d, i) => (
+                                <span key={i}
+                                    className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full ${typography.misc.badge} text-white`}
+                                    style={{ backgroundColor: BRAND }}>
+                                    {d}
+                                    <button type="button" onClick={() => removeDept(i)} className="hover:opacity-70">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </span>
                             ))}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 3. DEPARTMENTS ──────────────────────────────────── */}
-                <SectionCard title="Departments">
-                    <div>
-                        <FieldLabel required>Available Departments</FieldLabel>
-                        <textarea
-                            name="departments"
-                            value={safeDepartments}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Cardiology, Orthopaedics, Neurology, Dermatology, Pediatrics"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Separate each department with a comma
-                        </p>
-                    </div>
-
-                    {/* Department chips preview */}
-                    {safeDepartments && safeDepartments.trim() && (
-                        <div className="mt-3">
-                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Selected Departments ({safeDepartments.split(',').filter(d => d.trim()).length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {safeDepartments.split(',').map((d, i) => {
-                                    const trimmed = d.trim();
-                                    if (!trimmed) return null;
-                                    return (
-                                        <span
-                                            key={i}
-                                            className={`inline-flex items-center gap-1.5 bg-[#00598a]/10 text-[#00598a] px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                        >
-                                            <span className="text-[#00598a]">🏥</span>
-                                            {trimmed}
-                                        </span>
-                                    );
-                                })}
-                            </div>
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* ─── 4. SERVICES ─────────────────────────────────────── */}
-                <SectionCard title="Services & Facilities">
-                    <div>
-                        <FieldLabel required>Available Services</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={safeServices}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Emergency Care, ICU, Lab Tests, X-Ray, CT Scan, MRI, Surgery, Dialysis, Pharmacy"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 List all medical services and facilities, separated by commas
-                        </p>
+                {/* 4. Services - Full width for complex input */}
+                <Card>
+                    <FieldLabel required>Services Offered</FieldLabel>
+                    <div className="flex gap-2">
+                        <input type="text" value={serviceInput} onChange={e => setServiceInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addService())}
+                            placeholder="Add a service" className={inputCls} />
+                        <button type="button" onClick={addService}
+                            className="flex-shrink-0 w-12 h-12 rounded-xl flex items-center justify-center text-white transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: BRAND }}>
+                            <Plus className="w-6 h-6" />
+                        </button>
                     </div>
-
-                    {/* Service chips preview */}
-                    {safeServices && safeServices.trim() && (
-                        <div className="mt-3">
-                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Selected Services ({safeServices.split(',').filter(s => s.trim()).length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {safeServices.split(',').map((s, i) => {
-                                    const trimmed = s.trim();
-                                    if (!trimmed) return null;
-                                    return (
-                                        <span
-                                            key={i}
-                                            className={`inline-flex items-center gap-1.5 bg-[#00598a]/5 text-[#00598a]/80 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium`}
-                                        >
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                            </svg>
-                                            {trimmed}
-                                        </span>
-                                    );
-                                })}
-                            </div>
+                    {servicesList.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            {servicesList.map((s, i) => (
+                                <span key={i}
+                                    className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full ${typography.misc.badge} text-white`}
+                                    style={{ backgroundColor: BRAND }}>
+                                    {s}
+                                    <button type="button" onClick={() => removeService(i)} className="hover:opacity-70">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                </span>
+                            ))}
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* ─── 5. LOCATION DETAILS ─────────────────────────────── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[] hover:!bg-[#00598a]"
-                        >
-                            {locationLoading ? (
-                                <>
-                                    <span className="animate-spin mr-1">⌛</span>
-                                    Detecting...
-                                </>
-                            ) : (
-                                <>
-                                    <MapPin className="w-4 h-4 inline mr-1.5" />
-                                    Auto Detect
-                                </>
-                            )}
-                        </Button>
-                    }
-                >
-                    <div className="grid grid-cols-2 gap-3">
+                {/* 5. Description - Full width */}
+                <Card>
+                    <FieldLabel>Description</FieldLabel>
+                    <textarea name="description" value={formData.description} onChange={handleChange}
+                        rows={4} placeholder="Tell us about yourself and your expertise..."
+                        className={inputCls + ' resize-none'} />
+                </Card>
+
+                {/* 6. Location - Two columns for fields */}
+                <Card>
+                    <CardTitle
+                        title="Location Details"
+                        action={
+                            <button type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg ${typography.misc.badge} text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
+                                style={{ backgroundColor: BRAND }}>
+                                {locationLoading
+                                    ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>}
+                            </button>
+                        }
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Banjara Hills"
-                                className={inputBase}
-                            />
+                            <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder="Area name" className={inputCls} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Hyderabad"
-                                className={inputBase}
-                            />
+                            <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" className={inputCls} />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Telangana"
-                                className={inputBase}
-                            />
+                            <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" className={inputCls} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="e.g., 500016"
-                                className={inputBase}
-                            />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="PIN code" className={inputCls} />
                         </div>
                     </div>
 
-                    {/* Location Tip */}
-                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl p-3">
-                        <p className={`${typography.body.small} text-[#00598a]`}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                    <div className="mt-4 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <p className={`${typography.body.xs} font-medium`} style={{ color: '#92400e' }}>
+                            💡 <span className="font-semibold">Tip:</span> Use auto-detect to fill location automatically from your device GPS
                         </p>
                     </div>
 
-                    {/* Coordinates Display */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-[#00598a]`}>
-                                <span className="font-semibold">✓ Location detected:</span>
-                                <span className="ml-1">{parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}</span>
+                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3.5">
+                            <p className={`${typography.body.xs} font-medium text-green-800`}>
+                                <span className="font-bold">✓ Location detected: </span>
+                                {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
                             </p>
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* ─── 6. HOSPITAL IMAGES ──────────────────────────────── */}
-                <SectionCard title="Hospital Images (Optional)">
-                    <label className="cursor-pointer block">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5}
-                        />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${selectedImages.length + existingImages.length >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'border-[#00598a]/20 hover:border-[#00598a] hover:bg-[#00598a]/10'
-                            }`}>
+                {/* 7. Photos - Full width */}
+                <Card>
+                    <CardTitle title="Portfolio Photos (Optional)" />
+                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect}
+                            className="hidden" disabled={totalImages >= 5} />
+                        <div className="border-2 border-dashed rounded-xl p-8 text-center"
+                            style={{ borderColor: totalImages >= 5 ? '#d1d5db' : '#c7d9e6' }}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-[#00598a]/10 flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-[#00598a]" />
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
+                                    <Upload className="w-7 h-7" style={{ color: BRAND }} />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum limit reached'
-                                            : 'Tap to upload hospital images'}
+                                    <p className={`${typography.form.label} text-gray-600`}>
+                                        {totalImages >= 5 ? 'Maximum limit reached' : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.xs} text-gray-400 mt-1`}>Maximum 5 images · 5 MB each</p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
-                    {/* Image Previews */}
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
+                        <div className="grid grid-cols-3 gap-2 mt-3">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <img src={url} alt="" className="w-full h-full object-cover rounded-xl" />
+                                    <button type="button"
+                                        onClick={() => setExistingImages(p => p.filter((_, idx) => idx !== i))}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#00598a] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-1.5 left-1.5 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: BRAND }}>
                                         Saved
                                     </span>
                                 </div>
                             ))}
-                            {imagePreviews.map((preview, i) => (
+                            {imagePreviews.map((src, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]/20"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg"
-                                    >
+                                    <img src={src} alt="" className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                    <button type="button"
+                                        onClick={() => {
+                                            setSelectedImages(p => p.filter((_, idx) => idx !== i));
+                                            setImagePreviews(p => p.filter((_, idx) => idx !== i));
+                                        }}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-[#00598a] text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                    <span className={`absolute bottom-1.5 left-1.5 bg-green-600 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}>
                                         New
                                     </span>
                                 </div>
                             ))}
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-all ${loading
-                            ? "bg-[#00598a]/40 cursor-not-allowed"
-                            : "bg-[#00598a] hover:bg-[#00598a] active:bg-[#00598a]"
-                            } shadow-sm ${typography.body.base}`}
-                    >
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-2 pb-8">
+                    <button type="button" onClick={handleSubmit} disabled={loading}
+                        className={`flex-1 py-4 rounded-xl font-bold ${typography.nav.button} text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70`}
+                        style={{ backgroundColor: BRAND }}>
+                        {loading && (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        )}
                         {loading
                             ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Hospital' : 'Create Hospital')}
+                            : (isEditMode ? 'Update Hospital' : 'Create Service')}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base}`}
-                    >
+                    <button type="button" onClick={() => window.history.back()} disabled={loading}
+                        className={`px-8 py-4 rounded-xl font-semibold ${typography.nav.button} text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50`}>
                         Cancel
                     </button>
                 </div>

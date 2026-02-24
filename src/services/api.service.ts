@@ -532,7 +532,7 @@ export interface AddWorkerSkillPayload {
     subCategory: string;
     skill: string;
     serviceCharge: number;
-    chargeType: "hour" | "day";
+    chargeType: "hour" | "day" | "fixed";
     images?: File[];
 }
 
@@ -829,7 +829,7 @@ export interface UpdateWorkerSkillPayload {
     subCategory?: string;
     skill?: string;
     serviceCharge?: number;
-    chargeType?: "hour" | "day";
+    chargeType?: "hour" | "day" | "fixed";
 }
 
 export const updateWorkerSkill = async (

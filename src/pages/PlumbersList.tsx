@@ -39,6 +39,7 @@ export interface PlumberWorker {
     longitude: number;
     createdAt: string;
     updatedAt: string;
+    phoneNumber?: string; // Added phone number field
 }
 
 // ============================================================================
@@ -95,6 +96,89 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 // ============================================================================
+// PHONE POPUP COMPONENT
+// ============================================================================
+interface PhonePopupProps {
+    phoneNumber: string;
+    workerName: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phoneNumber, workerName, onClose }) => {
+    const handleCall = () => {
+        window.location.href = `tel:${phoneNumber}`;
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(phoneNumber);
+        // Optional: Add toast notification here
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+                className="bg-white rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 animate-in zoom-in-95 duration-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="bg-[#00598a] text-white p-4 rounded-t-2xl flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <span className="text-2xl">📞</span>
+                        <span className="font-semibold">Contact Worker</span>
+                    </div>
+                    <button 
+                        onClick={onClose}
+                        className="text-white/80 hover:text-white transition-colors text-xl leading-none"
+                    >
+                        ×
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div className="p-6 text-center space-y-4">
+                    <div className="w-16 h-16 bg-[#00598a]/10 rounded-full flex items-center justify-center mx-auto">
+                        <span className="text-3xl">👷</span>
+                    </div>
+                    
+                    <div>
+                        <p className="text-gray-500 text-sm mb-1">Calling</p>
+                        <h3 className="text-lg font-bold text-gray-900">{workerName}</h3>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                        <p className="text-2xl font-mono font-bold text-[#00598a] tracking-wider">
+                            {phoneNumber}
+                        </p>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                        <button
+                            onClick={handleCopy}
+                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:border-[#00598a] hover:text-[#00598a] transition-all duration-200"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            Copy
+                        </button>
+                        <button
+                            onClick={handleCall}
+                            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#00598a] text-white rounded-xl font-medium hover:bg-[#004a70] transition-all duration-200 shadow-lg shadow-[#00598a]/25"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            Call Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 const PlumberServicesList: React.FC = () => {
@@ -107,6 +191,9 @@ const PlumberServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+
+    // Phone popup state
+    const [selectedWorker, setSelectedWorker] = useState<PlumberWorker | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -176,11 +263,21 @@ const PlumberServicesList: React.FC = () => {
 
     const openDirections = (worker: PlumberWorker) => {
         if (worker.latitude && worker.longitude) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${worker.latitude},${worker.longitude}`, "_blank");
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=  ${worker.latitude},${worker.longitude}`, "_blank");
         } else if (worker.area || worker.city) {
             const addr = encodeURIComponent([worker.area, worker.city, worker.state].filter(Boolean).join(", "));
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=  ${addr}`, "_blank");
         }
+    };
+
+    // ── Phone popup handlers ─────────────────────────────────────────────────
+    const handleCallClick = (e: React.MouseEvent, worker: PlumberWorker) => {
+        e.stopPropagation();
+        setSelectedWorker(worker);
+    };
+
+    const closePhonePopup = () => {
+        setSelectedWorker(null);
     };
 
     // ── Render single worker card (matches RealEstate card style) ────────────
@@ -199,34 +296,34 @@ const PlumberServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
                 onClick={() => handleView(worker)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-[#00598a]/5 to-[#00598a]/10 overflow-hidden">
                     {worker.profilePic || imageUrls.length > 0 ? (
                         <img
                             src={worker.profilePic || imageUrls[0]}
                             alt={worker.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                            <span className="text-5xl">🔧</span>
+                            <span className="text-5xl group-hover:scale-110 transition-transform duration-300">🔧</span>
                         </div>
                     )}
 
                     {/* Live Data badge — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 bg-[#00598a] text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
 
                     {/* Charge type badge — top right */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-blue-700 text-xs font-bold rounded-md shadow-md border border-blue-100 capitalize">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#00598a] text-xs font-bold rounded-md shadow-md border border-[#00598a]/20 capitalize">
                             Per {worker.chargeType}
                         </span>
                     </div>
@@ -240,12 +337,12 @@ const PlumberServicesList: React.FC = () => {
 
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-[#00598a] transition-colors duration-200">
                         {worker.name || "Unnamed Worker"}
                     </h2>
 
                     {worker.subCategory && (
-                        <span className="inline-flex items-center gap-1.5 w-fit text-xs bg-blue-50 text-blue-700 px-3 py-1 rounded-md border border-blue-100">
+                        <span className="inline-flex items-center gap-1.5 w-fit text-xs bg-[#00598a]/10 text-[#00598a] px-3 py-1 rounded-md border border-[#00598a]/20">
                             🔧 {worker.subCategory}
                         </span>
                     )}
@@ -256,7 +353,7 @@ const PlumberServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold text-[#00598a] flex items-center gap-1">
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -276,24 +373,30 @@ const PlumberServicesList: React.FC = () => {
                         {worker.serviceCharge && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase tracking-wide">Charges</p>
-                                <p className="text-base font-bold text-green-600">₹{worker.serviceCharge}</p>
+                                <p className="text-base font-bold text-[#00598a]">₹{worker.serviceCharge}</p>
                             </div>
                         )}
                     </div>
 
                     {/* Action buttons */}
-                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                    <div className="grid grid-cols-3 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 border-2 border-[#00598a] text-[#00598a] rounded-lg font-medium text-xs hover:bg-[#00598a] hover:text-white transition-all duration-200"
                         >
                             <span>📍</span> Directions
                         </button>
                         <button
-                            onClick={e => { e.stopPropagation(); handleView(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 transition-colors"
+                            onClick={(e) => handleCallClick(e, worker)}
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-medium text-xs hover:bg-green-600 hover:text-white transition-all duration-200"
                         >
-                            <span>👁️</span> View Details
+                            <span>📞</span> Call
+                        </button>
+                        <button
+                            onClick={e => { e.stopPropagation(); handleView(worker); }}
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 bg-[#00598a] text-white rounded-lg font-medium text-xs hover:bg-[#004a70] transition-all duration-200"
+                        >
+                            <span>👁️</span> View
                         </button>
                     </div>
                 </div>
@@ -312,7 +415,7 @@ const PlumberServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00598a]" />
                 </div>
             );
         }
@@ -332,7 +435,7 @@ const PlumberServicesList: React.FC = () => {
                 {/* Header with count — mirrors RealEstate style */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Workers</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-[#00598a] text-white text-sm font-bold rounded-full px-2.5">
                         {nearbyWorkers.length}
                     </span>
                 </div>
@@ -347,7 +450,7 @@ const PlumberServicesList: React.FC = () => {
     // MAIN RENDER — DUMMY FIRST, API SECOND
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+        <div className="min-h-screen bg-gradient-to-b from-[#00598a]/5 to-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* ── Header ── */}
@@ -362,7 +465,7 @@ const PlumberServicesList: React.FC = () => {
                         variant="primary"
                         size="md"
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center"
+                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#004a70]"
                     >
                         + Add Post
                     </Button>
@@ -370,9 +473,9 @@ const PlumberServicesList: React.FC = () => {
 
                 {/* ── Location status ── */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full" />
+                        <span className="text-sm text-[#00598a]">Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -395,6 +498,15 @@ const PlumberServicesList: React.FC = () => {
                 {userLocation && !fetchingLocation && renderNearbyWorkers()}
 
             </div>
+
+            {/* Phone Popup Modal */}
+            {selectedWorker && (
+                <PhonePopup
+                    phoneNumber={selectedWorker.phoneNumber || "+91 98765 43210"}
+                    workerName={selectedWorker.name || "Worker"}
+                    onClose={closePhonePopup}
+                />
+            )}
         </div>
     );
 };

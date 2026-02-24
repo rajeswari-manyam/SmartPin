@@ -126,7 +126,8 @@ const BusinessServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-
+const [showCallPopup, setShowCallPopup] = useState(false);
+const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
     // ── Get user's location on component mount ────────────────────────────────
     useEffect(() => {
         const getUserLocation = () => {
@@ -231,10 +232,10 @@ const BusinessServicesList: React.FC = () => {
         }
     };
 
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
-    };
-
+   const openCallPopup = (phone: string) => {
+    setSelectedPhone(phone);
+    setShowCallPopup(true);
+};
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -271,7 +272,14 @@ const BusinessServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+               className="
+bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer
+border border-gray-100
+shadow-sm
+transition-all duration-200 ease-out
+hover:-translate-y-1 hover:shadow-xl
+hover:border-[#00598a]
+"
                 onClick={() => handleView(service)}
             >
                 {/* Image Section - Fixed height like dummy cards */}
@@ -374,10 +382,15 @@ const BusinessServicesList: React.FC = () => {
                             <span>📍</span>Directions
                         </button>
                         <button
-                            onClick={(e) => { e.stopPropagation(); service.phone && openCall(service.phone); }}
+                           onClick={(e) => {
+    e.stopPropagation();
+    if (service.phone) {
+        openCallPopup(service.phone);
+    }
+}}
                             disabled={!service.phone}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                ? "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
+                                ? "bg-[#00598a] text-white hover:bg-[#00446a] active:bg-[#003355]"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                         >
@@ -437,8 +450,9 @@ const BusinessServicesList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+     <div className="min-h-screen bg-gray-50 relative">
+  <div className={showCallPopup ? "blur-sm select-none" : ""}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -477,6 +491,51 @@ const BusinessServicesList: React.FC = () => {
                         <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
+                  {/* Popup OUTSIDE blur */}
+  {showCallPopup && selectedPhone && (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    {/* Overlay */}
+     {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+        onClick={() => setShowCallPopup(false)}
+      />
+
+   {/* Popup */}
+      <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-2xl animate-scaleIn">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+          Call Business Service
+        </h3>
+
+
+    
+        <p className="text-sm text-gray-600 mb-4">
+          Phone Number
+          <span className="block mt-1 text-xl font-bold text-[#00598a]">
+            {selectedPhone}
+          </span>
+        </p>
+
+       <div className="flex gap-3">
+          <button
+            onClick={() => {
+              window.location.href = `tel:${selectedPhone}`;
+              setShowCallPopup(false);
+            }}
+            className="flex-1 bg-[#00598a] text-white py-2.5 rounded-lg font-medium hover:bg-[#00446a]"
+          >
+            📞 Call Now
+          </button>
+    <button
+            onClick={() => setShowCallPopup(false)}
+            className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
 
                 {/* DUMMY CARDS FIRST */}
                 {shouldShowNearbyCards(subcategory) && (
@@ -488,6 +547,7 @@ const BusinessServicesList: React.FC = () => {
                 {/* YOUR SERVICES (API DATA) SECOND */}
                 {userLocation && !fetchingLocation && renderYourServices()}
             </div>
+        </div>
         </div>
     );
 };

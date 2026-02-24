@@ -5,46 +5,53 @@
             "items": [
                 {
                     "name": "Restaurants",
-                    "icon": "RestaurantsIcon",
+                    "icon": "🍽️",
                     "imgPath": "/assets/icons/Restaurants.png"
                 },
                 {
                     "name": "Cafes",
-                    "icon": "CafesIcon",
+                    "icon": "☕",
                     "imgPath": "/assets/icons/Cafes.png"
                 },
                 {
                     "name": "Bakeries",
-                    "icon": "BakeriesIcon"
-                    
+                    "icon": "🥖",
+                    "imgPath": "/assets/icons/Bakeries.png"
                 },
                 {
                     "name": "Street Food",
-                    "icon": "StreetFoodIcon"
+                    "icon": "🍔",
+                    "imgPath": "/assets/icons/StreetFood.png"
                 },
                 {
                     "name": "Juice Shops",
-                    "icon": "JuiceIcon"
+                    "icon": "🥤",
+                    "imgPath": "/assets/icons/Juice.png"
                 },
                 {
                     "name": "Sweet Shops",
-                    "icon": "SweetShopsIcon"
+                    "icon": "🍭",
+                    "imgPath": "/assets/icons/SweetShops.png"
                 },
                 {
                     "name": "Ice Cream Parlours",
-                    "icon": "IceCreamIcon"
+                    "icon": "🍦",
+                    "imgPath": "/assets/icons/IceCream.png"
                 },
                 {
                     "name": "Catering Services",
-                    "icon": "CateringIcon"
+                    "icon": "🍱",
+                    "imgPath": "/assets/icons/Catering.png"
                 },
                 {
                     "name": "Food Delivery",
-                    "icon": "FoodDeliveryIcon"
+                    "icon": "🛵",
+                    "imgPath": "/assets/icons/FoodDelivery.png"
                 },
                 {
                     "name": "Mess Services",
-                    "icon": "MessServicesIcon"
+                    "icon": "🍜",
+                    "imgPath": "/assets/icons/MessService.png"
                 }
             ]
         },
@@ -152,39 +159,39 @@
             "items": [
                 {
                     "name": "Hotels",
-                    "icon": "HotelsIcon"
+                    "icon": "🏨"
                 },
                 {
                     "name": "Resorts",
-                    "icon": "ResortsIcon"
+                    "icon": "🏖️"
                 },
                 {
                     "name": "Lodges",
-                    "icon": "LodgesIcon"
+                    "icon": "🏠"
                 },
                 {
                     "name": "Guest Houses",
-                    "icon": "GuestHousesIcon"
+                    "icon": "🏘️"
                 },
                 {
                     "name": "Travel Agencies",
-                    "icon": "TravelAgenciesIcon"
+                    "icon": "✈️"
                 },
                 {
                     "name": "Taxi Services",
-                    "icon": "TaxiServicesIcon"
+                    "icon": "🚕"
                 },
                 {
                     "name": "Vehicle Rentals",
-                    "icon": "VehicleRentalsIcon"
+                    "icon": "🚗"
                 },
                 {
                     "name": "Bus Ticket Booking",
-                    "icon": "BusTicketBookingIcon"
+                    "icon": "🚌"
                 },
                 {
                     "name": "Train Ticket Booking",
-                    "icon": "TrainTicketBookingIcon"
+                    "icon": "🚂"
                 }
             ]
         },

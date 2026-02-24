@@ -5,11 +5,12 @@ import {
     updateBeautyWorker,
     getBeautyWorkerById,
 } from '../services/Beauty.Service.service';
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { useAccount } from "../context/AccountContext";
+
+const BRAND = '#00598a';
 
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
@@ -36,34 +37,30 @@ const getCategoryFromSubcategory = (sub: string): string => {
 };
 
 // ============================================================================
-// SHARED INPUT CLASSES
+// SHARED INPUT CLASS
 // ============================================================================
-const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
-    `${typography.form.input} bg-white`;
-
-const inputError =
-    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
-    `placeholder-gray-400 transition-all duration-200 focus:outline-none ` +
-    `${typography.form.input} bg-white`;
-
-// Focus handlers reused across all inputs
-const focusStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = '#00598a';
-    e.target.style.boxShadow = '0 0 0 2px #00598a40';
-};
-const blurStyle = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>, hasError = false) => {
-    e.target.style.borderColor = hasError ? '#f87171' : '#D1D5DB';
-    e.target.style.boxShadow = 'none';
-};
+const inputCls =
+    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white focus:outline-none focus:border-[#00598a] ' +
+    'focus:ring-1 focus:ring-[#00598a] transition-all';
 
 // ============================================================================
 // REUSABLE COMPONENTS
 // ============================================================================
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 ${className}`}>{children}</div>
+);
+
+const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h3 className={`${typography.heading.h6} text-gray-900`}>{title}</h3>
+        {action}
+    </div>
+);
+
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
+    <label className={`block ${typography.form.label} font-semibold text-gray-700 mb-2`}>
+        {children}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
 );
 
@@ -73,26 +70,6 @@ const FieldError: React.FC<{ message?: string }> = ({ message }) =>
             <span>⚠️</span> {message}
         </p>
     ) : null;
-
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-        {title && (
-            <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-                {action}
-            </div>
-        )}
-        {children}
-    </div>
-);
-
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
-};
 
 // ============================================================================
 // GEOCODING HELPER
@@ -182,7 +159,8 @@ const BeautyServiceForm: React.FC = () => {
 
     const defaultSubcategory = getSubcategoryFromUrl() || BEAUTY_CATEGORIES[0] || 'Beauty Parlour';
     const defaultCategory = getCategoryFromSubcategory(defaultSubcategory);
-     const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
+
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
@@ -329,11 +307,7 @@ const BeautyServiceForm: React.FC = () => {
         setLocationLoading(true);
         setError('');
         setFieldErrors(prev => ({ ...prev, location: undefined }));
-        if (!navigator.geolocation) {
-            setError('Geolocation not supported');
-            setLocationLoading(false);
-            return;
-        }
+        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async pos => {
                 const lat = pos.coords.latitude.toString();
@@ -341,9 +315,7 @@ const BeautyServiceForm: React.FC = () => {
                 gpsCoords.current = { lat, lng };
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
@@ -365,8 +337,7 @@ const BeautyServiceForm: React.FC = () => {
 
     // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setError('');
-        setSuccessMessage('');
+        setError(''); setSuccessMessage('');
         const errors = validateForm(formData, isEditMode);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
@@ -405,15 +376,7 @@ const BeautyServiceForm: React.FC = () => {
                 await createBeautyWorker(payload, selectedImages);
                 setSuccessMessage('Service created successfully!');
             }
-                        // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-            setTimeout(() => {
-
-                setAccountType("worker");
-
-                navigate("/my-business");
-
-            }, 1500);
+            setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
         } catch (err: unknown) {
             if (err instanceof Error) setError(err.message);
             else if (typeof err === 'string') setError(err);
@@ -423,19 +386,20 @@ const BeautyServiceForm: React.FC = () => {
         }
     };
 
-    const handleCancel = () => window.history.back();
-
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: '#00598a' }} />
+                        style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
         );
     }
+
+    const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER
@@ -444,42 +408,36 @@ const BeautyServiceForm: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* Sticky Header */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
+                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                    <button onClick={() => window.history.back()} className="p-2 rounded-full hover:bg-gray-100 transition">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
+                    <div>
+                        <h1 className={`${typography.heading.h5} text-gray-900 leading-tight`}>
                             {isEditMode ? 'Update Beauty Service' : 'Add Beauty Service'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
+                        <p className={`${typography.body.xs} text-gray-400 mt-0.5`}>
                             {isEditMode ? 'Update your service listing' : 'Create new beauty service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
 
-                {/* Global error */}
+                {/* Alerts */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
-                            <div>
-                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
-                                <p className="text-red-700">{error}</p>
-                            </div>
-                        </div>
+                    <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <span className="text-red-500 mt-0.5 flex-shrink-0">✕</span>
+                        <p className={`${typography.form.error}`}>{error}</p>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-600 text-lg">✓</span>
-                        <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <p className={`${typography.body.small} text-green-700`}>✓ {successMessage}</p>
                     </div>
                 )}
                 {!formData.userId && !isEditMode && (
@@ -490,90 +448,141 @@ const BeautyServiceForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* 1. NAME */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Business / Professional Name</FieldLabel>
-                        <input
-                            type="text" name="name" value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Glam Beauty Salon"
-                            className={fieldErrors.name ? inputError : inputBase}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e, !!fieldErrors.name)}
-                        />
-                        <FieldError message={fieldErrors.name} />
+                {/* ─── 1. BUSINESS NAME + CATEGORY (two columns) ───────────── */}
+                <Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Business / Professional Name</FieldLabel>
+                            <input
+                                type="text" name="name" value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Glam Beauty Salon"
+                                className={inputCls}
+                            />
+                            <FieldError message={fieldErrors.name} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Service Category</FieldLabel>
+                            <div className="relative">
+                                <select
+                                    name="category" value={formData.category}
+                                    onChange={handleInputChange}
+                                    className={inputCls + ' appearance-none pr-10'}
+                                >
+                                    {['Beautician', 'Hair Stylist', 'Makeup Artist', 'Spa Therapist',
+                                        'Massage Therapist', 'Nail Technician', 'Skincare Specialist',
+                                        'Fitness Trainer', 'Yoga Instructor', 'Tattoo Artist',
+                                        'Mehendi Artist', 'Beauty Parlour'].map(t => (
+                                            <option key={t} value={t}>{t}</option>
+                                        ))}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
-                </SectionCard>
+                </Card>
 
-                {/* 2. CONTACT */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel" name="phone" value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={fieldErrors.phone ? inputError : inputBase}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e, !!fieldErrors.phone)}
-                        />
-                        <FieldError message={fieldErrors.phone} />
+                {/* ─── 2. CONTACT INFORMATION (two columns) ────────────────── */}
+                <Card>
+                    <CardTitle title="Contact Information" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel" name="phone" value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputCls}
+                            />
+                            <FieldError message={fieldErrors.phone} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Email</FieldLabel>
+                            <input
+                                type="email" name="email" value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputCls}
+                            />
+                            <FieldError message={fieldErrors.email} />
+                        </div>
                     </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input
-                            type="email" name="email" value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={fieldErrors.email ? inputError : inputBase}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e, !!fieldErrors.email)}
-                        />
-                        <FieldError message={fieldErrors.email} />
-                    </div>
-                </SectionCard>
+                </Card>
 
-                {/* 3. CATEGORY */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Category</FieldLabel>
-                        <select
-                            name="category" value={formData.category}
-                            onChange={handleInputChange}
-                            className={`${inputBase} appearance-none`}
-                            style={selectStyle}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e)}
-                        >
-                            {['Beautician', 'Hair Stylist', 'Makeup Artist', 'Spa Therapist',
-                                'Massage Therapist', 'Nail Technician', 'Skincare Specialist',
-                                'Fitness Trainer', 'Yoga Instructor', 'Tattoo Artist',
-                                'Mehendi Artist', 'Beauty Parlour'].map(t => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                        </select>
+                {/* ─── 3. PROFESSIONAL DETAILS (two columns) ───────────────── */}
+                <Card>
+                    <CardTitle title="Professional Details" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel>Experience (years)</FieldLabel>
+                            <input
+                                type="number" name="experience" value={formData.experience}
+                                onChange={handleInputChange}
+                                placeholder="Years of experience" min="0"
+                                className={inputCls}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Service Charge (₹)</FieldLabel>
+                            <input
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
+                                onChange={handleInputChange}
+                                placeholder="Amount" min="0"
+                                className={inputCls}
+                            />
+                            <FieldError message={fieldErrors.serviceCharge} />
+                        </div>
                     </div>
-                </SectionCard>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <FieldLabel>Availability</FieldLabel>
+                            <div className="relative">
+                                <select
+                                    name="availability" value={formData.availability}
+                                    onChange={handleInputChange}
+                                    className={inputCls + ' appearance-none pr-10'}
+                                >
+                                    {availabilityOptions.map(o => <option key={o} value={o}>{o}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+                        {/* Currently Available toggle — right column */}
+                        <div className="flex items-center justify-between px-1 py-2">
+                            <div>
+                                <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
+                                <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>
+                                    Toggle on to appear available to clients
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleAvailabilityToggle}
+                                className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0"
+                                style={{ backgroundColor: isCurrentlyAvailable ? BRAND : '#D1D5DB' }}
+                            >
+                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    </div>
+                </Card>
 
-                {/* 4. SERVICES */}
-                <SectionCard title="Services Offered">
+                {/* ─── 4. SERVICES OFFERED (full width) ────────────────────── */}
+                <Card>
+                    <CardTitle title="Services Offered" />
                     <div>
                         <FieldLabel required>Services</FieldLabel>
                         <textarea
                             name="services" value={formData.services}
-                            onChange={handleInputChange}
-                            rows={3}
+                            onChange={handleInputChange} rows={3}
                             placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                            className={`${fieldErrors.services ? inputError : inputBase} resize-none`}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e, !!fieldErrors.services)}
+                            className={inputCls + ' resize-none'}
                         />
                         <p className={`${typography.misc.caption} mt-2`}>💡 Separate each service with a comma</p>
                         <FieldError message={fieldErrors.services} />
                     </div>
                     {formData.services.trim() && (
-                        <div className="mt-1">
+                        <div className="mt-3">
                             <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
                                 Selected ({formData.services.split(',').filter(s => s.trim()).length}):
                             </p>
@@ -583,8 +592,8 @@ const BeautyServiceForm: React.FC = () => {
                                     if (!t) return null;
                                     return (
                                         <span key={i}
-                                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white ${typography.misc.badge} font-medium`}
-                                            style={{ backgroundColor: '#00598a' }}>
+                                            className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full ${typography.misc.badge} text-white`}
+                                            style={{ backgroundColor: BRAND }}>
                                             <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
@@ -595,247 +604,157 @@ const BeautyServiceForm: React.FC = () => {
                             </div>
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* 5. PROFESSIONAL DETAILS */}
-                <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel>Experience (years)</FieldLabel>
-                            <input
-                                type="number" name="experience" value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years" min="0"
-                                className={inputBase}
-                                onFocus={focusStyle}
-                                onBlur={e => blurStyle(e)}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel>Service Charge (₹)</FieldLabel>
-                            <input
-                                type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange}
-                                placeholder="Amount" min="0"
-                                className={fieldErrors.serviceCharge ? inputError : inputBase}
-                                onFocus={focusStyle}
-                                onBlur={e => blurStyle(e, !!fieldErrors.serviceCharge)}
-                            />
-                            <FieldError message={fieldErrors.serviceCharge} />
-                        </div>
-                    </div>
-
-                    <div>
-                        <FieldLabel>Availability</FieldLabel>
-                        <select
-                            name="availability" value={formData.availability}
-                            onChange={handleInputChange}
-                            className={`${inputBase} appearance-none`}
-                            style={selectStyle}
-                            onFocus={focusStyle}
-                            onBlur={e => blurStyle(e)}
-                        >
-                            {availabilityOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2">
-                        <div>
-                            <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                            <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>
-                                Toggle on to appear as available to clients
-                            </p>
-                        </div>
-                        {/* Toggle — uses #00598a when active */}
-                        <button
-                            type="button"
-                            onClick={handleAvailabilityToggle}
-                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
-                            style={{ backgroundColor: isCurrentlyAvailable ? '#00598a' : '#D1D5DB' }}
-                        >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
-                </SectionCard>
-
-                {/* 6. BIO */}
-                <SectionCard title="Bio">
+                {/* ─── 5. BIO (full width) ─────────────────────────────────── */}
+                <Card>
+                    <FieldLabel>Bio</FieldLabel>
                     <textarea
                         name="bio" value={formData.bio}
-                        onChange={handleInputChange}
-                        rows={4}
+                        onChange={handleInputChange} rows={4}
                         placeholder="Tell clients about yourself and your expertise..."
-                        className={`${inputBase} resize-none`}
-                        onFocus={focusStyle}
-                        onBlur={e => blurStyle(e)}
+                        className={inputCls + ' resize-none'}
                     />
-                </SectionCard>
+                </Card>
 
-                {/* 7. LOCATION */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-sm font-medium text-white transition-all disabled:opacity-60"
-                            style={{ backgroundColor: '#00598a' }}
-                            onMouseEnter={e => { if (!locationLoading) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#d4880f'; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
-                        >
-                            {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>}
-                        </button>
-                    }
-                >
-                    <div className="grid grid-cols-2 gap-3">
+                {/* ─── 6. LOCATION (two columns) ───────────────────────────── */}
+                <Card>
+                    <CardTitle
+                        title="Location Details"
+                        action={
+                            <button
+                                type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg ${typography.misc.badge} text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
+                                style={{ backgroundColor: BRAND }}>
+                                {locationLoading
+                                    ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>}
+                            </button>
+                        }
+                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
-                                placeholder="e.g. Banjara Hills"
-                                className={fieldErrors.area ? inputError : inputBase}
-                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.area)} />
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="e.g. Banjara Hills" className={inputCls} />
                             <FieldError message={fieldErrors.area} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
-                                placeholder="e.g. Hyderabad"
-                                className={fieldErrors.city ? inputError : inputBase}
-                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.city)} />
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="e.g. Hyderabad" className={inputCls} />
                             <FieldError message={fieldErrors.city} />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
-                                placeholder="e.g. Telangana"
-                                className={fieldErrors.state ? inputError : inputBase}
-                                onFocus={focusStyle} onBlur={e => blurStyle(e, !!fieldErrors.state)} />
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="e.g. Telangana" className={inputCls} />
                             <FieldError message={fieldErrors.state} />
                         </div>
                         <div>
                             <FieldLabel>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
-                                placeholder="e.g. 500016"
-                                className={inputBase}
-                                onFocus={focusStyle} onBlur={e => blurStyle(e)} />
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="e.g. 500016" maxLength={6} className={inputCls} />
                         </div>
                     </div>
 
                     {fieldErrors.location && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                        <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-700 flex items-center gap-1.5"><span>⚠️</span> {fieldErrors.location}</p>
                         </div>
                     )}
 
-                    {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ed', border: '1px solid #00598a40' }}>
-                            <p className={`${typography.body.small}`} style={{ color: '#92600a' }}>
-                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" or type your address — coordinates set automatically.
-                            </p>
-                        </div>
-                    )}
-                    {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set: </span>
-                                <span className="font-mono text-xs">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
-                            </p>
-                        </div>
-                    )}
-                </SectionCard>
+                    <div className="mt-4 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <p className={`${typography.body.xs} font-medium`} style={{ color: '#92400e' }}>
+                            💡 <span className="font-semibold">Tip:</span> Use auto-detect to fill location automatically from your device GPS
+                        </p>
+                    </div>
 
-                {/* 8. PORTFOLIO PHOTOS */}
-                <SectionCard title="Portfolio Photos (Optional)">
-                    <label className="cursor-pointer block">
-                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={selectedImages.length + existingImages.length >= 5} />
-                        <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${
-                                selectedImages.length + existingImages.length >= 5
-                                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                    : 'hover:bg-orange-50'
-                            }`}
-                            style={selectedImages.length + existingImages.length < 5 ? { borderColor: '#00598a' } : {}}
-                        >
+                    {formData.latitude && formData.longitude && (
+                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3.5">
+                            <p className={`${typography.body.xs} font-medium text-green-800`}>
+                                <span className="font-bold">✓ Location detected: </span>
+                                {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
+                            </p>
+                        </div>
+                    )}
+                </Card>
+
+                {/* ─── 7. PORTFOLIO PHOTOS (full width) ────────────────────── */}
+                <Card>
+                    <CardTitle title={`Portfolio Photos (${totalImages}/5)`} />
+                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect}
+                            className="hidden" disabled={maxImagesReached} />
+                        <div className="border-2 border-dashed rounded-xl p-8 text-center"
+                            style={{ borderColor: maxImagesReached ? '#d1d5db' : '#c7d9e6' }}>
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                                    style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
+                                    <Upload className="w-7 h-7" style={{ color: BRAND }} />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {selectedImages.length + existingImages.length >= 5
-                                            ? 'Maximum 5 images reached'
-                                            : 'Tap to upload portfolio photos'}
+                                    <p className={`${typography.form.label} text-gray-600`}>
+                                        {maxImagesReached ? 'Maximum limit reached' : `Tap to upload photos (${5 - totalImages} slots left)`}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>JPG, PNG, WebP — max 5 MB each</p>
+                                    <p className={`${typography.body.xs} text-gray-400 mt-1`}>JPG, PNG, WebP — max 5 MB each</p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
+                        <div className="grid grid-cols-3 gap-2 mt-3">
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square">
                                     <img src={url} alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        className="w-full h-full object-cover rounded-xl"
                                         onError={e => { (e.target as HTMLImageElement).src = ''; }} />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-blue-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>Saved</span>
+                                    <span className={`absolute bottom-1.5 left-1.5 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: BRAND }}>
+                                        Saved
+                                    </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square">
                                     <img src={preview} alt={`New ${i + 1}`}
                                         className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#00598a' }} />
+                                        style={{ borderColor: BRAND }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#00598a' }}>New</span>
+                                    <span className={`absolute bottom-1.5 left-1.5 bg-green-600 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md ${typography.body.base}`}
-                        style={{ backgroundColor: loading || successMessage ? '#00598a' : '#00598a', cursor: loading || successMessage ? 'not-allowed' : 'pointer' }}
-                        onMouseEnter={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
-                        onMouseLeave={e => { if (!loading && !successMessage) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
-                                {isEditMode ? 'Updating...' : 'Creating...'}
-                            </span>
-                        ) : successMessage ? '✓ Done' : (isEditMode ? 'Update Service' : 'Create Service')}
+                {/* ── Action Buttons ── */}
+                <div className="flex gap-3 pt-2 pb-8">
+                    <button type="button" onClick={handleSubmit} disabled={loading || !!successMessage}
+                        className={`flex-1 py-4 rounded-xl font-bold ${typography.nav.button} text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70`}
+                        style={{ backgroundColor: BRAND }}>
+                        {loading && (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        )}
+                        {loading
+                            ? (isEditMode ? 'Updating...' : 'Creating...')
+                            : successMessage ? '✓ Done'
+                            : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
+                    <button type="button" onClick={() => window.history.back()} disabled={loading}
+                        className={`px-8 py-4 rounded-xl font-semibold ${typography.nav.button} text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50`}>
                         Cancel
                     </button>
                 </div>
