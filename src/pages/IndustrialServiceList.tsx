@@ -37,7 +37,7 @@ const resolveCardKey = (subcategory?: string): CardKey => {
     if (n.includes("water") || n.includes("tank") || n.includes("cleaning")) return "water-tank-cleaning";
     if (n.includes("scrap") || n.includes("recycle") || n.includes("waste")) return "scrap-dealers";
     if (n.includes("machine") || n.includes("repair") || n.includes("maintenance")) return "machine-repair";
-    return "borewell"; // default
+    return "borewell";
 };
 
 const getDisplayTitle = (subcategory?: string): string => {
@@ -67,6 +67,88 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 // ============================================================================
+// PHONE POPUP
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    serviceName: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, serviceName, onClose }) => (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+        />
+        {/* Modal */}
+        <div className="relative bg-white rounded-3xl shadow-2xl max-w-xs w-full overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-7 text-center" style={{ backgroundColor: '#00598a' }}>
+                <div
+                    className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
+                    <span className="text-4xl">📞</span>
+                </div>
+                <h3 className="text-xl font-bold text-white">Contact</h3>
+                <p className="text-white/80 text-sm mt-1 truncate">{serviceName}</p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 text-center space-y-4">
+                <p className="text-gray-500 text-sm">Phone Number</p>
+                <p className="text-3xl font-bold tracking-widest" style={{ color: '#00598a' }}>
+                    {phone}
+                </p>
+
+                {/* Call button */}
+                <a
+                    href={`tel:${phone}`}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-white text-base transition-all"
+                    style={{ backgroundColor: '#00598a' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                >
+                    📞 Call Now
+                </a>
+
+                {/* Cancel */}
+                <button
+                    onClick={onClose}
+                    className="w-full py-3 rounded-xl font-semibold text-base transition-all"
+                    style={{
+                        border: '2px solid #00598a',
+                        color: '#00598a',
+                        backgroundColor: 'transparent',
+                    }}
+                    onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                        (e.currentTarget as HTMLElement).style.color = '#fff';
+                    }}
+                    onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = '#00598a';
+                    }}
+                >
+                    Cancel
+                </button>
+            </div>
+
+            {/* Close X */}
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-full transition-colors"
+                style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+            >
+                ✕
+            </button>
+        </div>
+    </div>
+);
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 const IndustrialServicesList: React.FC = () => {
@@ -81,6 +163,9 @@ const IndustrialServicesList: React.FC = () => {
     const [fetchingLocation, setFetchingLocation] = useState(false);
     const [distance, setDistance] = useState<number>(10);
 
+    // ── Phone popup state ────────────────────────────────────────────────────
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; serviceName: string } | null>(null);
+
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -89,7 +174,6 @@ const IndustrialServicesList: React.FC = () => {
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => {
                 console.error(err);
@@ -107,17 +191,13 @@ const IndustrialServicesList: React.FC = () => {
             setLoading(true);
             setError("");
             try {
-                console.log("🏭 Fetching nearby industrial services...");
                 const res: IndustrialWorkerResponse = await getNearbyIndustrialWorkers(
                     userLocation.latitude,
                     userLocation.longitude,
                     distance
                 );
-                console.log("🏭 API Response:", res);
-                console.log("🏭 Total records:", res?.data ? (Array.isArray(res.data) ? res.data.length : 1) : 0);
                 if (res?.success && res.data) {
                     const all = Array.isArray(res.data) ? res.data : [res.data];
-                    console.log("✅ Displaying", all.length, "industrial services");
                     setNearbyData(all);
                 } else { setNearbyData([]); }
             } catch (e) {
@@ -152,10 +232,8 @@ const IndustrialServicesList: React.FC = () => {
         }
     };
 
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
-
     // ============================================================================
-    // REAL API CARD — mirrors RealEstateList card style
+    // REAL API CARD
     // ============================================================================
     const renderIndustrialCard = (service: IndustrialWorker) => {
         const id = service._id || "";
@@ -189,19 +267,21 @@ const IndustrialServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Live Data — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: '#00598a' }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Availability — top right */}
+                    {/* Availability badge */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${service.availability !== false
-                            ? 'bg-green-500 text-white'
-                            : 'bg-red-500 text-white'
-                            }`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${
+                            service.availability !== false ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        }`}>
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             {service.availability !== false ? 'Available' : 'Unavailable'}
                         </span>
@@ -234,7 +314,7 @@ const IndustrialServicesList: React.FC = () => {
                     </p>
 
                     {distanceLabel && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: '#00598a' }}>
                             <span>📍</span> {distanceLabel} away
                         </p>
                     )}
@@ -243,7 +323,7 @@ const IndustrialServicesList: React.FC = () => {
                     <div className="flex items-center justify-between pt-1 border-t border-gray-100">
                         <div>
                             <p className="text-xs text-gray-500 uppercase tracking-wide">Service Charge</p>
-                            <p className="text-base font-bold text-blue-600">
+                            <p className="text-base font-bold" style={{ color: '#00598a' }}>
                                 ₹{service.serviceCharge?.toLocaleString() || "N/A"}
                             </p>
                         </div>
@@ -261,19 +341,48 @@ const IndustrialServicesList: React.FC = () => {
 
                     {/* Directions + Call */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        {/* Directions — outline */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm :bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all border-2"
+                            style={{ borderColor: '#00598a', color: '#00598a', backgroundColor: 'transparent' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLElement).style.color = '#fff';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLElement).style.color = '#00598a';
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* Call — solid, opens popup */}
                         <button
-                            onClick={e => { e.stopPropagation(); service.phone && openCall(service.phone); }}
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (service.phone) {
+                                    setPhonePopup({
+                                        phone: service.phone,
+                                        serviceName: service.serviceName || 'Industrial Service',
+                                    });
+                                }
+                            }}
                             disabled={!service.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all text-white"
+                            style={{
+                                backgroundColor: service.phone ? '#00598a' : '#d1d5db',
+                                cursor: service.phone ? 'pointer' : 'not-allowed',
+                            }}
+                            onMouseEnter={e => {
+                                if (service.phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73';
+                            }}
+                            onMouseLeave={e => {
+                                if (service.phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                            }}
                         >
                             <span>📞</span> Call
                         </button>
@@ -283,18 +392,18 @@ const IndustrialServicesList: React.FC = () => {
         );
     };
 
-    // ── DUMMY CARDS — always renders first ───────────────────────────────────
+    // ── DUMMY CARDS ───────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} nearbyData={[]} userLocation={userLocation} />;
     };
 
-    // ── NEARBY SERVICES SECTION — renders second ─────────────────────────────
+    // ── NEARBY SERVICES SECTION ───────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#00598a' }} />
                 </div>
             );
         }
@@ -304,17 +413,19 @@ const IndustrialServicesList: React.FC = () => {
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
                     <div className="text-5xl mb-3">{getCategoryIcon(subcategory)}</div>
                     <p className="text-gray-500 font-medium">No industrial services found in your area.</p>
-                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
+                    <p className="text-xs text-gray-400 mt-1">Try increasing the search distance.</p>
                 </div>
             );
         }
 
         return (
             <div className="space-y-4">
-                {/* "Nearby Services" header with count — mirrors RealEstateList */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: '#00598a' }}
+                    >
                         {nearbyData.length}
                     </span>
                 </div>
@@ -326,7 +437,7 @@ const IndustrialServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
@@ -349,7 +460,8 @@ const IndustrialServicesList: React.FC = () => {
                             <select
                                 value={distance}
                                 onChange={e => setDistance(Number(e.target.value))}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2"
+                                style={{ '--tw-ring-color': '#00598a' } as React.CSSProperties}
                             >
                                 <option value={5}>5 km</option>
                                 <option value={10}>10 km</option>
@@ -359,22 +471,23 @@ const IndustrialServicesList: React.FC = () => {
                             </select>
                         </div>
 
-                        <Button
-                            variant="primary"
-                            size="md"
+                        <button
                             onClick={handleAddPost}
-                            className="w-full sm:w-auto justify-center"
+                            className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white transition-all w-full sm:w-auto justify-center"
+                            style={{ backgroundColor: '#00598a' }}
+                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                         >
                             + Add Post
-                        </Button>
+                        </button>
                     </div>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="rounded-lg p-3 flex items-center gap-2" style={{ backgroundColor: '#e8f2f8', border: '1px solid #b3d4e8' }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#00598a', borderTopColor: 'transparent' }} />
+                        <span className="text-sm" style={{ color: '#00598a' }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -388,15 +501,24 @@ const IndustrialServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
+                {/* 1. DUMMY CARDS FIRST */}
                 <div className="space-y-4">
                     {renderDummyCards()}
                 </div>
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
             </div>
+
+            {/* ── Phone Popup ── */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    serviceName={phonePopup.serviceName}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
         </div>
     );
 };

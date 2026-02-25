@@ -13,6 +13,10 @@ import HousekeepingCard from "../components/cards/Home Repair/NearByHouseKeeping
 import NearbyLaundryCard from "../components/cards/Home Repair/NearByLaundaryCard";
 import MineralWaterSuppliers from "../components/cards/Home Repair/NearByWaterSuppliers";
 
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a73";
+const BRAND_DARKER = "#003d5c";
+
 // ============================================================================
 // WORKER INTERFACE
 // ============================================================================
@@ -29,6 +33,9 @@ export interface HomePersonalWorker {
     profilePic?: string;
     images?: string[];
     phone?: string;
+    phoneNumber?: string;
+    mobile?: string;
+    contact?: string;
     area: string;
     city: string;
     state: string;
@@ -38,6 +45,95 @@ export interface HomePersonalWorker {
     createdAt: string;
     updatedAt: string;
 }
+
+// ── Helper: resolve phone from any field name ────────────────────────────────
+const getWorkerPhone = (worker: any): string =>
+    worker.phone || worker.phoneNumber || worker.mobile || worker.contact || "";
+
+// ============================================================================
+// PHONE POPUP
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    name: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Phone icon */}
+                <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,89,138,0.1)" }}
+                >
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" style={{ color: BRAND }}>
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                </div>
+
+                {/* Name */}
+                <div className="text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Contact</p>
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
+                </div>
+
+                {/* Phone number */}
+                <div
+                    className="w-full text-center py-3 px-4 rounded-xl"
+                    style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
+                >
+                    <p className="text-xl font-bold tracking-wide" style={{ color: BRAND }}>{phone}</p>
+                </div>
+
+                {/* Buttons */}
+                <div className="grid grid-cols-2 gap-3 w-full">
+                    <a
+                        href={`tel:${phone}`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        Call Now
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                        style={{ color: BRAND, border: `2px solid ${BRAND}`, backgroundColor: "transparent" }}
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                            (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.color = BRAND;
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ============================================================================
 // CARD MAP
@@ -84,42 +180,38 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// ============================================================================
-// Extracts worker array from ANY known API response shape
-// ============================================================================
 const extractWorkers = (response: any): HomePersonalWorker[] => {
     if (!response) return [];
+    console.log("🔍 FULL RAW RESPONSE:", response);
 
-    // Full response dump — expand in browser console to see exact shape
-    console.log("🔍 FULL RAW RESPONSE (expand to inspect):", response);
-    try {
-        console.log("🔍 FULL RAW RESPONSE (JSON):", JSON.stringify(response, null, 2));
-    } catch {
-        console.log("🔍 Response could not be JSON stringified (may contain circular refs)");
-    }
-
-    // Try every common API shape
     const candidates: Array<{ label: string; value: any }> = [
-        { label: "response.workers", value: response.workers },
-        { label: "response.data?.workers", value: response.data?.workers },
-        { label: "response.data (array)", value: response.data },
-        { label: "response.result", value: response.result },
-        { label: "response.results", value: response.results },
-        { label: "response.data?.data", value: response.data?.data },
-        { label: "response.data?.result", value: response.data?.result },
-        { label: "response.data?.results", value: response.data?.results },
-        { label: "response.nearbyWorkers", value: response.nearbyWorkers },
-        { label: "response.data?.nearbyWorkers", value: response.data?.nearbyWorkers },
-        { label: "response.services", value: response.services },
-        { label: "response.data?.services", value: response.data?.services },
+        { label: "response.workers",               value: response.workers },
+        { label: "response.data?.workers",         value: response.data?.workers },
+        { label: "response.data (array)",          value: response.data },
+        { label: "response.result",                value: response.result },
+        { label: "response.results",               value: response.results },
+        { label: "response.data?.data",            value: response.data?.data },
+        { label: "response.data?.result",          value: response.data?.result },
+        { label: "response.data?.results",         value: response.data?.results },
+        { label: "response.nearbyWorkers",         value: response.nearbyWorkers },
+        { label: "response.data?.nearbyWorkers",   value: response.data?.nearbyWorkers },
+        { label: "response.services",              value: response.services },
+        { label: "response.data?.services",        value: response.data?.services },
     ];
 
     for (const { label, value } of candidates) {
         if (Array.isArray(value)) {
             console.log(`✅ Workers found at: ${label} — count: ${value.length}`);
+            if (value.length > 0) {
+                console.log("📞 First worker phone fields:", {
+                    phone: value[0].phone,
+                    phoneNumber: value[0].phoneNumber,
+                    mobile: value[0].mobile,
+                    contact: value[0].contact,
+                });
+            }
             return value as HomePersonalWorker[];
         }
-        // Single object with _id — wrap it
         if (value && typeof value === "object" && !Array.isArray(value) && value._id) {
             console.log(`✅ Single worker found at: ${label}, wrapping in array`);
             return [value] as HomePersonalWorker[];
@@ -143,6 +235,8 @@ const HomePersonalServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -156,7 +250,6 @@ const HomePersonalServicesList: React.FC = () => {
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => {
                 console.error(err);
@@ -174,9 +267,6 @@ const HomePersonalServicesList: React.FC = () => {
             setLoading(true);
             setError("");
             try {
-                console.log("🏠 Fetching nearby home & personal workers...");
-                console.log("📡 Params → lat:", userLocation.latitude, "lng:", userLocation.longitude, "range: 10, category: home, sub:", subcategory || "(none)");
-
                 const response = await getNearbyWorkers(
                     userLocation.latitude,
                     userLocation.longitude,
@@ -184,11 +274,7 @@ const HomePersonalServicesList: React.FC = () => {
                     "home",
                     subcategory || ""
                 );
-
-                const workers = extractWorkers(response);
-                console.log("🏠 Final worker count to display:", workers.length);
-                setNearbyWorkers(workers);
-
+                setNearbyWorkers(extractWorkers(response));
             } catch (e) {
                 console.error("❌ Error fetching workers:", e);
                 setError("Failed to load nearby workers");
@@ -201,7 +287,9 @@ const HomePersonalServicesList: React.FC = () => {
     }, [userLocation]);
 
     // ── Navigation handlers ──────────────────────────────────────────────────
-    const handleView = (worker: any) => navigate(`/home-personal-services/worker/${worker._id || worker.id}`);
+    const handleView = (worker: any) =>
+        navigate(`/home-personal-services/worker/${worker._id || worker.id}`);
+
     const handleAddPost = () =>
         navigate(subcategory ? `/add-home-service-form?subcategory=${subcategory}` : "/add-home-service-form");
 
@@ -212,21 +300,31 @@ const HomePersonalServicesList: React.FC = () => {
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([worker.area, worker.city, worker.state].filter(Boolean).join(", "))}`, "_blank");
     };
 
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
+    const handleCallClick = (e: React.MouseEvent, worker: HomePersonalWorker) => {
+        e.stopPropagation();
+        const phone = getWorkerPhone(worker);
+        console.log("📞 Call clicked — resolved phone:", phone);
+        if (phone) {
+            setPhonePopup({ phone, name: worker.name || "Service Worker" });
+        } else {
+            alert("Phone number not available for this worker.");
+        }
+    };
 
-    // ── Dummy cards — always render first ────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
     // ============================================================================
-    // WORKER CARD — mirrors RealEstateList card style
+    // WORKER CARD
     // ============================================================================
     const renderWorkerCard = (worker: HomePersonalWorker) => {
         const id = worker._id || "";
         const location = [worker.area, worker.city].filter(Boolean).join(", ") || "Location not set";
         const imageUrls = (worker.images || []).filter(Boolean) as string[];
+        const isHovered = hoveredCard === id;
+        const phone = getWorkerPhone(worker);
 
         let distance: string | null = null;
         if (userLocation && worker.latitude && worker.longitude) {
@@ -240,41 +338,63 @@ const HomePersonalServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: isHovered ? BRAND : "#f3f4f6",
+                    boxShadow: isHovered
+                        ? "0 8px 24px rgba(0,89,138,0.15)"
+                        : "0 1px 3px rgba(0,0,0,0.06)",
+                    transform: isHovered ? "translateY(-2px)" : "none",
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleView(worker)}
             >
-                {/* ── Image / Profile ── */}
-                <div className="relative h-48 bg-gradient-to-br from-purple-600/5 to-purple-600/10 overflow-hidden">
+                {/* ── Image ── */}
+                <div className="relative h-48 overflow-hidden">
                     {worker.profilePic ? (
                         <img
                             src={worker.profilePic}
                             alt={worker.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={worker.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6" }}
+                        >
                             <span className="text-5xl">🏠</span>
                         </div>
                     )}
 
-                    {/* Live Data — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-purple-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: BRAND }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Charge type — top right */}
+                    {/* Charge type badge */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-purple-500 text-white capitalize">
+                        <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md text-white capitalize"
+                            style={{ backgroundColor: BRAND }}
+                        >
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             Per {worker.chargeType}
                         </span>
@@ -289,7 +409,10 @@ const HomePersonalServicesList: React.FC = () => {
 
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                    <h2
+                        className="text-lg font-semibold line-clamp-1 transition-colors duration-200"
+                        style={{ color: isHovered ? BRAND : "#111827" }}
+                    >
                         {worker.name || "Unnamed Worker"}
                     </h2>
 
@@ -303,7 +426,10 @@ const HomePersonalServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-purple-600 flex items-center gap-1">
+                        <p
+                            className="text-sm font-semibold flex items-center gap-1"
+                            style={{ color: BRAND }}
+                        >
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -320,7 +446,12 @@ const HomePersonalServicesList: React.FC = () => {
                         {worker.serviceCharge && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase">Per {worker.chargeType}</p>
-                                <p className="text-base font-bold text-purple-600">₹{worker.serviceCharge}</p>
+                                <p
+                                    className="text-base font-bold"
+                                    style={{ color: BRAND }}
+                                >
+                                    ₹{worker.serviceCharge}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -329,17 +460,32 @@ const HomePersonalServicesList: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{ border: `2px solid ${BRAND}`, color: BRAND, backgroundColor: "transparent" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                                (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLElement).style.color = BRAND;
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
                         <button
-                            onClick={e => { e.stopPropagation(); worker.phone && openCall(worker.phone); }}
-                            disabled={!worker.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${worker.phone
-                                ? "bg-purple-600 text-white hover:bg-purple-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            onClick={e => handleCallClick(e, worker)}
+                            disabled={!phone}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={
+                                phone
+                                    ? { backgroundColor: BRAND, color: "#fff" }
+                                    : { backgroundColor: "#d1d5db", color: "#9ca3af", cursor: "not-allowed" }
+                            }
+                            onMouseEnter={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK; }}
+                            onMouseLeave={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND; }}
+                            title={phone ? `Call ${phone}` : "No phone number available"}
                         >
                             <span>📞</span> Call
                         </button>
@@ -354,7 +500,10 @@ const HomePersonalServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+                    <div
+                        className="animate-spin rounded-full h-8 w-8 border-b-2"
+                        style={{ borderColor: BRAND }}
+                    />
                 </div>
             );
         }
@@ -364,9 +513,7 @@ const HomePersonalServicesList: React.FC = () => {
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
                     <div className="text-5xl mb-3">🏠</div>
                     <p className="text-gray-500 font-medium">No workers found in your area.</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                        Open console → look for <strong>🔍 FULL RAW RESPONSE (JSON)</strong> to see the exact API response shape
-                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
                 </div>
             );
         }
@@ -375,7 +522,10 @@ const HomePersonalServicesList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-purple-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: BRAND }}
+                    >
                         {nearbyWorkers.length}
                     </span>
                 </div>
@@ -387,10 +537,22 @@ const HomePersonalServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND
+    // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-purple-50/30 to-white">
+        <div
+            className="min-h-screen"
+            style={{ background: "linear-gradient(to bottom, rgba(0,89,138,0.04), white)" }}
+        >
+            {/* ── Phone Popup ── */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    name={phonePopup.name}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -401,21 +563,28 @@ const HomePersonalServicesList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find home services near you</p>
                     </div>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center"
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-purple-600/10 border border-purple-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-purple-700">Getting your location...</span>
+                    <div
+                        className="rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: "rgba(0,89,138,0.08)", border: "1px solid rgba(0,89,138,0.2)" }}
+                    >
+                        <div
+                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: BRAND, borderTopColor: "transparent" }}
+                        />
+                        <span className="text-sm" style={{ color: BRAND }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -429,12 +598,10 @@ const HomePersonalServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
-                <div className="space-y-4">
-                    {renderDummyCards()}
-                </div>
+                {/* 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">{renderDummyCards()}</div>
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
             </div>

@@ -74,6 +74,95 @@ const calculateDistance = (
 };
 
 /* ============================================================================
+   CALL POPUP COMPONENT
+============================================================================ */
+interface CallPopupProps {
+    phone: string;
+    serviceName: string;
+    onClose: () => void;
+}
+
+const CallPopup: React.FC<CallPopupProps> = ({ phone, serviceName, onClose }) => {
+    // Close on backdrop click
+    const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) onClose();
+    };
+
+    // Close on Escape key
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={handleBackdrop}
+        >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-[fadeInScale_0.2s_ease-out]">
+                {/* Header */}
+                <div className="px-6 py-5 text-center" style={{ background: 'linear-gradient(135deg, #00598a 0%, #007ab8 100%)' }}>
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-white font-bold text-lg leading-tight line-clamp-1">{serviceName}</h3>
+                    <p className="text-white/70 text-sm mt-1">Contact Service Provider</p>
+                </div>
+
+                {/* Phone number display */}
+                <div className="px-6 py-6 text-center">
+                    <p className="text-gray-500 text-sm mb-2">Phone Number</p>
+                    <div className="flex items-center justify-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                        <span className="text-gray-400 text-lg">📞</span>
+                        <span className="text-2xl font-bold tracking-widest" style={{ color: '#00598a' }}>
+                            +91 {phone}
+                        </span>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="grid grid-cols-2 gap-3 mt-5">
+                        {/* Call Now */}
+                        <a
+                            href={`tel:+91${phone}`}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:bg-[#00598a]/90 active:scale-95"
+                            style={{ backgroundColor: '#00598a' }}
+                            onClick={onClose}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            Call Now
+                        </a>
+
+                        {/* Close */}
+                        <button
+                            onClick={onClose}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 transition-all hover:text-white active:scale-95"
+                            style={{ borderColor: '#00598a', color: '#00598a' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLButtonElement).style.color = 'white';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLButtonElement).style.color = '#00598a';
+                            }}
+                        >
+                            ✕ Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/* ============================================================================
    MAIN COMPONENT
 ============================================================================ */
 const CorporateServicesList: React.FC = () => {
@@ -83,29 +172,24 @@ const CorporateServicesList: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [nearbyServices, setNearbyServices] = useState<CorporateWorker[]>([]);
-    const [userLocation, setUserLocation] = useState<{
-        latitude: number;
-        longitude: number;
-    } | null>(null);
+    const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+
+    // Call popup state
+    const [callPopup, setCallPopup] = useState<{ phone: string; serviceName: string } | null>(null);
 
     /* ── Get user location ─────────────────────────────────────────────────── */
     useEffect(() => {
         setFetchingLocation(true);
-
         if (!navigator.geolocation) {
             setLocationError("Geolocation not supported");
             setFetchingLocation(false);
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
             (pos) => {
-                setUserLocation({
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude,
-                });
+                setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
             },
             () => {
@@ -119,21 +203,13 @@ const CorporateServicesList: React.FC = () => {
     /* ── Fetch nearby corporate services ───────────────────────────────────── */
     useEffect(() => {
         if (!userLocation) return;
-
         const fetchNearby = async () => {
             setLoading(true);
             setError("");
-
             try {
-                const response = await getNearbyCorporateWorkers(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    10
-                );
-
+                const response = await getNearbyCorporateWorkers(userLocation.latitude, userLocation.longitude, 10);
                 if (response.success && response.data) {
                     let data = Array.isArray(response.data) ? response.data : [response.data];
-
                     if (subcategory) {
                         const target = titleFromSlug(subcategory).toLowerCase();
                         data = data.filter(
@@ -142,7 +218,6 @@ const CorporateServicesList: React.FC = () => {
                                 (s.serviceName && s.serviceName.toLowerCase().includes(target))
                         );
                     }
-
                     setNearbyServices(data);
                 } else {
                     setNearbyServices([]);
@@ -154,7 +229,6 @@ const CorporateServicesList: React.FC = () => {
                 setLoading(false);
             }
         };
-
         fetchNearby();
     }, [userLocation, subcategory]);
 
@@ -172,61 +246,60 @@ const CorporateServicesList: React.FC = () => {
         );
     };
 
+    const handleCall = (e: React.MouseEvent, service: CorporateWorker) => {
+        e.stopPropagation();
+        const phone = service.phone || "";
+        if (!phone) return;
+        setCallPopup({ phone, serviceName: service.serviceName || "Corporate Service" });
+    };
+
     /* ============================================================================
-       REAL API CARD — styled to match HospitalServicesList card
+       REAL API CARD
     ============================================================================ */
     const renderCorporateCard = (service: CorporateWorker) => {
         const id = service._id || service.id || "";
-        const location =
-            [service.area, service.city].filter(Boolean).join(", ") ||
-            "Location not specified";
-
+        const location = [service.area, service.city].filter(Boolean).join(", ") || "Location not specified";
         const imageUrls = (service.images || []).filter(Boolean) as string[];
 
         let distance: string | null = null;
         if (userLocation && service.latitude && service.longitude) {
             const dist = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                service.latitude,
-                service.longitude
+                userLocation.latitude, userLocation.longitude,
+                service.latitude, service.longitude
             );
-            distance = dist < 1
-                ? `${(dist * 1000).toFixed(0)} m`
-                : `${dist.toFixed(1)} km`;
+            distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
                 onClick={() => handleView(service)}
+                style={{ '--hover-color': '#00598a' } as React.CSSProperties}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={service.serviceName || "Corporate Service"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = "none";
-                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-[#00598a]/150 transition-colors duration-200">
                             <span className="text-5xl">{getIcon(subcategory || service.subCategory)}</span>
                         </div>
                     )}
 
-                    {/* Live Data badge — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md" style={{ backgroundColor: '#00598a' }}>
                             Live Data
                         </span>
                     </div>
 
-                    {/* Image counter — bottom right */}
+                    {/* Image counter */}
                     {imageUrls.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
                             1 / {imageUrls.length}
@@ -235,9 +308,9 @@ const CorporateServicesList: React.FC = () => {
                 </div>
 
                 {/* ── Body ── */}
-                <div className="p-4 flex flex-col gap-2.5">
+                <div className="p-4 flex flex-col gap-2.5 flex-1">
                     {/* Title */}
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight group-hover:text-[#00598a] transition-colors duration-200">
                         {service.serviceName || "Corporate Service"}
                     </h2>
 
@@ -249,7 +322,7 @@ const CorporateServicesList: React.FC = () => {
 
                     {/* Distance */}
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: '#00598a' }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -264,7 +337,8 @@ const CorporateServicesList: React.FC = () => {
                     {/* Subcategory badge */}
                     {service.subCategory && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-blue-600/5 text-blue-600 px-2.5 py-1 rounded-md border border-blue-600/20 font-medium">
+                            <span className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border font-medium"
+                                style={{ backgroundColor: '#00598a0d', color: '#00598a', borderColor: '#00598a33' }}>
                                 🏢 {service.subCategory}
                             </span>
                         </div>
@@ -273,7 +347,7 @@ const CorporateServicesList: React.FC = () => {
                     {/* Charge */}
                     {service.serviceCharge && (
                         <div className="flex items-center gap-1.5 pt-0.5">
-                            <span className="text-sm font-bold text-blue-600">
+                            <span className="text-sm font-bold" style={{ color: '#00598a' }}>
                                 ₹{service.serviceCharge}
                             </span>
                             {service.chargeType && (
@@ -282,8 +356,9 @@ const CorporateServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Action buttons */}
-                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                    {/* ── Action Buttons: 3 cols ── */}
+                    <div className="grid grid-cols-3 gap-2 pt-3 mt-auto">
+                        {/* Directions */}
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
@@ -294,18 +369,46 @@ const CorporateServicesList: React.FC = () => {
                                     );
                                 }
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-600/5 transition-colors active:bg-blue-600/10"
-                        >
-                            <span>📍</span> Directions
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleView(service);
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 border-2 rounded-lg font-medium text-xs transition-all hover:text-white active:scale-95"
+                            style={{ borderColor: '#00598a', color: '#00598a' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLButtonElement).style.color = 'white';
                             }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 active:bg-blue-800 transition-colors"
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLButtonElement).style.color = '#00598a';
+                            }}
                         >
-                            <span>👁️</span> View
+                            📍 Dir.
+                        </button>
+
+                        {/* Call */}
+                        <button
+                            onClick={(e) => handleCall(e, service)}
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 border-2 rounded-lg font-medium text-xs transition-all hover:text-white active:scale-95"
+                            style={{ borderColor: '#00598a', color: '#00598a' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLButtonElement).style.color = 'white';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLButtonElement).style.color = '#00598a';
+                            }}
+                        >
+                            📞 Call
+                        </button>
+
+                        {/* View */}
+                        <button
+                            onClick={(e) => { e.stopPropagation(); handleView(service); }}
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-xs text-white transition-all active:scale-95"
+                            style={{ backgroundColor: '#00598a' }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#004a73'; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
+                        >
+                            👁️ View
                         </button>
                     </div>
                 </div>
@@ -319,14 +422,7 @@ const CorporateServicesList: React.FC = () => {
     const renderDummyCards = () => {
         const Card = getCardComponentForSubcategory(subcategory);
         if (!Card) return null;
-
-        return (
-            <Card
-                onViewDetails={handleView}
-                nearbyData={undefined}
-                userLocation={userLocation}
-            />
-        );
+        return <Card onViewDetails={handleView} nearbyData={undefined} userLocation={userLocation} />;
     };
 
     /* ============================================================================
@@ -336,7 +432,7 @@ const CorporateServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#00598a' }} />
                 </div>
             );
         }
@@ -354,7 +450,7 @@ const CorporateServicesList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Your Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5" style={{ backgroundColor: '#00598a' }}>
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -370,34 +466,40 @@ const CorporateServicesList: React.FC = () => {
     ============================================================================ */
     return (
         <div className="min-h-screen bg-gray-50">
+            {/* ── Call Popup ── */}
+            {callPopup && (
+                <CallPopup
+                    phone={callPopup.phone}
+                    serviceName={callPopup.serviceName}
+                    onClose={() => setCallPopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {titleFromSlug(subcategory)}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Manage Corporate & Business services
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900">{titleFromSlug(subcategory)}</h1>
+                        <p className="text-sm text-gray-500 mt-1">Manage Corporate & Business services</p>
                     </div>
 
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#004a73'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#00598a'; }}
                     >
                         + Add Corporate Service
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-600">Getting your location...</span>
+                    <div className="border rounded-lg p-3 flex items-center gap-2" style={{ backgroundColor: '#00598a0d', borderColor: '#00598a33' }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#00598a', borderTopColor: 'transparent' }} />
+                        <span className="text-sm font-medium" style={{ color: '#00598a' }}>Getting your location...</span>
                     </div>
                 )}
 

@@ -5,11 +5,10 @@ import {
     updateBusinessService,
     getBusinessServiceById,
 } from "../services/BusinessService.service";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { useAccount } from "../context/AccountContext";
 
 // ── Charge type options ───────────────────────────────────────────────────────
 const chargeTypeOptions: { label: string; value: string }[] = [
@@ -32,67 +31,67 @@ const getBusinessSubcategories = (): string[] => {
 const BUSINESS_CATEGORIES = getBusinessSubcategories();
 
 // ============================================================================
-// SHARED INPUT CLASSES
+// SHARED STYLES
 // ============================================================================
-const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
+const inputCls =
+    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white focus:outline-none focus:border-[#00598a] ' +
+    'focus:ring-1 focus:ring-[#00598a] transition-all';
 
-const inputError =
-    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
-    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
+const inputErrCls =
+    'w-full px-4 py-3.5 border border-red-400 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white focus:outline-none focus:border-red-400 ' +
+    'focus:ring-1 focus:ring-red-400 transition-all';
 
 // ============================================================================
-// REUSABLE LABEL
+// REUSABLE COMPONENTS
 // ============================================================================
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
-    </label>
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 ${className}`}>{children}</div>
 );
 
-// ============================================================================
-// SECTION CARD WRAPPER
-// ============================================================================
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-        {title && (
-            <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-                {action}
-            </div>
-        )}
-        {children}
+const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h3 className={`${typography.heading.h6} text-gray-900`}>{title}</h3>
+        {action}
     </div>
 );
 
+const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label className={`block ${typography.form.label} font-semibold text-gray-700 mb-2`}>
+        {children}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+);
+
+const FieldError: React.FC<{ message?: string }> = ({ message }) =>
+    message ? (
+        <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+            <span>⚠️</span> {message}
+        </p>
+    ) : null;
+
 // ============================================================================
-// GOOGLE MAPS GEOCODING HELPER
+// GEOCODING HELPER
 // ============================================================================
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
-        const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
-        const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`
+        const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY_HERE';
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
         );
-        const data = await response.json();
+        const data = await res.json();
         if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
+            const loc = data.results[0].geometry.location;
+            return { lat: loc.lat, lng: loc.lng };
         }
         return null;
-    } catch (error) {
-        console.error('Geocoding error:', error);
+    } catch {
         return null;
     }
 };
 
 // ============================================================================
-// VALIDATION HELPER
+// VALIDATION
 // ============================================================================
 interface FieldErrors {
     name?: string;
@@ -178,13 +177,15 @@ const BusinessForm = () => {
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     const defaultCategory = getSubcategoryFromUrl() || BUSINESS_CATEGORIES[0] || 'Chartered Accountant';
-         const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
+
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: '',
         category: defaultCategory,
         email: '',
         phone: '',
+        alternatePhone: '',
         bio: '',
         services: '' as string,
         serviceCharge: '',
@@ -198,12 +199,9 @@ const BusinessForm = () => {
         experience: '',
     });
 
-    // ── images ────────────────────────────────────────────────────────────────
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // ── geo ───────────────────────────────────────────────────────────────────
     const [locationLoading, setLocationLoading] = useState(false);
     const gpsCoords = useRef<{ lat: string; lng: string } | null>(null);
 
@@ -226,6 +224,7 @@ const BusinessForm = () => {
                     category: data.serviceType || data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
+                    alternatePhone: data.alternatePhone || '',
                     bio: data.description || data.bio || '',
                     services: data.skills || (data.services ? data.services.join(', ') : ''),
                     serviceCharge: data.serviceCharge?.toString() || '',
@@ -249,21 +248,13 @@ const BusinessForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── Auto-geocode ONLY when: area typed, lat/lng empty, not from GPS ───────
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const { area, city, state, latitude, longitude } = formData;
-
-        if (!area.trim()) return;
-        if (latitude && longitude) return;
-        if (
-            gpsCoords.current &&
-            gpsCoords.current.lat === latitude &&
-            gpsCoords.current.lng === longitude
-        ) return;
+        if (!area.trim() || (latitude && longitude)) return;
+        if (gpsCoords.current?.lat === latitude && gpsCoords.current?.lng === longitude) return;
 
         const fullAddress = [area, city, state].filter(Boolean).join(', ');
-        if (!fullAddress.trim()) return;
-
         const timer = setTimeout(async () => {
             const coords = await geocodeAddress(fullAddress);
             if (coords) {
@@ -277,22 +268,20 @@ const BusinessForm = () => {
         return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state]);
 
-    // ── generic input ─────────────────────────────────────────────────────────
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors]) {
+        if (fieldErrors[name as keyof FieldErrors])
             setFieldErrors(prev => ({ ...prev, [name]: undefined }));
-        }
     };
 
     // ── image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
-        const validFiles = files.slice(0, availableSlots).filter(file => {
+        const slots = 5 - (selectedImages.length + existingImages.length);
+        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+        const validFiles = files.slice(0, slots).filter(file => {
             if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
             if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
             return true;
@@ -336,21 +325,13 @@ const BusinessForm = () => {
             async (pos) => {
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy;
-
-                if (accuracy > 500) {
-                    setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). The address fields below may be approximate — please verify and correct if needed.`
-                    );
+                if (pos.coords.accuracy > 500) {
+                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify address fields.`);
                 }
-
                 gpsCoords.current = { lat, lng };
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-
                 try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
@@ -362,14 +343,10 @@ const BusinessForm = () => {
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
-                } catch (e) { console.error('Reverse geocode error:', e); }
-
+                } catch (e) { console.error(e); }
                 setLocationLoading(false);
             },
-            (err) => {
-                setError(`Location error: ${err.message}`);
-                setLocationLoading(false);
-            },
+            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
@@ -382,8 +359,7 @@ const BusinessForm = () => {
         const errors = validateForm(formData, isEditMode);
         if (Object.keys(errors).length > 0) {
             setFieldErrors(errors);
-            const firstError = Object.values(errors)[0];
-            setError(firstError || 'Please fix the errors below before submitting');
+            setError(Object.values(errors)[0] || 'Please fix the errors below before submitting');
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
@@ -404,6 +380,7 @@ const BusinessForm = () => {
             formDataToSend.append('description', formData.bio.trim());
             if (formData.email.trim()) formDataToSend.append('email', formData.email.trim());
             if (formData.phone.trim()) formDataToSend.append('phone', formData.phone.trim());
+            if (formData.alternatePhone.trim()) formDataToSend.append('alternatePhone', formData.alternatePhone.trim());
             formDataToSend.append('skills', servicesArray.join(','));
             formDataToSend.append('serviceCharge', charge.toString());
             formDataToSend.append('chargeType', formData.chargeType);
@@ -422,29 +399,13 @@ const BusinessForm = () => {
                 const response = await updateBusinessService(editId, formDataToSend);
                 if (response.success) {
                     setSuccessMessage('Service updated successfully!');
-                                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-            setTimeout(() => {
-
-                setAccountType("worker");
-
-                navigate("/my-business");
-
-            }, 1500);
+                    setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
                 } else throw new Error(response.message || 'Failed to update service');
             } else {
                 const response = await createBusinessService(formDataToSend);
                 if (response.success) {
                     setSuccessMessage('Service created successfully!');
-                                // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-            setTimeout(() => {
-
-                setAccountType("worker");
-
-                navigate("/my-business");
-
-            }, 1500);
+                    setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
                 } else throw new Error(response.message || 'Failed to create service');
             }
         } catch (err: unknown) {
@@ -457,16 +418,11 @@ const BusinessForm = () => {
         }
     };
 
-    const handleCancel = () => window.history.back();
-
     if (loadingData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div
-                        className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4"
-                        style={{ borderColor: '#00598a' }}
-                    />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading service data...</p>
                 </div>
             </div>
@@ -477,350 +433,316 @@ const BusinessForm = () => {
     const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
-    // RENDER — Mobile First
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
-                    <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
+                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                    <button onClick={() => window.history.back()} className="p-2 rounded-full hover:bg-gray-100 transition">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1">
-                        <h1 className={`${typography.heading.h5} text-gray-900`}>
+                    <div>
+                        <h1 className={`${typography.heading.h5} text-gray-900 leading-tight`}>
                             {isEditMode ? 'Update Business Service' : 'Add Business Service'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500`}>
+                        <p className={`${typography.body.xs} text-gray-400 mt-0.5`}>
                             {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
 
-                {/* Global error banner */}
+                {/* ── Alerts ── */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
-                            <div className="flex-1">
-                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
-                                <p className="text-red-700">{error}</p>
+                    <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <span className="text-red-500 mt-0.5 flex-shrink-0">⚠️</span>
+                        <div>
+                            <p className="font-semibold text-red-800 text-sm mb-0.5">Please fix the following</p>
+                            <p className="text-red-700 text-sm">{error}</p>
+                        </div>
+                    </div>
+                )}
+                {successMessage && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <p className="text-sm text-green-700">✓ {successMessage}</p>
+                    </div>
+                )}
+                {!formData.userId && !isEditMode && (
+                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                        <p className="text-sm text-orange-700">⚠️ You must be logged in to add a service.</p>
+                    </div>
+                )}
+
+                {/* ─── 1. SERVICE NAME + SERVICE CATEGORY ───────────────────── */}
+                <Card>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Service Name</FieldLabel>
+                            <input
+                                type="text" name="name" value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Krishna & Associates"
+                                className={fieldErrors.name ? inputErrCls : inputCls}
+                            />
+                            <FieldError message={fieldErrors.name} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Service Category</FieldLabel>
+                            <div className="relative">
+                                <select
+                                    name="category" value={formData.category}
+                                    onChange={handleInputChange}
+                                    className={inputCls + ' appearance-none pr-10'}
+                                >
+                                    {BUSINESS_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                             </div>
                         </div>
                     </div>
-                )}
+                </Card>
 
-                {/* Success banner */}
-                {successMessage && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                        <div className="flex items-center gap-2">
-                            <span className="text-green-600 text-lg">✓</span>
-                            <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
+                {/* ─── 2. CONTACT INFORMATION — Phone + Alternate Phone ─────── */}
+                <Card>
+                    <CardTitle title="Contact Information" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel" name="phone" value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputCls}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Alternate Phone (Optional)</FieldLabel>
+                            <input
+                                type="tel" name="alternatePhone" value={formData.alternatePhone}
+                                onChange={handleInputChange}
+                                placeholder="Enter alternate phone"
+                                className={inputCls}
+                            />
                         </div>
                     </div>
-                )}
+                </Card>
 
-                {/* Not logged in warning */}
-                {!formData.userId && !isEditMode && (
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                        <p className={`${typography.body.small} text-orange-700`}>
-                            ⚠️ You must be logged in to add a service.
-                        </p>
+                {/* ─── 3. PRICING DETAILS — Service Charge + Charge Type ────── */}
+                <Card>
+                    <CardTitle title="Pricing Details" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <FieldLabel required>Service Charge (₹)</FieldLabel>
+                            <input
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
+                                onChange={handleInputChange}
+                                placeholder="Amount" min="1" step="0.01"
+                                className={fieldErrors.serviceCharge ? inputErrCls : inputCls}
+                            />
+                            <FieldError message={fieldErrors.serviceCharge} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Charge Type</FieldLabel>
+                            <div className="relative">
+                                <select
+                                    name="chargeType" value={formData.chargeType}
+                                    onChange={handleInputChange}
+                                    className={inputCls + ' appearance-none pr-10'}
+                                >
+                                    {chargeTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                                </select>
+                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
                     </div>
-                )}
+                </Card>
 
-                {/* ─── 1. BUSINESS NAME ─────────────────────────────────────── */}
-                <SectionCard>
+                {/* ─── 4. DESCRIPTION (full width) ──────────────────────────── */}
+                <Card>
                     <div>
-                        <FieldLabel required>Business Name</FieldLabel>
-                        <input
-                            type="text" name="name" value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Krishna & Associates, Raju Law Firm"
-                            className={fieldErrors.name ? inputError : inputBase}
-                        />
-                        {fieldErrors.name && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.name}
-                            </p>
-                        )}
-                    </div>
-                </SectionCard>
-
-                {/* ─── 2. CONTACT INFORMATION ───────────────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel>Phone</FieldLabel>
-                        <input
-                            type="tel" name="phone" value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number (optional)"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>Email</FieldLabel>
-                        <input
-                            type="email" name="email" value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address (optional)"
-                            className={inputBase}
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="bio" value={formData.bio} onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Describe your services, experience, and what makes you unique..."
+                            className={inputCls + ' resize-none'}
                         />
                     </div>
-                </SectionCard>
+                </Card>
 
-                {/* ─── 3. CATEGORY ──────────────────────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Category</FieldLabel>
-                        <select
-                            name="category" value={formData.category} onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem'
-                            }}
-                        >
-                            {BUSINESS_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. SERVICES ──────────────────────────────────────────── */}
-                <SectionCard title="Services Offered">
+                {/* ─── 5. SERVICES OFFERED (full width) ─────────────────────── */}
+                <Card>
+                    <CardTitle title="Services Offered" />
                     <div>
                         <FieldLabel required>Services</FieldLabel>
                         <textarea
                             name="services" value={formData.services} onChange={handleInputChange}
                             rows={3}
                             placeholder="Tax Filing, GST Returns, Auditing, Financial Planning"
-                            className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
+                            className={(fieldErrors.services ? inputErrCls : inputCls) + ' resize-none'}
                         />
-                        {fieldErrors.services && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.services}
-                            </p>
-                        )}
-                        <p className={`${typography.misc.caption} mt-2`}>💡 Enter services separated by commas</p>
-
-                        {/* Service chips preview */}
-                        {formData.services && formData.services.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
-                                    {formData.services.split(',').map((s, i) => {
-                                        const trimmed = s.trim();
-                                        if (!trimmed) return null;
-                                        return (
-                                            <span
-                                                key={i}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium text-white`}
-                                                style={{ backgroundColor: '#00598a' }}
-                                            >
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {trimmed}
-                                            </span>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
+                        <p className="text-xs text-gray-400 mt-2">💡 Enter services separated by commas</p>
+                        <FieldError message={fieldErrors.services} />
                     </div>
-                </SectionCard>
+                    {formData.services && formData.services.trim() && (
+                        <div className="mt-3">
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                                Selected ({formData.services.split(',').filter(s => s.trim()).length}):
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.services.split(',').map((s, i) => {
+                                    const trimmed = s.trim();
+                                    if (!trimmed) return null;
+                                    return (
+                                        <span key={i}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                                            style={{ backgroundColor: '#00598a' }}>
+                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                            </svg>
+                                            {trimmed}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </Card>
 
-                {/* ─── 5. PROFESSIONAL DETAILS ──────────────────────────────── */}
-                <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-2 gap-3">
+                {/* ─── 6. PROFESSIONAL DETAILS — Experience + Email ─────────── */}
+                <Card>
+                    <CardTitle title="Professional Details" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
                             <input
                                 type="number" name="experience" value={formData.experience}
-                                onChange={handleInputChange} placeholder="Years" min="0"
-                                className={fieldErrors.experience ? inputError : inputBase}
+                                onChange={handleInputChange}
+                                placeholder="Years of experience" min="0"
+                                className={fieldErrors.experience ? inputErrCls : inputCls}
                             />
-                            {fieldErrors.experience && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.experience}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.experience} />
                         </div>
                         <div>
-                            <FieldLabel required>Service Charge (₹)</FieldLabel>
+                            <FieldLabel>Email (Optional)</FieldLabel>
                             <input
-                                type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange} placeholder="Amount" min="1" step="0.01"
-                                className={fieldErrors.serviceCharge ? inputError : inputBase}
+                                type="email" name="email" value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputCls}
                             />
-                            {fieldErrors.serviceCharge && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.serviceCharge}
-                                </p>
-                            )}
                         </div>
                     </div>
+                </Card>
 
-                    <div>
-                        <FieldLabel required>Charge Type</FieldLabel>
-                        <select
-                            name="chargeType" value={formData.chargeType} onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat', backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em', paddingRight: '2.5rem'
-                            }}
-                        >
-                            {chargeTypeOptions.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 6. BIO ───────────────────────────────────────────────── */}
-                <SectionCard title="Bio">
-                    <textarea
-                        name="bio" value={formData.bio} onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Tell us about yourself and your expertise..."
-                        className={inputBase + ' resize-none'}
+                {/* ─── 7. LOCATION — 2×2 grid ───────────────────────────────── */}
+                <Card>
+                    <CardTitle
+                        title="Location Details"
+                        action={
+                            <button
+                                type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                                style={{ backgroundColor: '#00598a' }}
+                            >
+                                {locationLoading
+                                    ? <><span className="animate-spin">⌛</span> Detecting...</>
+                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>}
+                            </button>
+                        }
                     />
-                </SectionCard>
 
-                {/* ─── 7. LOCATION ──────────────────────────────────────────── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="!py-1.5 !px-3 !bg-[#00598a] !border-[#00598a] hover:!bg-[#00598a]"
-                        >
-                            {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
-                            }
-                        </Button>
-                    }
-                >
                     {locationWarning && (
-                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
+                        <div className="mb-4 bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
+                            <p className="text-sm text-yellow-800">{locationWarning}</p>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange}
                                 placeholder="e.g. Banjara Hills"
-                                className={fieldErrors.area ? inputError : inputBase} />
-                            {fieldErrors.area && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.area}</p>
-                            )}
+                                className={fieldErrors.area ? inputErrCls : inputCls} />
+                            <FieldError message={fieldErrors.area} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange}
                                 placeholder="e.g. Hyderabad"
-                                className={fieldErrors.city ? inputError : inputBase} />
-                            {fieldErrors.city && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.city}</p>
-                            )}
+                                className={fieldErrors.city ? inputErrCls : inputCls} />
+                            <FieldError message={fieldErrors.city} />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange}
                                 placeholder="e.g. Telangana"
-                                className={fieldErrors.state ? inputError : inputBase} />
-                            {fieldErrors.state && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>
-                            )}
+                                className={fieldErrors.state ? inputErrCls : inputCls} />
+                            <FieldError message={fieldErrors.state} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
-                                placeholder="e.g. 500033"
-                                className={fieldErrors.pincode ? inputError : inputBase} />
-                            {fieldErrors.pincode && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.pincode}</p>
-                            )}
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange}
+                                placeholder="e.g. 500033" maxLength={6}
+                                className={fieldErrors.pincode ? inputErrCls : inputCls} />
+                            <FieldError message={fieldErrors.pincode} />
                         </div>
                     </div>
 
-                    {/* Location error (coordinates missing) */}
                     {fieldErrors.location && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                            <p className="text-sm text-red-700 flex items-center gap-1.5">
-                                <span>⚠️</span> {fieldErrors.location}
-                            </p>
+                        <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-700 flex items-center gap-1.5"><span>⚠️</span> {fieldErrors.location}</p>
                         </div>
                     )}
 
-                    {/* Tip box */}
-                    {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-                            <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
-                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or type your address and coordinates will be set automatically.
-                            </p>
-                        </div>
-                    )}
+                    <div className="mt-4 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <p className="text-xs font-medium" style={{ color: '#92400e' }}>
+                            📍 <span className="font-semibold">Tip:</span> Click "Auto Detect" to fill location automatically from your device GPS
+                        </p>
+                    </div>
 
-                    {/* Coordinates confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set:</span>
-                                <span className="ml-1 font-mono text-xs">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
+                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3.5">
+                            <p className="text-xs font-medium text-green-800">
+                                <span className="font-bold">✓ Location set: </span>
+                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                             </p>
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
                 {/* ─── 8. PORTFOLIO PHOTOS ──────────────────────────────────── */}
-                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
-                    <label className="cursor-pointer block">
-                        <input type="file" accept="image/*" multiple onChange={handleImageSelect} className="hidden"
-                            disabled={maxImagesReached} />
-                        <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                <Card>
+                    <CardTitle title={`Portfolio Photos (${totalImages}/5)`} />
+                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                        <input type="file" accept="image/*" multiple onChange={handleImageSelect}
+                            className="hidden" disabled={maxImagesReached} />
+                        <div className="border-2 border-dashed rounded-xl p-8 text-center"
                             style={{
-                                borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
-                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
-                            }}
-                        >
+                                borderColor: maxImagesReached ? '#d1d5db' : '#c7d9e6',
+                                backgroundColor: maxImagesReached ? '#f9fafb' : '#f8fbfd',
+                            }}>
                             <div className="flex flex-col items-center gap-3">
-                                <div
-                                    className="w-16 h-16 rounded-full flex items-center justify-center"
-                                    style={{ backgroundColor: '#fff0d6' }}
-                                >
-                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
+                                    <Upload className="w-7 h-7" style={{ color: '#00598a' }} />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {maxImagesReached
-                                            ? 'Maximum 5 images reached'
-                                            : `Tap to upload photos (${5 - totalImages} slots left)`}
+                                    <p className="text-sm font-medium text-gray-600">
+                                        {maxImagesReached ? 'Maximum limit reached' : `Tap to upload photos (${5 - totalImages} slots left)`}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        JPG, PNG, WebP — max 5 MB each, up to 5 images
-                                    </p>
+                                    <p className="text-xs text-gray-400 mt-1">JPG, PNG, WebP — max 5 MB each</p>
                                 </div>
                             </div>
                         </div>
@@ -837,12 +759,8 @@ const BusinessForm = () => {
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span
-                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: '#00598a' }}
-                                    >
-                                        Saved
-                                    </span>
+                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
+                                        style={{ backgroundColor: '#00598a' }}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
@@ -854,38 +772,35 @@ const BusinessForm = () => {
                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
-                                    </span>
+                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
                                 </div>
                             ))}
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
+                <div className="flex gap-3 pt-2 pb-8">
                     <button
-                        onClick={handleSubmit}
+                        type="button" onClick={handleSubmit}
                         disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading || successMessage ? '#00598a' : '#00598a' }}
+                        className="flex-1 py-4 rounded-xl font-bold text-base text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70"
+                        style={{ backgroundColor: '#00598a' }}
                     >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
-                                {isEditMode ? 'Updating...' : 'Creating...'}
-                            </span>
-                        ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
-                        ) : (
-                            isEditMode ? 'Update Service' : 'Create Service'
+                        {loading && (
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
                         )}
+                        {loading
+                            ? (isEditMode ? 'Updating...' : 'Creating...')
+                            : successMessage ? '✓ Done'
+                            : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
                     <button
-                        onClick={handleCancel} type="button" disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        type="button" onClick={() => window.history.back()} disabled={loading}
+                        className="px-8 py-4 rounded-xl font-semibold text-base text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
                     >
                         Cancel
                     </button>

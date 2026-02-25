@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createHotelWithImages, updateHotel, getHotelById, Hotel } from '../services/HotelService.service';
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
@@ -14,19 +13,20 @@ const getHotelTravelSubcategories = () => {
     return hotelCategory ? hotelCategory.items.map(item => item.name) : [];
 };
 
-// ── Brand color ───────────────────────────────────────────────────────────────
+// ── Brand colors ──────────────────────────────────────────────────────────────
 const BRAND = '#00598a';
-const BRAND_DARK = '#004a75';
+const BRAND_DARK = '#004a73';
+const BRAND_DARKER = '#003d5c';
 const BRAND_LIGHT_BG = '#e8f2f8';
 const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const inputBase =
-    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-const selectChevronStyle = {
+const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
     backgroundPosition: 'right 0.75rem center',
@@ -34,6 +34,7 @@ const selectChevronStyle = {
     paddingRight: '2.5rem',
 };
 
+// ── Shared layout components ──────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
         {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
@@ -41,7 +42,7 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 );
 
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -52,6 +53,12 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
+// Always 2 columns — same as CourierForm
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
+);
+
+// ── Geocoding helper ──────────────────────────────────────────────────────────
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
     try {
         const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
@@ -91,15 +98,12 @@ const HotelForm = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
     const { setAccountType } = useAccount();
+
     const hotelTypes = getHotelTravelSubcategories();
     const defaultType = getSubcategoryFromUrl() || hotelTypes[0] || 'Hotels';
 
     const resolveUserId = (): string => {
-        const candidates = [
-            'userId', 'user_id', 'uid', 'id',
-            'user', 'currentUser', 'loggedInUser',
-            'userData', 'userInfo', 'authUser'
-        ];
+        const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
         for (const key of candidates) {
             const raw = localStorage.getItem(key);
             if (!raw) continue;
@@ -139,6 +143,7 @@ const HotelForm = () => {
     const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
     const isGPSDetected = useRef(false);
 
+    // ── Fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
         const fetchData = async () => {
@@ -176,6 +181,7 @@ const HotelForm = () => {
         fetchData();
     }, [editId]);
 
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -183,9 +189,7 @@ const HotelForm = () => {
                 const fullAddress = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
                 if (fullAddress.trim()) {
                     const coords = await geocodeAddress(fullAddress);
-                    if (coords) {
-                        setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
-                    }
+                    if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
                 }
             }
         };
@@ -198,11 +202,11 @@ const HotelForm = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // ── Image helpers ─────────────────────────────────────────────────────────
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
-        const totalExisting = selectedImages.length + existingImages.length;
-        const availableSlots = 5 - totalExisting;
+        const availableSlots = 5 - (selectedImages.length + existingImages.length);
         if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
         const validFiles = files.slice(0, availableSlots).filter(file => {
             if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
@@ -231,10 +235,9 @@ const HotelForm = () => {
     };
     const handleRemoveExistingImage = (i: number) => setExistingImages(prev => prev.filter((_, idx) => idx !== i));
 
+    // ── Geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
+        setLocationLoading(true); setError(''); setLocationWarning('');
         if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -266,10 +269,9 @@ const HotelForm = () => {
         );
     };
 
+    // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
+        setLoading(true); setError(''); setSuccessMessage('');
         try {
             if (!formData.userId || formData.userId.trim() === '') {
                 const freshId = resolveUserId();
@@ -287,10 +289,7 @@ const HotelForm = () => {
                 const payload: Hotel = { ...formData, latitude: parseFloat(formData.latitude), longitude: parseFloat(formData.longitude) };
                 await updateHotel(editId, payload);
                 setSuccessMessage('Service updated successfully!');
-                setTimeout(() => {
-                    setAccountType("worker");
-                    navigate("/my-business");
-                }, 1500);
+                setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
             } else {
                 const formdata = new FormData();
                 formdata.append("userId", formData.userId);
@@ -321,10 +320,7 @@ const HotelForm = () => {
                 const result = JSON.parse(responseText);
                 if (!result.success) throw new Error(result.message || 'Failed to create service');
                 setSuccessMessage('Service created successfully!');
-                setTimeout(() => {
-                    setAccountType("worker");
-                    navigate("/my-business");
-                }, 1500);
+                setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
             }
         } catch (err: any) {
             console.error("❌ Submit error:", err);
@@ -338,7 +334,7 @@ const HotelForm = () => {
 
     if (loadingData) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
@@ -348,16 +344,20 @@ const HotelForm = () => {
     }
 
     const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
+    // ============================================================================
+    // RENDER — Wide layout, 2 fields per row (mirrors CourierForm exactly)
+    // ============================================================================
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 rounded-full transition hover:bg-gray-50"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -365,151 +365,199 @@ const HotelForm = () => {
                     </button>
                     <div className="flex-1">
                         <h1 className={`${typography.heading.h5} text-gray-900`}>
-                            {isEditMode ? 'Update Service' : 'Add New Hotel Service'}
+                            {isEditMode ? 'Update Hotel Service' : 'Add New Hotel Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new hotel/travel listing'}
+                            {isEditMode ? 'Update your hotel/travel listing' : 'Create new hotel/travel listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            {/* ── Wide container — 2 fields per row ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1">Error</p>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
-                        ✓ {successMessage}
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <p>{successMessage}</p>
+                        </div>
                     </div>
                 )}
 
-                {/* 1. NAME */}
+                {/* ─── ROW 1: Hotel Name + Type ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Hotel / Service Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Enter hotel or service name"
-                            className={inputBase}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Hotel / Service Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="Enter hotel or service name"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Category / Type</FieldLabel>
+                            <select
+                                name="type"
+                                value={formData.type}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 2. CONTACT */}
+                {/* ─── ROW 2: Contact ─── */}
                 <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Email</FieldLabel>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 3. CATEGORY */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Category / Type</FieldLabel>
-                        <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectChevronStyle}
-                        >
-                            {hotelTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* 4. SERVICES */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Services Offered</FieldLabel>
-                        <textarea
-                            name="service"
-                            value={formData.service}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Room Service, Pool, Spa, Restaurant, Parking"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter services separated by commas
-                        </p>
-                        {formData.service && formData.service.trim() && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Services:</p>
-                                <div className="flex flex-wrap gap-2">
+                {/* ─── ROW 3: Services + Description ─── */}
+                <SectionCard title="Service Details">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Services Offered</FieldLabel>
+                            <textarea
+                                name="service"
+                                value={formData.service}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="Room Service, Pool, Spa, Restaurant, Parking"
+                                className={inputBase + ' resize-none'}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 Enter services separated by commas
+                            </p>
+                            {formData.service && formData.service.trim() && (
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     {formData.service.split(',').map((s, i) => {
                                         const trimmed = s.trim();
                                         if (!trimmed) return null;
                                         return (
                                             <span
                                                 key={i}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                                                style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                                                style={{ backgroundColor: BRAND }}
                                             >
                                                 ✓ {trimmed}
                                             </span>
                                         );
                                     })}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                        <div>
+                            <FieldLabel>Description</FieldLabel>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="Describe your hotel or service..."
+                                className={inputBase + ' resize-none'}
+                            />
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 5. PROFESSIONAL DETAILS */}
-                <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <FieldLabel>Experience (years)</FieldLabel>
-                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} placeholder="Years" min="0" className={inputBase} />
-                        </div>
+                {/* ─── ROW 4: Pricing + Availability ─── */}
+                <SectionCard title="Pricing & Availability">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Price Range (₹)</FieldLabel>
-                            <input type="text" name="priceRange" value={formData.priceRange} onChange={handleInputChange} placeholder="e.g. 1000" className={inputBase} />
+                            <input
+                                type="text"
+                                name="priceRange"
+                                value={formData.priceRange}
+                                onChange={handleInputChange}
+                                placeholder="e.g. 1000 - 5000"
+                                className={inputBase}
+                            />
                         </div>
-                    </div>
-
-                    <div className="flex items-center justify-between py-2">
-                        <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
-                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
-                            style={{ backgroundColor: isCurrentlyAvailable ? BRAND : '#d1d5db' }}
-                        >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                    </div>
+                        <div>
+                            <FieldLabel>Experience (years)</FieldLabel>
+                            <input
+                                type="number"
+                                name="experience"
+                                value={formData.experience}
+                                onChange={handleInputChange}
+                                placeholder="Years of experience"
+                                min="0"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Availability</FieldLabel>
+                            <select
+                                name="availability"
+                                value={formData.availability}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {availabilityOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-4 pt-2">
+                            <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
+                            <button
+                                type="button"
+                                onClick={() => setIsCurrentlyAvailable(!isCurrentlyAvailable)}
+                                className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0"
+                                style={{ backgroundColor: isCurrentlyAvailable ? BRAND : '#d1d5db' }}
+                            >
+                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 6. DESCRIPTION */}
-                <SectionCard title="Description">
-                    <textarea
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                        placeholder="Describe your hotel or service..."
-                        className={inputBase + ' resize-none'}
-                    />
-                </SectionCard>
-
-                {/* 7. LOCATION */}
+                {/* ─── ROW 5: Location ─── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -517,14 +565,13 @@ const HotelForm = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: BRAND }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {locationLoading
                                 ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
                             }
                         </button>
                     }
@@ -536,140 +583,170 @@ const HotelForm = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Area + City */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="e.g. Banjara Hills" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Hyderabad" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* State + PIN */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. Telangana" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g. 500034" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
                     {/* Tip box */}
                     <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
                         <p className={`${typography.body.small}`} style={{ color: BRAND }}>
-                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to fill your location automatically, or enter manually above.
+                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to fill location automatically, or enter manually above.
                         </p>
                     </div>
 
                     {formData.latitude && formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected: </span>
-                                {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </SectionCard>
 
-                {/* 8. PHOTOS */}
-                <SectionCard title="Photos (Optional)">
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={totalImages >= 5}
-                        />
-                        <div
-                            className="border-2 border-dashed rounded-2xl p-8 text-center transition"
-                            style={
-                                totalImages >= 5
-                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
-                            }
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {totalImages >= 5
-                                            ? 'Maximum limit reached (5 images)'
-                                            : 'Tap to upload photos'}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
-                                    </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                {/* ─── ROW 6: Photos ─── */}
+                <SectionCard title={`Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center h-full flex items-center justify-center transition"
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : BRAND_LIGHT_BG,
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(0,89,138,0.12)' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
-                                    )}
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            Max 5 images · 5 MB each · JPG, PNG, WEBP
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Image Previews */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                        {/* Previews */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExistingImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((preview, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div
+                                className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}
+                            >
+                                <p className={`${typography.body.small} text-gray-400`}>Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
                 </SectionCard>
 
-                {/* Action Buttons */}
-                <div className="flex gap-4 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
-                    >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
+                {/* ── Action Buttons — courier style, right-aligned ── */}
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-10 py-3.5 rounded-xl font-semibold
+                            text-[#00598a] bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
+                    </button>
                 </div>
+
             </div>
         </div>
     );

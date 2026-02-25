@@ -84,7 +84,7 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches CourierUserService card layout
+    // CARD — #00598a hover effects matching CourierUserService
     // ============================================================================
     const renderWorkerCard = (worker: LabourWorker) => {
         const id = worker._id || "";
@@ -101,35 +101,44 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100
+                         transition-all duration-300 ease-in-out
+                         hover:shadow-lg hover:border-[#00598a]/30 hover:-translate-y-1
+                         group cursor-pointer"
             >
                 {/* ── Image ── */}
-                <div className="relative h-52 bg-gray-100">
+                <div className="relative h-52 bg-gray-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={displayName}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300
+                                     group-hover:scale-105"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-orange-500/5">
-                            <span className="text-6xl">{icon}</span>
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5
+                                      transition-colors duration-300 group-hover:bg-[#00598a]/10">
+                            <span className="text-6xl transition-transform duration-300
+                                           group-hover:scale-110 group-hover:rotate-3">{icon}</span>
                         </div>
                     )}
 
-                    {/* SubCategory badge — bottom left over image */}
+                    {/* SubCategory badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
-                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg
+                                       backdrop-blur-sm transition-all duration-300
+                                       group-hover:bg-[#00598a] group-hover:text-white group-hover:px-4">
                             {worker.subCategory || "Daily Wage"}
                         </span>
                     </div>
 
                     {/* Action menu — top right */}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100
+                                  transition-opacity duration-300">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-500" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00598a]" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -141,29 +150,37 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                 </div>
 
                 {/* ── Body ── */}
-                <div className="p-4">
+                <div className="p-4 transition-colors duration-300 group-hover:bg-[#00598a]/5">
 
                     {/* Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate
+                                 transition-colors duration-300 group-hover:text-[#00598a]">
                         {displayName}
                     </h3>
 
                     {/* Location */}
                     <div className="flex items-center gap-1.5 mb-3">
-                        <span className="text-sm">📍</span>
-                        <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
+                        <span className="text-sm transition-colors duration-300
+                                       group-hover:text-[#00598a]">📍</span>
+                        <p className="text-sm text-gray-500 line-clamp-1
+                                    transition-colors duration-300 group-hover:text-gray-700">{location}</p>
                     </div>
 
-                    {/* SubCategory pill + Availability status — side by side */}
+                    {/* SubCategory pill + Availability */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-orange-700 bg-orange-500/8 border border-orange-500/20 px-3 py-1.5 rounded-full truncate">
+                        <span className="flex-1 text-center text-sm font-medium text-[#00598a] bg-[#00598a]/8
+                                       border border-[#00598a]/20 px-3 py-1.5 rounded-full truncate
+                                       transition-all duration-300
+                                       group-hover:bg-[#00598a] group-hover:text-white
+                                       group-hover:border-[#00598a]">
                             {worker.subCategory || "Daily Wage"}
                         </span>
-                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
-                            isAvailable
-                                ? "text-green-600 bg-green-50 border-green-200"
-                                : "text-red-500 bg-red-50 border-red-200"
-                        }`}>
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border
+                                        transition-all duration-300
+                                        ${isAvailable
+                                ? "text-green-600 bg-green-50 border-green-200 group-hover:bg-green-100"
+                                : "text-red-500 bg-red-50 border-red-200 group-hover:bg-red-100"
+                            }`}>
                             <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-red-500"}`} />
                             {isAvailable ? "Available" : "Busy"}
                         </span>
@@ -171,44 +188,63 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
 
                     {/* Description */}
                     {description && (
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-3
+                                    transition-colors duration-300 group-hover:text-gray-700">
+                            {description}
+                        </p>
                     )}
 
-                    {/* Skill / detail chips (shown when no description) */}
+                    {/* Skill / detail chips */}
                     {!description && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {worker.experience && (
-                                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span className="text-xs bg-[#00598a]/8 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20
+                                               transition-all duration-300
+                                               group-hover:bg-[#00598a] group-hover:text-white
+                                               group-hover:border-[#00598a]">
                                     👷 {worker.experience} yrs exp
                                 </span>
                             )}
                             {worker.chargeType && (
-                                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span className="text-xs bg-[#00598a]/8 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20
+                                               transition-all duration-300
+                                               group-hover:bg-[#00598a] group-hover:text-white
+                                               group-hover:border-[#00598a]">
                                     {worker.chargeType}
                                 </span>
                             )}
                             {skills.slice(0, 2).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span key={idx}
+                                      className="text-xs bg-[#00598a]/8 text-[#00598a] px-2 py-0.5 rounded-full border border-[#00598a]/20
+                                               transition-all duration-300
+                                               group-hover:bg-[#00598a] group-hover:text-white
+                                               group-hover:border-[#00598a]">
                                     {s}
                                 </span>
                             ))}
                             {skills.length > 2 && (
-                                <span className="text-xs text-gray-400 px-1 self-center">
+                                <span className="text-xs text-gray-400 px-1 self-center
+                                               transition-colors duration-300 group-hover:text-gray-600">
                                     +{skills.length - 2} more
                                 </span>
                             )}
                         </div>
                     )}
 
-                    {/* Rating row + optional phone + daily wage */}
+                    {/* Rating + phone + daily wage */}
                     <div className="flex items-center gap-2 mb-4">
-                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full
+                                       transition-all duration-300
+                                       group-hover:bg-[#00598a] group-hover:text-white
+                                       group-hover:border-[#00598a]">
                             ⭐ {(worker as any).rating ? (worker as any).rating : "N/A"}
                         </span>
 
                         {phone && (
-                            <span className="text-sm text-gray-500 flex items-center gap-1">
-                                <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <span className="text-sm text-gray-500 flex items-center gap-1
+                                           transition-colors duration-300 group-hover:text-gray-700">
+                                <svg className="w-4 h-4 text-gray-400 transition-colors duration-300
+                                              group-hover:text-[#00598a]" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                                 </svg>
                                 {phone}
@@ -216,10 +252,39 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                         )}
 
                         {worker.dailyWage && (
-                            <span className="ml-auto text-sm font-bold text-orange-700">
+                            <span className="ml-auto text-sm font-bold text-[#00598a]
+                                           transition-colors duration-300 group-hover:text-[#004a73]">
                                 ₹{worker.dailyWage}{worker.chargeType ? `/${worker.chargeType}` : ""}
                             </span>
                         )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(id);
+                            }}
+                            className="flex-1 bg-[#00598a] text-white text-sm font-semibold py-2 px-4 rounded-lg
+                                     transition-all duration-300
+                                     hover:bg-[#004a73] hover:shadow-md
+                                     active:scale-95"
+                        >
+                            Edit Listing
+                        </button>
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(id);
+                            }}
+                            className="bg-red-500 text-white text-sm font-semibold py-2 px-4 rounded-lg
+                                     transition-all duration-300
+                                     hover:bg-red-600 hover:shadow-md
+                                     active:scale-95"
+                        >
+                            Delete
+                        </button>
                     </div>
 
                 </div>
@@ -241,7 +306,7 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                     </h2>
                 )}
                 <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
-                    <div className="text-6xl mb-4">👷</div>
+                    <div className="text-6xl mb-4 transition-transform duration-300 hover:scale-110">👷</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Worker Listings Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your worker listings to showcase them here.
@@ -250,7 +315,7 @@ const DailyWageUserService: React.FC<DailyWageUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-daily-wage-service-form")}
-                        className="gap-1.5 bg-orange-500 hover:bg-orange-600"
+                        className="gap-1.5 bg-[#00598a] hover:bg-[#004a73] text-white transition-colors duration-300"
                     >
                         + Add Worker Listing
                     </Button>

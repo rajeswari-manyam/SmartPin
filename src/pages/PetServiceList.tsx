@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { getNearbyPetWorkers, PetWorker } from "../services/PetWorker.service";
 
@@ -31,7 +30,7 @@ const resolveCardKey = (subcategory?: string): CardKey => {
     if (n.includes("shop")) return "shop";
     if (n.includes("groom")) return "grooming";
     if (n.includes("train") || n.includes("walk")) return "training";
-    return "clinic"; // default
+    return "clinic";
 };
 
 const getDisplayTitle = (subcategory?: string): string => {
@@ -59,38 +58,98 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// ============================================================================
-// Extracts worker array from ANY known API response shape — mirrors HomePersonal
-// ============================================================================
 const extractPetWorkers = (response: any): PetWorker[] => {
     if (!response) return [];
-    console.log("🔍 FULL RAW RESPONSE:", response);
-
     const candidates = [
-        response.data,
-        response.workers,
-        response.data?.data,
-        response.data?.workers,
-        response.result,
-        response.results,
-        response.data?.result,
-        response.nearbyServices,
-        response.services,
+        response.data, response.workers, response.data?.data, response.data?.workers,
+        response.result, response.results, response.data?.result,
+        response.nearbyServices, response.services,
     ];
-
     for (const candidate of candidates) {
-        if (Array.isArray(candidate)) {
-            console.log(`✅ Pet workers found — count: ${candidate.length}`);
-            return candidate as PetWorker[];
-        }
-        if (candidate && typeof candidate === "object" && !Array.isArray(candidate) && candidate._id) {
+        if (Array.isArray(candidate)) return candidate as PetWorker[];
+        if (candidate && typeof candidate === "object" && !Array.isArray(candidate) && candidate._id)
             return [candidate] as PetWorker[];
-        }
     }
-
-    console.warn("⚠️ Could not extract pet workers. Keys:", Object.keys(response));
     return [];
 };
+
+// ============================================================================
+// PHONE POPUP
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    serviceName: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, serviceName, onClose }) => (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+        {/* Backdrop */}
+        <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+        />
+        {/* Modal */}
+        <div className="relative bg-white rounded-3xl shadow-2xl max-w-xs w-full overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-7 text-center" style={{ backgroundColor: '#00598a' }}>
+                <div
+                    className="mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-4"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                >
+                    <span className="text-4xl">📞</span>
+                </div>
+                <h3 className="text-xl font-bold text-white">Contact</h3>
+                <p className="text-white/80 text-sm mt-1 truncate">{serviceName}</p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 text-center space-y-4">
+                <p className="text-gray-500 text-sm">Phone Number</p>
+                <p className="text-3xl font-bold tracking-widest" style={{ color: '#00598a' }}>
+                    {phone}
+                </p>
+
+                {/* Call Now */}
+                <a
+                    href={`tel:${phone}`}
+                    className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-semibold text-white text-base transition-all"
+                    style={{ backgroundColor: '#00598a' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                >
+                    📞 Call Now
+                </a>
+
+                {/* Cancel */}
+                <button
+                    onClick={onClose}
+                    className="w-full py-3 rounded-xl font-semibold text-base transition-all"
+                    style={{ border: '2px solid #00598a', color: '#00598a', backgroundColor: 'transparent' }}
+                    onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                        (e.currentTarget as HTMLElement).style.color = '#fff';
+                    }}
+                    onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                        (e.currentTarget as HTMLElement).style.color = '#00598a';
+                    }}
+                >
+                    Cancel
+                </button>
+            </div>
+
+            {/* Close X */}
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-full transition-colors"
+                style={{ backgroundColor: 'rgba(255,255,255,0.15)' }}
+            >
+                ✕
+            </button>
+        </div>
+    </div>
+);
 
 // ============================================================================
 // MAIN COMPONENT
@@ -106,6 +165,9 @@ const PetServicesList: React.FC = () => {
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
 
+    // ── Phone popup state ────────────────────────────────────────────────────
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; serviceName: string } | null>(null);
+
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -114,24 +176,20 @@ const PetServicesList: React.FC = () => {
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => { console.error(err); setLocationError("Unable to retrieve your location."); setFetchingLocation(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     }, []);
 
-    // ── Fetch nearby when location ready — mirrors RealEstateList ────────────
+    // ── Fetch nearby when location ready ─────────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
         const fetch_ = async () => {
             setLoading(true); setError("");
             try {
-                console.log("🐾 Fetching nearby pet services...");
                 const response = await getNearbyPetWorkers(userLocation.latitude, userLocation.longitude, 10);
-                console.log("🐾 API Response:", response);
                 const workers = extractPetWorkers(response);
-                console.log("🐾 Final count:", workers.length);
                 setNearbyPetWorkers(workers);
             } catch (e) {
                 console.error("❌ Error:", e);
@@ -140,28 +198,28 @@ const PetServicesList: React.FC = () => {
             } finally { setLoading(false); }
         };
         fetch_();
-    }, [userLocation]); // ✅ no subcategory filter — mirrors RealEstateList
+    }, [userLocation]);
 
     // ── Navigation handlers ──────────────────────────────────────────────────
     const handleView = (service: any) => navigate(`/pet-services/details/${service._id || service.id}`);
     const handleAddPost = () =>
         navigate(subcategory ? `/add-pet-service-form?subcategory=${subcategory}` : "/add-pet-service-form");
+
     const openDirections = (service: PetWorker) => {
         if (service.latitude && service.longitude)
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${service.latitude},${service.longitude}`, "_blank");
         else if (service.area || service.city)
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([service.area, service.city, service.state].filter(Boolean).join(", "))}`, "_blank");
     };
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
-    // ── Dummy cards — always render first ────────────────────────────────────
+    // ── Dummy cards ───────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
     // ============================================================================
-    // PET WORKER CARD — mirrors RealEstateList card style exactly
+    // PET WORKER CARD
     // ============================================================================
     const renderPetWorkerCard = (service: PetWorker) => {
         const id = service._id || "";
@@ -178,11 +236,24 @@ const PetServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                style={{ transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease' }}
+                onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(-4px)';
+                    el.style.boxShadow = '0 12px 32px rgba(0,89,138,0.15)';
+                    el.style.borderColor = 'rgba(0,89,138,0.3)';
+                }}
+                onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(0)';
+                    el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                    el.style.borderColor = 'rgb(243,244,246)';
+                }}
                 onClick={() => handleView(service)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(0,89,138,0.05), rgba(0,89,138,0.1))' }}>
                     {imageUrls.length > 0 ? (
                         <img src={imageUrls[0]} alt={service.name || "Pet Service"} className="w-full h-full object-cover"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -192,17 +263,21 @@ const PetServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Live Data — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: '#00598a' }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Availability — top right */}
+                    {/* Availability badge */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${service.availability ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                            }`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${
+                            service.availability ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        }`}>
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             {service.availability ? 'Available' : 'Unavailable'}
                         </span>
@@ -231,7 +306,7 @@ const PetServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: '#00598a' }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -246,7 +321,7 @@ const PetServicesList: React.FC = () => {
                         {(service.serviceCharge || (service as any).price) && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase">{(service as any).priceType || 'Per Service'}</p>
-                                <p className="text-base font-bold text-blue-600">
+                                <p className="text-base font-bold" style={{ color: '#00598a' }}>
                                     ₹{(service as any).price || service.serviceCharge}
                                 </p>
                             </div>
@@ -259,12 +334,18 @@ const PetServicesList: React.FC = () => {
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Services</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {servicesList.slice(0, 3).map((s, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200">
-                                        <span className="text-blue-500">●</span> {s}
+                                    <span
+                                        key={i}
+                                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border"
+                                        style={{ backgroundColor: 'rgba(0,89,138,0.07)', color: '#00598a', borderColor: 'rgba(0,89,138,0.2)' }}
+                                    >
+                                        <span>●</span> {s}
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">+{servicesList.length - 3} more</span>
+                                    <span className="text-xs font-medium px-1 py-1" style={{ color: '#00598a' }}>
+                                        +{servicesList.length - 3} more
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -272,19 +353,48 @@ const PetServicesList: React.FC = () => {
 
                     {/* Directions + Call */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        {/* Directions — outline */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all border-2"
+                            style={{ borderColor: '#00598a', color: '#00598a', backgroundColor: 'transparent' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLElement).style.color = '#fff';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLElement).style.color = '#00598a';
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* Call — solid, opens popup */}
                         <button
-                            onClick={e => { e.stopPropagation(); service.phone && openCall(service.phone); }}
+                            onClick={e => {
+                                e.stopPropagation();
+                                if (service.phone) {
+                                    setPhonePopup({
+                                        phone: service.phone,
+                                        serviceName: service.name || 'Pet Service',
+                                    });
+                                }
+                            }}
                             disabled={!service.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                }`}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all text-white"
+                            style={{
+                                backgroundColor: service.phone ? '#00598a' : '#d1d5db',
+                                cursor: service.phone ? 'pointer' : 'not-allowed',
+                            }}
+                            onMouseEnter={e => {
+                                if (service.phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73';
+                            }}
+                            onMouseLeave={e => {
+                                if (service.phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                            }}
                         >
                             <span>📞</span> Call
                         </button>
@@ -294,12 +404,12 @@ const PetServicesList: React.FC = () => {
         );
     };
 
-    // ── Nearby services section — renders after dummy cards ──────────────────
+    // ── Nearby services section ───────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#00598a' }} />
                 </div>
             );
         }
@@ -309,17 +419,19 @@ const PetServicesList: React.FC = () => {
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
                     <div className="text-5xl mb-3">🐾</div>
                     <p className="text-gray-500 font-medium">No pet services found in your area.</p>
-                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
+                    <p className="text-xs text-gray-400 mt-1">Try moving to a different area.</p>
                 </div>
             );
         }
 
         return (
             <div className="space-y-4">
-                {/* Nearby Services header with count — mirrors RealEstateList */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: '#00598a' }}
+                    >
                         {nearbyPetWorkers.length}
                     </span>
                 </div>
@@ -331,7 +443,7 @@ const PetServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND (mirrors RealEstateList exactly)
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
@@ -346,17 +458,23 @@ const PetServicesList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find pet services near you</p>
                     </div>
-                    <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white">
+
+                    <button
+                        onClick={handleAddPost}
+                        className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white transition-all w-full sm:w-auto"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                    >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="rounded-lg p-3 flex items-center gap-2" style={{ backgroundColor: '#e8f2f8', border: '1px solid #b3d4e8' }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: '#00598a', borderTopColor: 'transparent' }} />
+                        <span className="text-sm" style={{ color: '#00598a' }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -370,15 +488,24 @@ const PetServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
+                {/* 1. DUMMY CARDS FIRST */}
                 <div className="space-y-4">
                     {renderDummyCards()}
                 </div>
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
             </div>
+
+            {/* ── Phone Popup ── */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    serviceName={phonePopup.serviceName}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
         </div>
     );
 };

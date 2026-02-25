@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { deletePetServiceById, PetWorker } from "../services/PetWorker.service";
 import { ServiceItem } from "../services/api.service";
 import { typography } from "../styles/typography";
-import Button from "../components/ui/Buttons";
 import ActionDropdown from "../components/ActionDropDown";
 
 // ============================================================================
@@ -79,7 +78,7 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches DigitalUserService card layout
+    // CARD
     // ============================================================================
     const renderCard = (service: PetWorker) => {
         const id = service._id || "";
@@ -97,7 +96,21 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer"
+                style={{ transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease' }}
+                onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(-4px)';
+                    el.style.boxShadow = '0 12px 32px rgba(0, 89, 138, 0.15)';
+                    el.style.borderColor = 'rgba(0, 89, 138, 0.3)';
+                }}
+                onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(0)';
+                    el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                    el.style.borderColor = 'rgb(243,244,246)';
+                }}
+                onClick={() => handleView(id)}
             >
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
@@ -109,12 +122,15 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-600/5">
+                        <div
+                            className="w-full h-full flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(0, 89, 138, 0.05)' }}
+                        >
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
 
-                    {/* Category badge — bottom left over image */}
+                    {/* Category badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
                         <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {service.category || "Pet Service"}
@@ -122,10 +138,13 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                     </div>
 
                     {/* Action menu — top right */}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3" onClick={e => e.stopPropagation()}>
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
+                                <div
+                                    className="animate-spin rounded-full h-5 w-5 border-b-2"
+                                    style={{ borderColor: '#00598a' }}
+                                />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -150,9 +169,16 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Category pill + Availability status — side by side */}
+                    {/* Category pill + Availability */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-blue-700 bg-blue-600/8 border border-blue-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border"
+                            style={{
+                                color: '#00598a',
+                                backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                borderColor: 'rgba(0, 89, 138, 0.2)',
+                            }}
+                        >
                             {service.category || "Pet Service"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -170,16 +196,31 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Service detail chips (shown when no description) */}
+                    {/* Service detail chips */}
                     {!description && servicesList.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {service.experience && (
-                                <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border"
+                                    style={{
+                                        color: '#00598a',
+                                        backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                        borderColor: 'rgba(0, 89, 138, 0.2)',
+                                    }}
+                                >
                                     🐾 {service.experience} yrs exp
                                 </span>
                             )}
                             {servicesList.slice(0, 2).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border"
+                                    style={{
+                                        color: '#00598a',
+                                        backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                        borderColor: 'rgba(0, 89, 138, 0.2)',
+                                    }}
+                                >
                                     {s}
                                 </span>
                             ))}
@@ -191,7 +232,7 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Rating row + optional phone + price */}
+                    {/* Rating + phone + price */}
                     <div className="flex items-center gap-2 mb-4">
                         <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                             ⭐ {service.rating ? service.rating : "N/A"}
@@ -207,12 +248,22 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                         )}
 
                         {price && (
-                            <span className="ml-auto text-sm font-bold text-blue-700">
+                            <span className="ml-auto text-sm font-bold" style={{ color: '#00598a' }}>
                                 ₹{Number(price).toLocaleString()}
                             </span>
                         )}
                     </div>
 
+                    {/* View Details button */}
+                    <button
+                        onClick={e => { e.stopPropagation(); handleView(id); }}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                    >
+                        View Details
+                    </button>
                 </div>
             </div>
         );
@@ -237,14 +288,15 @@ const PetUserService: React.FC<PetUserServiceProps> = ({
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your pet services to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={() => navigate("/add-pet-service-form")}
-                        className="gap-1.5 bg-blue-600 hover:bg-blue-700"
+                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                     >
                         + Add Pet Service
-                    </Button>
+                    </button>
                 </div>
             </div>
         );

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     createShoppingStore,
@@ -11,11 +11,6 @@ import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
 
-const BRAND = '#00598a';
-const BRAND_DARK = '#004a75';
-const BRAND_LIGHT_BG = '#e8f2f8';
-const BRAND_LIGHT_BORDER = '#b3d4e8';
-
 const getShoppingRetailSubcategories = () => {
     const shoppingCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 7);
     return shoppingCategory ? shoppingCategory.items.map((item: any) => item.name) : [];
@@ -23,14 +18,14 @@ const getShoppingRetailSubcategories = () => {
 
 // ── Shared input: #00598a focus ring ─────────────────────────────────────────
 const inputBase =
-    `w-full px-3 sm:px-4 py-2.5 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in #00598a
+// Dropdown chevron
 const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
     backgroundPosition: 'right 0.75rem center',
     backgroundSize: '1.5em 1.5em',
@@ -39,21 +34,26 @@ const selectStyle = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-1.5 sm:mb-2 text-sm sm:text-base font-medium`}>
-        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
+    <label className={`block ${typography.form.label} text-gray-800 mb-2 font-medium`}>
+        {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 space-y-3 sm:space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900 text-sm sm:text-base`}>{title}</h3>
+                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
                 {action}
             </div>
         )}
         {children}
     </div>
+);
+
+// ── Always 2 columns with generous gap ───────────────────────────────────────
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -90,7 +90,9 @@ const ShoppingForm: React.FC = () => {
     const [loadingData, setLoadingData] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+    const [locationWarning, setLocationWarning] = useState('');
     const { setAccountType } = useAccount();
+
     const storeTypes = getShoppingRetailSubcategories();
     const defaultType = getSubcategoryFromUrl() || storeTypes[0] || 'Supermarkets';
 
@@ -114,6 +116,7 @@ const ShoppingForm: React.FC = () => {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
     const [locationLoading, setLocationLoading] = useState(false);
+    const isGPSDetected = useRef(false);
 
     // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -152,6 +155,7 @@ const ShoppingForm: React.FC = () => {
     // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
                 const fullAddress = [formData.area, formData.city, formData.state, formData.pincode]
                     .filter(Boolean).join(', ');
@@ -210,11 +214,22 @@ const ShoppingForm: React.FC = () => {
     const getCurrentLocation = () => {
         setLocationLoading(true);
         setError('');
+        setLocationWarning('');
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
+                isGPSDetected.current = true;
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
+                const accuracy = pos.coords.accuracy;
+
+                if (accuracy > 500) {
+                    setLocationWarning(
+                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). ` +
+                        `The address fields below may be approximate — please verify and correct if needed.`
+                    );
+                }
+
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
@@ -260,7 +275,6 @@ const ShoppingForm: React.FC = () => {
             fd.append('pincode', formData.pincode);
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
-
             selectedImages.forEach(img => fd.append('images', img, img.name));
 
             if (isEditMode) {
@@ -297,9 +311,9 @@ const ShoppingForm: React.FC = () => {
     // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
                 </div>
             </div>
@@ -307,94 +321,115 @@ const ShoppingForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER
+    // RENDER — Wide layout, 2 fields per row (matches CourierForm)
     // ============================================================================
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
-                <div className="max-w-2xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center gap-2 sm:gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-1.5 sm:p-2 -ml-1 sm:-ml-2 hover:bg-gray-50 rounded-full transition flex-shrink-0"
-                        aria-label="Go back"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
-                        <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div className="flex-1 min-w-0">
-                        <h1 className={`${typography.heading.h5} text-gray-900 truncate`}>
+                    <div className="flex-1">
+                        <h1 className={`${typography.heading.h5} text-gray-900`}>
                             {isEditMode ? 'Update Store' : 'Add New Store'}
                         </h1>
-                        <p className={`${typography.body.small} text-gray-500 hidden sm:block`}>
+                        <p className={`${typography.body.small} text-gray-500`}>
                             {isEditMode ? 'Update your store listing' : 'Create new store listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6 space-y-3 sm:space-y-4">
+            {/* ── Wide container ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
-                    <div className={`p-3 sm:p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error} text-sm sm:text-base`}>
-                        {error}
+                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1">Error</p>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-3 sm:p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
-                        ✓ {successMessage}
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <p>{successMessage}</p>
+                        </div>
                     </div>
                 )}
 
-                {/* 1. STORE NAME */}
+                {/* ─── ROW 1: STORE NAME + STORE TYPE ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Store Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="storeName"
-                            value={formData.storeName}
-                            onChange={handleInputChange}
-                            placeholder="Enter your store name"
-                            className={inputBase}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Store Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="storeName"
+                                value={formData.storeName}
+                                onChange={handleInputChange}
+                                placeholder="Enter your store name"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Store Type</FieldLabel>
+                            <select
+                                name="storeType"
+                                value={formData.storeType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {storeTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 2. CONTACT */}
+                {/* ─── ROW 2: CONTACT ─── */}
                 <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Email</FieldLabel>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 3. STORE TYPE */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Store Type</FieldLabel>
-                        <select
-                            name="storeType"
-                            value={formData.storeType}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectStyle}
-                        >
-                            {storeTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* 4. DESCRIPTION */}
+                {/* ─── ROW 3: DESCRIPTION (full width since single field) ─── */}
                 <SectionCard title="Store Description">
                     <textarea
                         name="description"
@@ -406,7 +441,7 @@ const ShoppingForm: React.FC = () => {
                     />
                 </SectionCard>
 
-                {/* 5. LOCATION */}
+                {/* ─── ROW 4-5: LOCATION ─── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -414,51 +449,63 @@ const ShoppingForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: BRAND }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
                             }
                         </button>
                     }
                 >
-                    <div className="grid grid-cols-2 gap-3">
+                    {locationWarning && (
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
+                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
+                        </div>
+                    )}
+
+                    {/* Area + City */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="e.g. Koramangala" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    </TwoCol>
+
+                    {/* State + PIN */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="e.g. Karnataka" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    {/* Tip box */}
-                    <div className="rounded-xl p-2.5 sm:p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
-                        <p className={`${typography.body.small} text-xs sm:text-sm`} style={{ color: BRAND }}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
+                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
                         </p>
                     </div>
 
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-2.5 sm:p-3">
-                            <p className={`${typography.body.small} text-green-800 text-xs sm:text-sm`}>
-                                <span className="font-semibold">✓ Location detected: </span>
-                                <span className="ml-1 break-all">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className={`${typography.body.small} text-green-800`}>
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -466,104 +513,114 @@ const ShoppingForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* 6. PHOTOS */}
+                {/* ─── ROW 6: PHOTOS ─── */}
                 <SectionCard title={`Store Photos (${totalImagesCount}/5)`}>
-                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={maxImagesReached}
-                        />
-                        <div
-                            className="border-2 border-dashed rounded-xl sm:rounded-2xl p-6 sm:p-8 text-center transition-colors"
-                            style={
-                                maxImagesReached
-                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
-                            }
-                        >
-                            <div className="flex flex-col items-center gap-2 sm:gap-3">
-                                <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
-                                    <Upload className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700 text-sm sm:text-base`}>
-                                        {maxImagesReached
-                                            ? 'Maximum 5 images reached'
-                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1 text-xs sm:text-sm`}>
-                                        Upload photos of your store, products, or team
-                                    </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
+                                        <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImagesCount} slots left)`}
                                         </p>
-                                    )}
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            Upload photos of your store, products, or team
+                                        </p>
+                                        {selectedImages.length > 0 && (
+                                            <p className="text-sm font-medium mt-1" style={{ color: '#00598a' }}>
+                                                {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Image Grid */}
-                    {(existingImages.length > 0 || selectedImages.length > 0) && (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mt-3 sm:mt-4">
-                            {existingImages
-                                .filter(url => !imagesToDelete.includes(url))
-                                .map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                        {/* Previews */}
+                        {(existingImages.length > 0 || selectedImages.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages
+                                    .filter(url => !imagesToDelete.includes(url))
+                                    .map((url, i) => (
+                                        <div key={`ex-${i}`} className="relative aspect-square group">
+                                            <img
+                                                src={url}
+                                                alt={`Saved ${i + 1}`}
+                                                className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveExistingImage(url)}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                            <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
+                                                Saved
+                                            </span>
+                                        </div>
+                                    ))}
+
+                                {selectedImages.map((file, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
                                         <img
-                                            src={url}
-                                            alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2 border-gray-200"
-                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
+                                            src={imagePreviews[i]}
+                                            alt={`New ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: '#00598a' }}
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveExistingImage(url)}
-                                            className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
+                                            onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                         >
-                                            <X className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            <X className="w-4 h-4" />
                                         </button>
-                                        <span className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full" style={{ backgroundColor: BRAND }}>
-                                            Saved
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(file.size / 1024 / 1024).toFixed(1)}MB
                                         </span>
                                     </div>
                                 ))}
-
-                            {selectedImages.map((file, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img
-                                        src={imagePreviews[i]}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-lg sm:rounded-xl border-2"
-                                        style={{ borderColor: BRAND }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
-                                    >
-                                        <X className="w-3 h-3 sm:w-4 sm:h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1 left-1 sm:bottom-2 sm:left-2 bg-green-600 text-white text-xs px-1.5 py-0.5 sm:px-2 rounded-full">
-                                        New
-                                    </span>
-                                    <span className="absolute top-1 right-1 sm:top-2 sm:right-2 bg-black/50 text-white text-[10px] sm:text-xs px-1 rounded">
-                                        {(file.size / 1024 / 1024).toFixed(1)}MB
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className={`${typography.body.small} text-gray-400`}>
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
 
                     {/* Deleted images — undo section */}
                     {imagesToDelete.length > 0 && (
-                        <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 bg-red-50 border border-red-200 rounded-xl">
-                            <p className={`${typography.body.small} text-red-700 mb-2 text-xs sm:text-sm`}>
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                            <p className={`${typography.body.small} text-red-700 mb-2`}>
                                 Images marked for deletion ({imagesToDelete.length}):
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -571,7 +628,7 @@ const ShoppingForm: React.FC = () => {
                                     <button
                                         key={`del-${i}`}
                                         onClick={() => handleRestoreExistingImage(url)}
-                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50 transition"
+                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50"
                                     >
                                         <span>↩</span> Restore image {i + 1}
                                     </button>
@@ -582,29 +639,41 @@ const ShoppingForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 pt-2 pb-4 sm:pb-0">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`w-full sm:flex-1 px-6 py-3 sm:py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm text-sm sm:text-base ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
-                    >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Store' : 'Create Store')}
-                    </button>
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors text-sm sm:text-base ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : (
+                            isEditMode ? 'Update Store' : 'Create Store'
+                        )}
+                    </button>
                 </div>
+
             </div>
         </div>
     );

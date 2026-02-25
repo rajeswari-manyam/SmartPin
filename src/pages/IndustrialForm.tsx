@@ -37,14 +37,22 @@ const resolveUserId = (): string => {
 
 // ── Shared Tailwind class strings ─────────────────────────────────────────────
 const inputBase =
-    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'w-full px-4 py-3 border border-gray-300 rounded-xl text-base text-gray-800 ' +
     'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
     'focus:border-[#00598a] focus:ring-2 focus:ring-[#00598a]/20';
 
 const inputErr =
-    'w-full px-4 py-3.5 border border-red-400 rounded-xl text-base text-gray-800 ' +
+    'w-full px-4 py-3 border border-red-400 rounded-xl text-base text-gray-800 ' +
     'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
     'focus:border-red-400 focus:ring-2 focus:ring-red-300/40';
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
 
 // ── Field errors type ─────────────────────────────────────────────────────────
 interface FieldErrors {
@@ -59,31 +67,31 @@ interface FieldErrors {
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className="block text-base font-semibold text-gray-800 mb-2">
         {children}
-        {required && <span className="text-[#00598a] ml-1">*</span>}
+        {required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
 const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
     msg ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
 
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 ${className}`}>
+const SectionCard: React.FC<{
+    title?: string;
+    children: React.ReactNode;
+    action?: React.ReactNode;
+}> = ({ title, children, action }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+        {title && (
+            <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                {action}
+            </div>
+        )}
         {children}
     </div>
 );
 
-const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
-    <div className="flex items-center justify-between mb-1">
-        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-        {action}
-    </div>
-);
-
-const SelectWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="relative">
-        {children}
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00598a] pointer-events-none" />
-    </div>
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 // ── Geocoding ─────────────────────────────────────────────────────────────────
@@ -328,7 +336,6 @@ const IndustrialForm: React.FC = () => {
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
 
             if (isEditMode && editId) {
-                // phone is now a valid optional field in updateIndustrialService payload
                 const res = await updateIndustrialService(editId, {
                     serviceName: formData.serviceName,
                     phone: formData.phone.trim(),
@@ -348,7 +355,6 @@ const IndustrialForm: React.FC = () => {
                 if (!res.success) throw new Error(res.message || 'Failed to update service');
                 setSuccessMessage('Service updated successfully!');
             } else {
-                // phone is now a valid optional field in addIndustrialService payload
                 const res = await addIndustrialService({
                     userId: uid,
                     serviceName: formData.serviceName,
@@ -395,14 +401,15 @@ const IndustrialForm: React.FC = () => {
     }
 
     const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-lg mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
                         className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -416,21 +423,20 @@ const IndustrialForm: React.FC = () => {
                         <h1 className="text-xl font-bold text-gray-900 leading-tight">
                             {isEditMode ? 'Update Industrial Service' : 'Add Industrial Service'}
                         </h1>
-                        <p className="text-sm text-gray-400 mt-0.5">
+                        <p className="text-sm text-gray-500 mt-0.5">
                             {isEditMode ? 'Update your service details' : 'Create new industrial service listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full bg-[#00598a]" />
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-10">
+            {/* ── Wide container ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Global error banner */}
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex gap-2.5">
-                        <span className="text-red-500 shrink-0 mt-0.5 text-lg">⚠️</span>
+                        <span className="text-red-500 shrink-0 mt-0.5">⚠️</span>
                         <div>
                             <p className="text-base font-semibold text-red-800 mb-0.5">Please fix the following</p>
                             <p className="text-sm text-red-600">{error}</p>
@@ -447,57 +453,59 @@ const IndustrialForm: React.FC = () => {
                 )}
 
                 {/* ── 1. Basic Information ── */}
-                <Card>
-                    <CardTitle title="Basic Information" />
-                    <div>
-                        <FieldLabel required>Service Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="serviceName"
-                            value={formData.serviceName}
-                            onChange={handleChange}
-                            placeholder="e.g., Packers & Movers"
-                            className={fieldErrors.serviceName ? inputErr : inputBase}
-                        />
-                        <FieldError msg={fieldErrors.serviceName} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Service Type</FieldLabel>
-                        <SelectWrap>
+                <SectionCard title="Basic Information">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Service Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="serviceName"
+                                value={formData.serviceName}
+                                onChange={handleChange}
+                                placeholder="e.g., Packers & Movers"
+                                className={fieldErrors.serviceName ? inputErr : inputBase}
+                            />
+                            <FieldError msg={fieldErrors.serviceName} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Service Type</FieldLabel>
                             <select
                                 name="subCategory"
                                 value={formData.subCategory}
                                 onChange={handleChange}
-                                className={inputBase + ' appearance-none pr-10'}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
                             >
                                 {industrialTypes.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
-                        </SelectWrap>
-                    </div>
-                </Card>
+                        </div>
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 2. Contact Information ── */}
-                <Card>
-                    <CardTitle title="Contact Information" />
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            placeholder="Enter 10-digit mobile number"
-                            maxLength={10}
-                            className={fieldErrors.phone ? inputErr : inputBase}
-                        />
-                        <FieldError msg={fieldErrors.phone} />
-                    </div>
-                </Card>
+                <SectionCard title="Contact Information">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="Enter 10-digit mobile number"
+                                maxLength={10}
+                                className={fieldErrors.phone ? inputErr : inputBase}
+                            />
+                            <FieldError msg={fieldErrors.phone} />
+                        </div>
+                        {/* Empty right column for balance */}
+                        <div />
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 3. Pricing Details ── */}
-                <Card>
-                    <CardTitle title="Pricing Details" />
-                    <div className="grid grid-cols-2 gap-3">
+                <SectionCard title="Pricing Details">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
@@ -513,22 +521,21 @@ const IndustrialForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
-                            <SelectWrap>
-                                <select
-                                    name="chargeType"
-                                    value={formData.chargeType}
-                                    onChange={handleChange}
-                                    className={inputBase + ' appearance-none pr-10'}
-                                >
-                                    {chargeTypeOptions.map(t => (
-                                        <option key={t} value={t}>
-                                            {t.replace(/\b\w/g, c => c.toUpperCase())}
-                                        </option>
-                                    ))}
-                                </select>
-                            </SelectWrap>
+                            <select
+                                name="chargeType"
+                                value={formData.chargeType}
+                                onChange={handleChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {chargeTypeOptions.map(t => (
+                                    <option key={t} value={t}>
+                                        {t.replace(/\b\w/g, c => c.toUpperCase())}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                    </div>
+                    </TwoCol>
 
                     {/* Availability toggle */}
                     <div className="flex items-center justify-between py-1">
@@ -545,121 +552,129 @@ const IndustrialForm: React.FC = () => {
                             }`} />
                         </button>
                     </div>
-                </Card>
+                </SectionCard>
 
                 {/* ── 4. Service Description ── */}
-                <Card>
-                    <CardTitle title="Service Description" />
-                    <div>
-                        <FieldLabel required>Description</FieldLabel>
-                        <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            rows={4}
-                            placeholder="Describe your service in detail..."
-                            className={(fieldErrors.description ? inputErr : inputBase) + ' resize-none'}
-                        />
-                        <FieldError msg={fieldErrors.description} />
-                    </div>
-                </Card>
+                <SectionCard title="Service Description">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Description</FieldLabel>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                rows={4}
+                                placeholder="Describe your service in detail..."
+                                className={(fieldErrors.description ? inputErr : inputBase) + ' resize-none'}
+                            />
+                            <FieldError msg={fieldErrors.description} />
+                        </div>
+                        {/* Empty right column for balance */}
+                        <div />
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 5. Service Photos ── */}
-                <Card>
-                    <CardTitle title="Service Photos (Optional)" />
-
-                    {/* Upload zone */}
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={totalImages >= 5}
-                        />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                            totalImages >= 5
-                                ? 'border-gray-200 bg-gray-50'
-                                : 'border-[#7ab3cc] bg-[#f0f7fb] hover:border-[#00598a] hover:bg-[#e8f2f8]'
-                        }`}>
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-[#e8f2f8] flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-[#00598a]" />
-                                </div>
-                                <div>
-                                    <p className="text-base font-semibold text-gray-700">
-                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload service photos'}
-                                    </p>
-                                    <p className="text-sm text-gray-400 mt-1">
-                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
-                                    </p>
-                                    {totalImages > 0 && (
-                                        <p className="text-sm font-semibold text-[#00598a] mt-1">
-                                            {totalImages}/5 uploaded ✓
+                <SectionCard title={`Service Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full bg-[#e8f2f8] flex items-center justify-center">
+                                        <Upload className="w-8 h-8 text-[#00598a]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-base font-semibold text-gray-700">
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
-                                    )}
+                                        <p className="text-sm text-gray-400 mt-1">
+                                            Max 5 images · 5 MB each · JPG, PNG, WEBP
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Thumbnail grid */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square group">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeExistingImg(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1.5 left-1.5 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((src, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeNewImg(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Card>
+                        {/* Thumbnail grid */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeExistingImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-1.5 left-1.5 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((src, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeNewImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                            New
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 6. Location Details ── */}
-                <Card>
-                    <CardTitle
-                        title="Location Details"
-                        action={
-                            <button
-                                type="button"
-                                onClick={getCurrentLocation}
-                                disabled={locationLoading}
-                                className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg bg-[#00598a] hover:bg-[#004a75] text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {locationLoading
-                                    ? <><span className="animate-spin text-sm">⌛</span> Detecting…</>
-                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>
-                                }
-                            </button>
-                        }
-                    />
-
+                <SectionCard
+                    title="Location Details"
+                    action={
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting…</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                            }
+                        </button>
+                    }
+                >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3.5 flex items-start gap-2">
                             <span className="text-yellow-600 shrink-0">⚠️</span>
@@ -667,26 +682,57 @@ const IndustrialForm: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { name: 'area', label: 'Area', placeholder: 'Area name' },
-                            { name: 'city', label: 'City', placeholder: 'City' },
-                            { name: 'state', label: 'State', placeholder: 'State' },
-                            { name: 'pincode', label: 'PIN Code', placeholder: 'PIN code' },
-                        ].map(field => (
-                            <div key={field.name}>
-                                <FieldLabel required>{field.label}</FieldLabel>
-                                <input
-                                    type="text"
-                                    name={field.name}
-                                    value={(formData as any)[field.name]}
-                                    onChange={handleChange}
-                                    placeholder={field.placeholder}
-                                    className={inputBase}
-                                />
-                            </div>
-                        ))}
-                    </div>
+                    {/* Area + City */}
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleChange}
+                                placeholder="Area name"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleChange}
+                                placeholder="City"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
+
+                    {/* State + PIN */}
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleChange}
+                                placeholder="State"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={formData.pincode}
+                                onChange={handleChange}
+                                placeholder="PIN code"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
 
                     {/* Location validation error */}
                     {fieldErrors.location && (
@@ -697,9 +743,9 @@ const IndustrialForm: React.FC = () => {
 
                     {/* GPS tip */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3.5 bg-[#e8f2f8] border border-[#b3d4e8]">
-                            <p className="text-sm text-[#00598a]">
-                                📍 <span className="font-semibold">Tip:</span> Click Auto Detect or enter your address manually above.
+                        <div className="rounded-xl p-3.5" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                            <p className="text-sm" style={{ color: '#7a4f00' }}>
+                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
                             </p>
                         </div>
                     )}
@@ -708,43 +754,51 @@ const IndustrialForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3.5">
                             <p className="text-sm text-green-800">
-                                <span className="font-semibold">✓ Location detected: </span>
+                                <span className="font-semibold">✓ Location set: </span>
                                 <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
                         </div>
                     )}
-                </Card>
+                </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-3 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className="flex-1 py-4 rounded-xl font-bold text-base text-white bg-[#00598a] hover:bg-[#004a75] flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading && (
-                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                        )}
-                        {loading
-                            ? (isEditMode ? 'Updating…' : 'Creating…')
-                            : successMessage
-                                ? '✓ Done'
-                                : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
-
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={() => window.history.back()}
                         type="button"
                         disabled={loading}
-                        className="px-8 py-4 rounded-xl font-bold text-base text-white bg-[#00598a] hover:bg-[#004a75] transition-colors disabled:opacity-50"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all text-base
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading || !!successMessage}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg text-base
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${loading || !!successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                {isEditMode ? 'Updating…' : 'Creating…'}
+                            </span>
+                        ) : successMessage
+                            ? '✓ Done'
+                            : isEditMode ? 'Update Service' : 'Create Service'
+                        }
                     </button>
                 </div>
 

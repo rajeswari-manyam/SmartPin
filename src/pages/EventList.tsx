@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { getNearbyEventWorkers, EventWorker } from "../services/EventWorker.service";
 
@@ -11,14 +10,10 @@ import NearbyDJCard from "../components/cards/Events/NearByDj";
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
-// ── Build a proper absolute image URL from a raw backend path ────────────────
 const buildImageUrl = (path: string): string => {
     if (!path) return "";
-    // Already a full URL — return as-is
     if (/^(https?:\/\/|blob:|data:)/i.test(path)) return path;
-    // Normalise Windows backslashes and strip leading slash
     const clean = path.replace(/\\/g, "/").replace(/^\//, "");
-    // Strip trailing slash from base to avoid double-slash
     const base = (API_BASE_URL || "").replace(/\/$/, "");
     const url = `${base}/${clean}`;
     console.log("🖼️ Image URL built:", path, "=>", url);
@@ -27,9 +22,109 @@ const buildImageUrl = (path: string): string => {
 
 const getImageUrls = (images?: string[]): string[] => {
     if (!images || images.length === 0) return [];
-    const urls = images.map(buildImageUrl).filter(Boolean);
-    console.log("🖼️ All image URLs:", urls);
-    return urls;
+    return images.map(buildImageUrl).filter(Boolean);
+};
+
+// ── Helper: extract phone from event (handles multiple possible field names) ──
+const getEventPhone = (event: any): string => {
+    return (
+        event.phone ||
+        event.phoneNumber ||
+        event.mobile ||
+        event.mobileNumber ||
+        event.contact ||
+        event.contactNumber ||
+        event.telephone ||
+        ""
+    );
+};
+
+// ============================================================================
+// PHONE POPUP COMPONENT
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    name: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
+    // Close on Escape key
+    useEffect(() => {
+        const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Phone icon */}
+                <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,89,138,0.1)" }}
+                >
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" style={{ color: "#00598a" }}>
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                </div>
+
+                {/* Service name */}
+                <div className="text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Contact</p>
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
+                </div>
+
+                {/* Phone number display */}
+                <div
+                    className="w-full text-center py-3 px-4 rounded-xl"
+                    style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
+                >
+                    <p className="text-xl font-bold tracking-wide" style={{ color: "#00598a" }}>
+                        {phone}
+                    </p>
+                </div>
+
+                {/* Buttons */}
+                <div className="grid grid-cols-2 gap-3 w-full">
+                    <a
+                        href={`tel:${phone}`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
+                        style={{ backgroundColor: "#00598a" }}
+                        onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#004a73")}
+                        onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.backgroundColor = "#00598a")}
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        Call Now
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                        style={{ color: "#00598a", border: "2px solid #00598a", backgroundColor: "transparent" }}
+                        onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a";
+                            (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.color = "#00598a";
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 // ============================================================================
@@ -55,16 +150,21 @@ const resolveCardKey = (subcategory?: string): CardKey => {
 
 const getDisplayTitle = (subcategory?: string): string => {
     if (!subcategory) return "All Event Services";
-    return subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return subcategory
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
 };
 
 const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
         Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
@@ -85,6 +185,16 @@ const extractEventWorkers = (response: any): EventWorker[] => {
     for (const candidate of candidates) {
         if (Array.isArray(candidate)) {
             console.log(`✅ Event workers found — count: ${candidate.length}`);
+            // Debug: log phone fields of first worker
+            if (candidate.length > 0) {
+                console.log("📞 First worker phone fields:", {
+                    phone: candidate[0].phone,
+                    phoneNumber: candidate[0].phoneNumber,
+                    mobile: candidate[0].mobile,
+                    contact: candidate[0].contact,
+                    allKeys: Object.keys(candidate[0]),
+                });
+            }
             return candidate as EventWorker[];
         }
         if (candidate && typeof candidate === "object" && !Array.isArray(candidate) && candidate._id) {
@@ -108,16 +218,21 @@ const EventServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
-        if (!navigator.geolocation) { setLocationError("Geolocation not supported"); setFetchingLocation(false); return; }
+        if (!navigator.geolocation) {
+            setLocationError("Geolocation not supported");
+            setFetchingLocation(false);
+            return;
+        }
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => {
                 console.error(err);
@@ -131,40 +246,69 @@ const EventServicesList: React.FC = () => {
     // ── Fetch nearby when location ready ─────────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-        const fetch_ = async () => {
-            setLoading(true); setError("");
+        const fetchWorkers = async () => {
+            setLoading(true);
+            setError("");
             try {
-                console.log("🎉 Fetching nearby event services...");
-                const response = await getNearbyEventWorkers(userLocation.latitude, userLocation.longitude, 10);
-                console.log("🎉 API Response:", response);
+                const response = await getNearbyEventWorkers(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    10
+                );
                 const workers = extractEventWorkers(response);
-                console.log("🎉 Final count:", workers.length);
                 setNearbyEventWorkers(workers);
             } catch (e) {
                 console.error("❌ Error:", e);
                 setError("Failed to load nearby event services");
                 setNearbyEventWorkers([]);
-            } finally { setLoading(false); }
+            } finally {
+                setLoading(false);
+            }
         };
-        fetch_();
+        fetchWorkers();
     }, [userLocation]);
 
     // ── Navigation handlers ──────────────────────────────────────────────────
-    const handleView = (event: any) => navigate(`/event-services/details/${event._id || event.id}`);
+    const handleView = (event: any) =>
+        navigate(`/event-services/details/${event._id || event.id}`);
+
     const handleAddPost = () =>
-        navigate(subcategory ? `/add-event-service-form?subcategory=${subcategory}` : "/add-event-service-form");
+        navigate(
+            subcategory
+                ? `/add-event-service-form?subcategory=${subcategory}`
+                : "/add-event-service-form"
+        );
+
     const openDirections = (event: EventWorker) => {
         if (event.latitude && event.longitude)
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`, "_blank");
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${event.latitude},${event.longitude}`,
+                "_blank"
+            );
         else if (event.area || event.city)
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([event.area, event.city, event.state].filter(Boolean).join(", "))}`, "_blank");
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                    [event.area, event.city, event.state].filter(Boolean).join(", ")
+                )}`,
+                "_blank"
+            );
     };
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
 
-    // ── Dummy cards — always render first ────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
+    };
+
+    // ── Open phone popup ─────────────────────────────────────────────────────
+    const handleCallClick = (e: React.MouseEvent, event: EventWorker) => {
+        e.stopPropagation();
+        const phone = getEventPhone(event);
+        console.log("📞 Call clicked. Resolved phone:", phone, "| Raw event:", event);
+        if (phone) {
+            setPhonePopup({ phone, name: event.name || "Event Service" });
+        } else {
+            alert("Phone number not available for this service.");
+        }
     };
 
     // ============================================================================
@@ -172,58 +316,85 @@ const EventServicesList: React.FC = () => {
     // ============================================================================
     const renderEventWorkerCard = (event: EventWorker) => {
         const id = event._id || "";
-        const location = [event.area, event.city].filter(Boolean).join(", ") || "Location not set";
-
-        // ✅ Build proper absolute URLs for every image path
+        const location =
+            [event.area, event.city].filter(Boolean).join(", ") || "Location not set";
         const imageUrls = getImageUrls(event.images);
-
         const services = event.services || [];
+        const isHovered = hoveredCard === id;
+        const phone = getEventPhone(event);
 
         let distance: string | null = null;
         if (userLocation && event.latitude && event.longitude) {
-            const d = calculateDistance(userLocation.latitude, userLocation.longitude, event.latitude, event.longitude);
+            const d = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                event.latitude,
+                event.longitude
+            );
             distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: isHovered ? "#00598a" : "#f3f4f6",
+                    boxShadow: isHovered
+                        ? "0 8px 24px rgba(0, 89, 138, 0.15)"
+                        : "0 1px 3px rgba(0,0,0,0.06)",
+                    transform: isHovered ? "translateY(-2px)" : "none",
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleView(event)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 overflow-hidden bg-gray-100">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={event.name || "Event Service"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
                             onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 target.onerror = null;
                                 target.style.display = "none";
                                 const parent = target.parentElement;
                                 if (parent) {
-                                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100"><span style="font-size:3rem">🎉</span></div>`;
+                                    parent.innerHTML = `<div class="w-full h-full flex items-center justify-center" style="background:rgba(0,89,138,0.05)"><span style="font-size:3rem">🎉</span></div>`;
                                 }
                             }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-50 to-purple-100">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{
+                                backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6",
+                            }}
+                        >
                             <span className="text-5xl">🎉</span>
                         </div>
                     )}
 
-                    {/* Live Data — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-purple-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Availability — top right */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${event.availability ? "bg-green-500 text-white" : "bg-red-500 text-white"}`}>
+                        <span
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${
+                                event.availability ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                            }`}
+                        >
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             {event.availability ? "Available" : "Busy"}
                         </span>
@@ -238,7 +409,10 @@ const EventServicesList: React.FC = () => {
 
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                    <h2
+                        className="text-lg font-semibold line-clamp-1 transition-colors duration-200"
+                        style={{ color: isHovered ? "#00598a" : "#111827" }}
+                    >
                         {event.name || "Unnamed Service"}
                     </h2>
 
@@ -252,12 +426,14 @@ const EventServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-purple-600 flex items-center gap-1">
+                        <p
+                            className="text-sm font-semibold flex items-center gap-1"
+                            style={{ color: "#00598a" }}
+                        >
                             <span>📍</span> {distance} away
                         </p>
                     )}
 
-                    {/* Experience + Charge */}
                     <div className="flex items-center justify-between pt-1 border-t border-gray-100">
                         <div className="flex items-center gap-2">
                             {event.experience && (
@@ -268,24 +444,43 @@ const EventServicesList: React.FC = () => {
                         </div>
                         {event.serviceCharge && (
                             <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase">{event.chargeType || "Charge"}</p>
-                                <p className="text-base font-bold text-purple-600">₹{event.serviceCharge}</p>
+                                <p className="text-xs text-gray-500 uppercase">
+                                    {event.chargeType || "Charge"}
+                                </p>
+                                <p className="text-base font-bold" style={{ color: "#00598a" }}>
+                                    ₹{event.serviceCharge}
+                                </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Services offered */}
                     {services.length > 0 && (
                         <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Services</p>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                Services
+                            </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {services.slice(0, 3).map((s, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200">
-                                        <span className="text-purple-500">●</span> {s}
+                                    <span
+                                        key={i}
+                                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors duration-200"
+                                        style={{
+                                            backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6",
+                                            color: isHovered ? "#00598a" : "#374151",
+                                            borderColor: isHovered ? "rgba(0,89,138,0.25)" : "#e5e7eb",
+                                        }}
+                                    >
+                                        <span style={{ color: isHovered ? "#00598a" : "#a855f7" }}>●</span>{" "}
+                                        {s}
                                     </span>
                                 ))}
                                 {services.length > 3 && (
-                                    <span className="text-xs text-purple-600 font-medium px-1 py-1">+{services.length - 3} more</span>
+                                    <span
+                                        className="text-xs font-medium px-1 py-1"
+                                        style={{ color: "#00598a" }}
+                                    >
+                                        +{services.length - 3} more
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -294,18 +489,40 @@ const EventServicesList: React.FC = () => {
                     {/* Directions + Call */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
-                            onClick={e => { e.stopPropagation(); openDirections(event); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-purple-600 text-purple-600 rounded-lg font-medium text-sm hover:bg-purple-50 transition-colors"
+                            onClick={(e) => { e.stopPropagation(); openDirections(event); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{ border: "2px solid #00598a", color: "#00598a", backgroundColor: "transparent" }}
+                            onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a";
+                                (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLElement).style.color = "#00598a";
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* ── Call Button → opens PhonePopup ── */}
                         <button
-                            onClick={e => { e.stopPropagation(); event.phone && openCall(event.phone); }}
-                            disabled={!event.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${event.phone
-                                ? "bg-purple-600 text-white hover:bg-purple-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            onClick={(e) => handleCallClick(e, event)}
+                            disabled={!phone}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={
+                                phone
+                                    ? { backgroundColor: "#00598a", color: "#fff" }
+                                    : { backgroundColor: "#d1d5db", color: "#9ca3af", cursor: "not-allowed" }
+                            }
+                            onMouseEnter={(e) => {
+                                if (phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = "#004a73";
+                            }}
+                            onMouseLeave={(e) => {
+                                if (phone)
+                                    (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a";
+                            }}
+                            title={phone ? `Call ${phone}` : "No phone number available"}
                         >
                             <span>📞</span> Call
                         </button>
@@ -320,11 +537,13 @@ const EventServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600" />
+                    <div
+                        className="animate-spin rounded-full h-8 w-8 border-b-2"
+                        style={{ borderColor: "#00598a" }}
+                    />
                 </div>
             );
         }
-
         if (nearbyEventWorkers.length === 0) {
             return (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
@@ -334,12 +553,14 @@ const EventServicesList: React.FC = () => {
                 </div>
             );
         }
-
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-purple-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: "#00598a" }}
+                    >
                         {nearbyEventWorkers.length}
                     </span>
                 </div>
@@ -354,9 +575,20 @@ const EventServicesList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-purple-50/30 to-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div
+            className="min-h-screen"
+            style={{ background: "linear-gradient(to bottom, rgba(0,89,138,0.04), white)" }}
+        >
+            {/* ── Phone Popup ── */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    name={phonePopup.name}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
 
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
@@ -365,17 +597,37 @@ const EventServicesList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find event services near you</p>
                     </div>
-                    <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white">
+                    <button
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: "#00598a" }}
+                        onMouseEnter={(e) =>
+                            ((e.currentTarget as HTMLElement).style.backgroundColor = "#004a73")
+                        }
+                        onMouseLeave={(e) =>
+                            ((e.currentTarget as HTMLElement).style.backgroundColor = "#00598a")
+                        }
+                    >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-purple-600/10 border border-purple-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-purple-700">Getting your location...</span>
+                    <div
+                        className="rounded-lg p-3 flex items-center gap-2"
+                        style={{
+                            backgroundColor: "rgba(0,89,138,0.08)",
+                            border: "1px solid rgba(0,89,138,0.2)",
+                        }}
+                    >
+                        <div
+                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: "#00598a", borderTopColor: "transparent" }}
+                        />
+                        <span className="text-sm" style={{ color: "#00598a" }}>
+                            Getting your location...
+                        </span>
                     </div>
                 )}
                 {locationError && (
@@ -390,13 +642,10 @@ const EventServicesList: React.FC = () => {
                 )}
 
                 {/* 1. DUMMY CARDS FIRST */}
-                <div className="space-y-4">
-                    {renderDummyCards()}
-                </div>
+                <div className="space-y-4">{renderDummyCards()}</div>
 
                 {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
-
             </div>
         </div>
     );

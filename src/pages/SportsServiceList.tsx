@@ -86,6 +86,9 @@ const SportsServicesList: React.FC = () => {
     const [fetchingLocation, setFetchingLocation] = useState(false);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
+    // ── Call popup state ─────────────────────────────────────────────────────
+    const [callPopup, setCallPopup] = useState<{ name: string; phone: string } | null>(null);
+
     // ── Get user location first, then fetch ──────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -195,7 +198,7 @@ const SportsServicesList: React.FC = () => {
             : "All Sports & Fitness Services";
 
     // ============================================================================
-    // REAL API CARD — matches RealEstate card style
+    // REAL API CARD — with hover color #00598a + call popup
     // ============================================================================
     const renderSportsCard = (service: SportsWorker) => {
         const id = service._id || "";
@@ -203,6 +206,14 @@ const SportsServicesList: React.FC = () => {
         const servicesList = service.services || [];
         const imageUrls = (service.images || []).filter(Boolean) as string[];
         const icon = getServiceIcon(service.subCategory);
+
+        // Resolve phone number from whichever field your SportsWorker type uses
+        const phoneNumber =
+            (service as any).phone ||
+            (service as any).mobile ||
+            (service as any).contact ||
+            (service as any).phoneNumber ||
+            "Not available";
 
         let distance: string | null = null;
         if (userLocation && service.latitude && service.longitude) {
@@ -218,8 +229,21 @@ const SportsServicesList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                style={{ transition: "border-color 0.2s, box-shadow 0.2s, transform 0.2s" }}
                 onClick={() => handleView(id)}
+                onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.borderColor = "#00598a";
+                    el.style.boxShadow = "0 6px 24px rgba(0,89,138,0.18)";
+                    el.style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLDivElement;
+                    el.style.borderColor = "#f3f4f6";
+                    el.style.boxShadow = "";
+                    el.style.transform = "";
+                }}
             >
                 {/* ── Image ── */}
                 <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
@@ -236,14 +260,14 @@ const SportsServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Live Data — top left, matches RealEstate */}
+                    {/* Live Data — top left */}
                     <div className="absolute top-3 left-3 z-10">
                         <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
 
-                    {/* Availability — top right, matches RealEstate */}
+                    {/* Availability — top right */}
                     <div className="absolute top-3 right-3 z-10">
                         <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${service.availability
                             ? 'bg-green-500 text-white'
@@ -279,7 +303,7 @@ const SportsServicesList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: "#00598a" }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -301,7 +325,7 @@ const SportsServicesList: React.FC = () => {
                         {service.serviceCharge && service.chargeType && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase">Charge</p>
-                                <p className="text-base font-bold text-blue-600">
+                                <p className="text-base font-bold" style={{ color: "#00598a" }}>
                                     ₹{service.serviceCharge}/{service.chargeType}
                                 </p>
                             </div>
@@ -315,11 +339,11 @@ const SportsServicesList: React.FC = () => {
                             <div className="flex flex-wrap gap-1.5">
                                 {servicesList.slice(0, 3).map((s, i) => (
                                     <span key={i} className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200">
-                                        <span className="text-blue-500">●</span> {s}
+                                        <span style={{ color: "#00598a" }}>●</span> {s}
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                    <span className="text-xs font-medium px-1 py-1" style={{ color: "#00598a" }}>
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -327,17 +351,37 @@ const SportsServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Directions + View — matches RealEstate button row */}
-                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                    {/* Directions + Call + View — 3-column button row */}
+                    <div className="grid grid-cols-3 gap-2 pt-3 mt-1">
+                        {/* Directions */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-xs border-2 hover:bg-blue-50 transition-colors"
+                            style={{ borderColor: "#00598a", color: "#00598a" }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* Call — opens popup */}
+                        <button
+                            onClick={e => {
+                                e.stopPropagation();
+                                setCallPopup({
+                                    name: service.serviceName || "Service",
+                                    phone: phoneNumber,
+                                });
+                            }}
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-xs text-white transition-colors hover:opacity-90"
+                            style={{ backgroundColor: "#22c55e" }}
+                        >
+                            📞 Call
+                        </button>
+
+                        {/* View */}
                         <button
                             onClick={e => { e.stopPropagation(); handleView(id); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm :bg-blue-700 transition-colors"
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-xs text-white transition-colors hover:opacity-90"
+                            style={{ backgroundColor: "#00598a" }}
                         >
                             <span>👁️</span> View
                         </button>
@@ -347,7 +391,7 @@ const SportsServicesList: React.FC = () => {
         );
     };
 
-    // ── DUMMY CARDS — always renders first (matches RealEstate pattern) ───────
+    // ── DUMMY CARDS — always renders first ───────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[getCardKeyFromSubCategory(subcategory)];
         return (
@@ -357,7 +401,7 @@ const SportsServicesList: React.FC = () => {
         );
     };
 
-    // ── NEARBY SERVICES SECTION — renders second (matches RealEstate) ─────────
+    // ── NEARBY SERVICES SECTION ──────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
@@ -379,10 +423,13 @@ const SportsServicesList: React.FC = () => {
 
         return (
             <div className="space-y-4">
-                {/* "Nearby Services" header with count — mirrors RealEstate */}
+                {/* "Nearby Services" header with count */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: "#00598a" }}
+                    >
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -394,7 +441,7 @@ const SportsServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND (matches RealEstate exactly)
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
@@ -418,7 +465,7 @@ const SportsServicesList: React.FC = () => {
                     </Button>
                 </div>
 
-                {/* Location status — matches RealEstate */}
+                {/* Location status */}
                 {fetchingLocation && (
                     <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
                         <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
@@ -455,6 +502,61 @@ const SportsServicesList: React.FC = () => {
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
             </div>
+
+            {/* ── Call Popup Modal ── */}
+            {callPopup && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                    onClick={() => setCallPopup(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl p-6 w-80 flex flex-col items-center gap-4"
+                        style={{ animation: "popIn 0.2s ease-out" }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Icon */}
+                        <div
+                            className="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+                            style={{ backgroundColor: "#e6f2f8" }}
+                        >
+                            📞
+                        </div>
+
+                        {/* Service name */}
+                        <div className="text-center">
+                            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Call</p>
+                            <h3 className="text-lg font-bold text-gray-900 mt-0.5 line-clamp-1">
+                                {callPopup.name}
+                            </h3>
+                        </div>
+
+                        {/* Phone number — tappable link */}
+                        <a
+                            href={`tel:${callPopup.phone}`}
+                            className="w-full py-3.5 rounded-xl text-white text-center text-lg font-bold tracking-wide transition-opacity hover:opacity-90 active:opacity-80"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
+                            {callPopup.phone}
+                        </a>
+
+                        {/* Cancel */}
+                        <button
+                            onClick={() => setCallPopup(null)}
+                            className="text-sm text-gray-400 hover:text-gray-600 transition-colors py-1"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+
+                    {/* Pop-in animation */}
+                    <style>{`
+                        @keyframes popIn {
+                            from { opacity: 0; transform: scale(0.92); }
+                            to   { opacity: 1; transform: scale(1); }
+                        }
+                    `}</style>
+                </div>
+            )}
         </div>
     );
 };

@@ -14,7 +14,7 @@ interface LoginFormProps {
     onOpenOTP?: (phone: string) => void;
 }
 
-type FormStep = "phone" | "otp";
+type FormStep = "email" | "otp";
 
 const LoginForm: React.FC<LoginFormProps> = ({
     onClose,
@@ -23,11 +23,11 @@ const LoginForm: React.FC<LoginFormProps> = ({
     onOpenOTP
 }) => {
     const navigate = useNavigate();
-    const [phoneNumber, setPhoneNumber] = useState("");
+    const [email, setEmail] = useState("");
     const [latitude, setLatitude] = useState<number | null>(null);
     const [longitude, setLongitude] = useState<number | null>(null);
     const [isLogin, setIsLogin] = useState(initialMode === "login");
-    const [currentStep, setCurrentStep] = useState<FormStep>("phone");
+    const [currentStep, setCurrentStep] = useState<FormStep>("email");
     const [isListening, setIsListening] = useState(false);
     const [voiceError, setVoiceError] = useState<string | null>(null);
 
@@ -48,18 +48,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
         }
     }, []);
 
-    const extractPhoneNumber = (text: string): string => {
-        const map: Record<string, string> = {
-            zero: "0", one: "1", two: "2", three: "3", four: "4",
-            five: "5", six: "6", seven: "7", eight: "8", nine: "9", oh: "0",
-        };
-
-        let processed = text.toLowerCase();
-        Object.keys(map).forEach(word => {
-            processed = processed.replace(new RegExp(word, "g"), map[word]);
-        });
-
-        return processed.replace(/\D/g, "").slice(0, 10);
+    const isValidEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return emailRegex.test(email);
     };
 
     const handleVoiceInput = () => {
@@ -80,12 +71,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
         voiceService.startListening(
             (result) => {
-                const extracted = extractPhoneNumber(result.transcript);
-                if (extracted.length > 0) {
-                    setPhoneNumber(extracted);
-                }
-
-                if (result.isFinal && extracted.length === 10) {
+                if (result.isFinal) {
+                    setEmail(result.transcript.trim());
                     voiceService.stopListening();
                     setIsListening(false);
                 }
@@ -98,31 +85,29 @@ const LoginForm: React.FC<LoginFormProps> = ({
         );
     };
 
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value.replace(/\D/g, "");
-        setPhoneNumber(value);
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setEmail(e.target.value);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (phoneNumber.length !== 10) {
-            alert("Please enter a valid 10-digit phone number");
+        if (!isValidEmail(email)) {
+            alert("Please enter a valid email address");
             return;
         }
 
         try {
-            console.log("Registering with phone:", phoneNumber);
+            console.log("Registering with email:", email);
 
-            // ✅ Store phone number in localStorage immediately
-            localStorage.setItem("userPhone", phoneNumber);
+            // ✅ Store email in localStorage immediately
+            localStorage.setItem("userEmail", email);
 
             const response = await registerWithOtp({
-                phone: phoneNumber,
+                email: email,
                 name: "User", // Default name
                 latitude: latitude ?? 0,
                 longitude: longitude ?? 0,
-
             });
 
             console.log("Registration response:", response);
@@ -133,7 +118,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 if (onOpenOTP) {
                     // Navbar OTP screen
                     console.log("Opening OTP modal via navbar");
-                    onOpenOTP(phoneNumber);
+                    onOpenOTP(email);
                 } else {
                     // Inline OTP
                     console.log("Switching to inline OTP");
@@ -148,9 +133,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
         }
     };
 
-    const handleBackToPhone = () => {
-        console.log("Going back to phone input");
-        setCurrentStep("phone");
+    const handleBackToEmail = () => {
+        console.log("Going back to email input");
+        setCurrentStep("email");
     };
 
     // ✅ Handle OTP Continue - Navigate to role selection
@@ -164,8 +149,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
     if (currentStep === "otp" && !onOpenOTP) {
         return (
           <OTPVerification
-    phoneNumber={phoneNumber}
-    onBack={handleBackToPhone}
+    email={email}
+    onBack={handleBackToEmail}
     // ❌ remove: fcmToken={fcmToken}
     onContinue={handleOTPContinue}
     onClose={onClose}
@@ -215,27 +200,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 </p>
             </button>
 
-            {/* Phone Form */}
+            {/* Email Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                     <label
-                        htmlFor="phone"
+                        htmlFor="email"
                         className={`block mb-2 text-gray-700 ${typography.form.label}`}
                     >
-                        Mobile Number
+                        Email Address
                     </label>
                     <div className="relative">
-                        <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-                            <span className={`text-gray-500 ${typography.body.base}`}>+91</span>
-                        </div>
                         <input
-                            type="tel"
-                            id="phone"
-                            value={phoneNumber}
-                            onChange={handlePhoneChange}
-                            placeholder="98765 43210"
-                            maxLength={10}
-                            className={`w-full pl-16 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#00598a] transition-colors duration-200 ${typography.form.input}`}
+                            type="email"
+                            id="email"
+                            value={email}
+                            onChange={handleEmailChange}
+                            placeholder="your.email@example.com"
+                            className={`w-full px-4 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#00598a] transition-colors duration-200 ${typography.form.input}`}
                             required
                         />
 
@@ -274,7 +255,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     fullWidth
                     size="lg"
                     variant="gradient-blue"
-                    disabled={phoneNumber.length < 10}
+                    disabled={!isValidEmail(email)}
                 >
                     Send OTP
                 </Button>

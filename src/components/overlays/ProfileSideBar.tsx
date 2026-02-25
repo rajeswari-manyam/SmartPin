@@ -14,6 +14,7 @@ import {
   Phone,
 } from "lucide-react";
 import Button from "../ui/Buttons";
+import { typography } from "../../styles/typography";
 
 type AccountType = "user" | "worker";
 
@@ -28,11 +29,11 @@ interface ProfileSidebarProps {
   profilePic?: string | null;
 }
 
-// ── Shared icon constants — matches Globe & Info exactly ──────────────────────
+// ── Brand colors ──────────────────────────────────────────────────────────────
 const ICON_COLOR = "#00598a";
 const ICON_COLOR_HOVER = "#ffffff";
-const ICON_SIZE_DEFAULT = 20;
-const ICON_SIZE_HOVER = 22;
+const ICON_SIZE_DEFAULT = 22;   // ↑ was 20
+const ICON_SIZE_HOVER = 24;     // ↑ was 22
 const ICON_STROKE = 1.8;
 
 // ── Unified Lucide icon wrapper ───────────────────────────────────────────────
@@ -46,11 +47,7 @@ const SidebarIcon: React.FC<{
     style={{
       width: hovered ? `${ICON_SIZE_HOVER}px` : `${ICON_SIZE_DEFAULT}px`,
       height: hovered ? `${ICON_SIZE_HOVER}px` : `${ICON_SIZE_DEFAULT}px`,
-      color: hovered
-        ? ICON_COLOR_HOVER
-        : danger
-        ? "#ef4444"
-        : ICON_COLOR,
+      color: hovered ? ICON_COLOR_HOVER : danger ? "#ef4444" : ICON_COLOR,
       transition: "all 0.3s ease",
     }}
   />
@@ -85,21 +82,23 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         {/* ================= HEADER ================= */}
         <div className="flex items-center justify-between p-6 border-b bg-white">
           <div>
-            <h2 className="text-lg font-semibold text-gray-900">{userName}</h2>
+            {/* ↑ Increased: text-xl → text-2xl */}
+            <h2 className={`${typography.heading.h5} text-gray-900 text-2xl font-bold`}>{userName}</h2>
+            {/* ↑ Increased: xs → sm */}
             <button
               onClick={() => onNavigate("/profile")}
-              className="text-sm text-[#00598a] hover:underline"
+              className={`${typography.body.small} text-[#00598a] hover:underline text-sm`}
             >
               Click to view profile
             </button>
           </div>
 
-          {/* Avatar */}
-          <div className="w-12 h-12 rounded-full overflow-hidden shadow-lg border-2 border-white">
+          {/* Avatar — slightly larger */}
+          <div className="w-14 h-14 rounded-full overflow-hidden shadow-lg border-2 border-white flex-shrink-0">
             {profilePic ? (
               <img src={profilePic} alt={userName} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-[#00598a] flex items-center justify-center text-white font-bold text-lg">
+              <div className="w-full h-full bg-[#00598a] flex items-center justify-center text-white font-bold text-xl">
                 {getInitial(userName)}
               </div>
             )}
@@ -108,21 +107,22 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         {/* ================= PROFILE ================= */}
         <div className="p-4 space-y-1">
-          <p className="text-xs font-semibold text-gray-500 mb-2 px-3">Profile</p>
+          {/* ↑ Section label: text-xs → text-sm */}
+          <p className={`${typography.misc.caption} font-semibold mb-2 px-3 uppercase tracking-wide text-sm`}>
+            Profile
+          </p>
 
           <MenuItem
-            icon={(h) => <SidebarIcon icon={UserCircle} hovered={h} />}
+            icon={h => <SidebarIcon icon={UserCircle} hovered={h} />}
             label="My Profile"
             onClick={() => onNavigate("/my-profile")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={Globe} hovered={h} />}
+            icon={h => <SidebarIcon icon={Globe} hovered={h} />}
             label="Change Language"
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={Gift} hovered={h} />}
+            icon={h => <SidebarIcon icon={Gift} hovered={h} />}
             label="Refer & Earn"
             onClick={() => onNavigate("/refer-and-earn")}
           />
@@ -130,40 +130,38 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         {/* ================= SUPPORT ================= */}
         <div className="p-4 space-y-1">
-          <p className="text-xs font-semibold text-gray-500 mb-2 px-3">Support & Settings</p>
+          {/* ↑ Section label: text-xs → text-sm */}
+          <p className={`${typography.misc.caption} font-semibold mb-2 px-3 uppercase tracking-wide text-sm`}>
+            Support & Settings
+          </p>
 
           <MenuItem
-            icon={(h) => <SidebarIcon icon={ShieldCheck} hovered={h} />}
+            icon={h => <SidebarIcon icon={ShieldCheck} hovered={h} />}
             label="Privacy Policy"
             onClick={() => onNavigate("/policy")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={Info} hovered={h} />}
+            icon={h => <SidebarIcon icon={Info} hovered={h} />}
             label="About Us"
             onClick={() => onNavigate("/about-us")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={Ticket} hovered={h} />}
+            icon={h => <SidebarIcon icon={Ticket} hovered={h} />}
             label="Raise Ticket"
             onClick={() => onNavigate("/raise-ticket")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={HelpCircle} hovered={h} />}
+            icon={h => <SidebarIcon icon={HelpCircle} hovered={h} />}
             label="Help"
             onClick={() => onNavigate("/help")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={Phone} hovered={h} />}
+            icon={h => <SidebarIcon icon={Phone} hovered={h} />}
             label="Contact Us"
             onClick={() => onNavigate("/contact")}
           />
-
           <MenuItem
-            icon={(h) => <SidebarIcon icon={LogOut} hovered={h} danger />}
+            icon={h => <SidebarIcon icon={LogOut} hovered={h} danger />}
             label="Logout"
             danger
             onClick={() => setShowLogoutPopup(true)}
@@ -179,33 +177,59 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setShowLogoutPopup(false)}
             />
-            <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-scale-in">
+            <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden">
+              {/* Modal header */}
               <div className="bg-[#00598a] px-6 py-8 text-center">
                 <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <LogOut className="w-10 h-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white">Logout?</h3>
+                {/* ↑ Modal title: h4 → h3 equivalent, explicit text-2xl */}
+                <h3 className={`${typography.heading.h4} text-white text-2xl font-bold`}>Logout?</h3>
               </div>
+
+              {/* Modal body */}
               <div className="p-6">
-                <p className="text-gray-600 text-center mb-6">Are you sure you want to logout?</p>
+                {/* ↑ Modal body text: small → base, text-base */}
+                <p className={`${typography.body.base} text-gray-600 text-center mb-6 text-base`}>
+                  Are you sure you want to logout?
+                </p>
                 <div className="space-y-3">
-                  <Button
+                  {/* Yes, Logout — solid brand */}
+                  {/* ↑ Button text: text-base → text-lg */}
+                  <button
                     onClick={handleLogout}
-                    fullWidth
-                    className="bg-[#00598a] text-white hover:brightness-110"
+                    className={`w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 text-lg`}
+                    style={{ backgroundColor: "#00598a" }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "#004a73"}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a"}
                   >
                     Yes, Logout
-                  </Button>
-                  <Button
+                  </button>
+
+                  {/* Cancel — outline brand */}
+                  <button
                     onClick={() => setShowLogoutPopup(false)}
-                    fullWidth
-                    variant="secondary"
-                    className="bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                    className={`w-full py-3 rounded-xl font-semibold transition-all duration-200 text-lg`}
+                    style={{
+                      border: "2px solid #00598a",
+                      color: "#00598a",
+                      backgroundColor: "transparent",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a";
+                      (e.currentTarget as HTMLElement).style.color = "#fff";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                      (e.currentTarget as HTMLElement).style.color = "#00598a";
+                    }}
                   >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
+
+              {/* Close X */}
               <button
                 onClick={() => setShowLogoutPopup(false)}
                 className="absolute top-4 right-4 text-white hover:bg-white/20 p-2 rounded-full transition-colors"
@@ -260,20 +284,19 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onClick, danger = fals
         {icon(hovered)}
       </span>
 
-      {/* Label */}
+      {/* Label — ↑ text-xs → text-base */}
       <span
-        className="flex-1 text-left transition-all duration-300"
+        className={`flex-1 text-left transition-all duration-300 text-base`}
         style={{
-          fontSize: hovered ? "14.5px" : "14px",
           fontWeight: hovered ? 600 : 500,
         }}
       >
         {label}
       </span>
 
-      {/* Arrow */}
+      {/* Arrow — ↑ text-base → text-lg */}
       <span
-        className="text-base transition-all duration-300"
+        className="text-lg transition-all duration-300"
         style={{
           transform: hovered ? "translateX(4px)" : "translateX(0px)",
           fontWeight: hovered ? 700 : 400,

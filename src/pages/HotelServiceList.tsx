@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import { getNearbyHotels, Hotel } from "../services/HotelService.service";
 
@@ -14,6 +13,98 @@ import NearbyTaxiServiceCard from "../components/cards/Hotel/NearByTaxiService";
 import NearbyTrainServiceCard from "../components/cards/Hotel/NearByTrains";
 import NearbyBusServiceCard from "../components/cards/Hotel/NearByBuses";
 import NearbyVehicleCard from "../components/cards/Hotel/NearByBikeCard";
+
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a73";
+
+// ── Helper: resolve phone from any field name ─────────────────────────────────
+const getHotelPhone = (hotel: any): string =>
+    hotel.phone || hotel.phoneNumber || hotel.mobile || hotel.contact || "";
+
+// ============================================================================
+// PHONE POPUP
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    name: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Icon */}
+                <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,89,138,0.1)" }}
+                >
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" style={{ color: BRAND }}>
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                </div>
+
+                {/* Name */}
+                <div className="text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Contact</p>
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
+                </div>
+
+                {/* Phone number */}
+                <div
+                    className="w-full text-center py-3 px-4 rounded-xl"
+                    style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
+                >
+                    <p className="text-xl font-bold tracking-wide" style={{ color: BRAND }}>{phone}</p>
+                </div>
+
+                {/* Buttons */}
+                <div className="grid grid-cols-2 gap-3 w-full">
+                    <a
+                        href={`tel:${phone}`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        Call Now
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                        style={{ color: BRAND, border: `2px solid ${BRAND}`, backgroundColor: "transparent" }}
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                            (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.color = BRAND;
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ============================================================================
 // SUBCATEGORY → CARD MAP
@@ -52,7 +143,7 @@ const resolveCardKey = (text?: string): CardKey => {
 
 const titleFromSlug = (slug?: string): string => {
     if (!slug) return "All Hotel & Travel Services";
-    return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 };
 
 const getIcon = (subcategory?: string, type?: string): string => {
@@ -68,10 +159,7 @@ const getIcon = (subcategory?: string, type?: string): string => {
     return "🏨";
 };
 
-const calculateDistance = (
-    lat1: number, lon1: number,
-    lat2: number, lon2: number
-): number => {
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
@@ -95,24 +183,23 @@ const HotelServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
         setLocationError("");
-
         if (!navigator.geolocation) {
             setLocationError("Geolocation is not supported by your browser");
             setFetchingLocation(false);
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
                 setUserLocation({ latitude, longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", latitude, longitude);
             },
             (err) => {
                 console.error("Location error:", err);
@@ -126,27 +213,13 @@ const HotelServicesList: React.FC = () => {
     // ── Fetch nearby hotels when location ready ──────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-
         const fetchNearbyHotels = async () => {
             setLoading(true);
             setError("");
-
             try {
-                console.log("🏨 Fetching nearby hotels...");
-                // GET /getNearbyhotelTravel?latitude=X&longitude=Y&distance=10
-                const res = await getNearbyHotels(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    10
-                );
-
-                console.log("🏨 API Response:", res);
-                console.log("🏨 Total records:", res?.data?.length ?? 0);
-
+                const res = await getNearbyHotels(userLocation.latitude, userLocation.longitude, 10);
                 if (res?.success && res.data) {
-                    // ✅ No subcategory filter — show ALL nearby results
                     const all: Hotel[] = Array.isArray(res.data) ? res.data : [res.data];
-                    console.log("✅ Displaying", all.length, "hotels");
                     setNearbyHotels(all);
                 } else {
                     setNearbyHotels([]);
@@ -159,94 +232,99 @@ const HotelServicesList: React.FC = () => {
                 setLoading(false);
             }
         };
-
         fetchNearbyHotels();
-    }, [userLocation]); // ✅ no subcategory dep
+    }, [userLocation]);
 
     // ── Navigation ───────────────────────────────────────────────────────────
-    const handleView = (hotel: any) => {
-        navigate(`/hotel-services/details/${hotel._id || hotel.id}`);
-    };
-
-    const handleAddPost = () => {
-        navigate(
-            subcategory
-                ? `/add-hotel-service-form?subcategory=${subcategory}`
-                : "/add-hotel-service-form"
-        );
-    };
+    const handleView = (hotel: any) => navigate(`/hotel-services/details/${hotel._id || hotel.id}`);
+    const handleAddPost = () =>
+        navigate(subcategory ? `/add-hotel-service-form?subcategory=${subcategory}` : "/add-hotel-service-form");
 
     const openDirections = (hotel: Hotel) => {
-        if (hotel.latitude && hotel.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`,
-                "_blank"
-            );
-        } else if (hotel.area || hotel.city) {
-            const addr = encodeURIComponent(
-                [hotel.area, hotel.city, hotel.state].filter(Boolean).join(", ")
-            );
+        if (hotel.latitude && hotel.longitude)
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${hotel.latitude},${hotel.longitude}`, "_blank");
+        else if (hotel.area || hotel.city) {
+            const addr = encodeURIComponent([hotel.area, hotel.city, hotel.state].filter(Boolean).join(", "));
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
     };
 
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
+    const handleCallClick = (e: React.MouseEvent, hotel: Hotel) => {
+        e.stopPropagation();
+        const phone = getHotelPhone(hotel);
+        console.log("📞 Call clicked — resolved phone:", phone);
+        if (phone) {
+            setPhonePopup({ phone, name: hotel.name || hotel.type || "Hotel Service" });
+        } else {
+            alert("Phone number not available for this service.");
+        }
+    };
 
     // ============================================================================
-    // REAL API CARD — same style as the courier screenshot
+    // HOTEL CARD
     // ============================================================================
     const renderHotelCard = (hotel: Hotel) => {
         const id = hotel._id || hotel.id || "";
-        const location =
-            [hotel.area, hotel.city].filter(Boolean).join(", ") || "Location not specified";
-
+        const location = [hotel.area, hotel.city].filter(Boolean).join(", ") || "Location not specified";
         const servicesList: string[] =
             typeof hotel.service === "string"
-                ? hotel.service.split(",").map((s) => s.trim()).filter(Boolean)
-                : Array.isArray(hotel.service)
-                    ? hotel.service
-                    : [];
-
+                ? hotel.service.split(",").map(s => s.trim()).filter(Boolean)
+                : Array.isArray(hotel.service) ? hotel.service : [];
         const imageUrls = (hotel.images || []).filter(Boolean) as string[];
+        const isHovered = hoveredCard === id;
+        const phone = getHotelPhone(hotel);
 
         let distance: string | null = null;
         if (userLocation && hotel.latitude && hotel.longitude) {
-            const dist = calculateDistance(
-                userLocation.latitude, userLocation.longitude,
-                hotel.latitude, hotel.longitude
-            );
+            const dist = calculateDistance(userLocation.latitude, userLocation.longitude, hotel.latitude, hotel.longitude);
             distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: isHovered ? BRAND : "#f3f4f6",
+                    boxShadow: isHovered ? "0 8px 24px rgba(0,89,138,0.15)" : "0 1px 3px rgba(0,0,0,0.06)",
+                    transform: isHovered ? "translateY(-2px)" : "none",
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleView(hotel)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={hotel.name || "Hotel"}
-                            className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6" }}
+                        >
                             <span className="text-5xl">{getIcon(subcategory, hotel.type)}</span>
                         </div>
                     )}
 
-                    {/* Live Data badge — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: BRAND }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Availability badge — top right */}
+                    {/* Availability badge */}
                     <div className="absolute top-3 right-3 z-10">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-green-500 text-white">
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
@@ -254,9 +332,8 @@ const HotelServicesList: React.FC = () => {
                         </span>
                     </div>
 
-                    {/* Image counter */}
                     {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
                             1 / {imageUrls.length}
                         </div>
                     )}
@@ -264,30 +341,37 @@ const HotelServicesList: React.FC = () => {
 
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
+                    <h2
+                        className="text-lg font-semibold line-clamp-1 leading-tight transition-colors duration-200"
+                        style={{ color: isHovered ? BRAND : "#111827" }}
+                    >
                         {hotel.name || hotel.type || "Hotel Service"}
                     </h2>
 
                     <div className="flex items-start gap-1.5">
-                        <span className="text-gray-400 text-sm mt-0.5 flex-shrink-0">📍</span>
+                        <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: isHovered ? BRAND : "#9ca3af" }}>📍</span>
                         <p className="text-sm text-gray-600 line-clamp-1">{location}</p>
                     </div>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: BRAND }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
 
                     {hotel.description && (
-                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
-                            {hotel.description}
-                        </p>
+                        <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{hotel.description}</p>
                     )}
 
                     {hotel.type && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-blue-600/5 text-blue-600 px-2.5 py-1 rounded-md border border-blue-600/20 font-medium">
+                            <span
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border font-medium transition-colors duration-200"
+                                style={isHovered
+                                    ? { backgroundColor: "rgba(0,89,138,0.08)", color: BRAND, borderColor: "rgba(0,89,138,0.3)" }
+                                    : { backgroundColor: "rgba(0,89,138,0.05)", color: BRAND, borderColor: "rgba(0,89,138,0.2)" }
+                                }
+                            >
                                 {getIcon(hotel.type)} {hotel.type}
                             </span>
                         </div>
@@ -296,15 +380,11 @@ const HotelServicesList: React.FC = () => {
                     {/* Rating + Price */}
                     <div className="flex items-center justify-between pt-0.5">
                         {hotel.ratings ? (
-                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
-                                ⭐ {hotel.ratings}
-                            </span>
+                            <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">⭐ {hotel.ratings}</span>
                         ) : <span />}
                         {hotel.priceRange && (
                             <div className="text-right">
-                                <span className="text-sm font-bold text-blue-600">
-                                    ₹{hotel.priceRange}
-                                </span>
+                                <span className="text-sm font-bold" style={{ color: BRAND }}>₹{hotel.priceRange}</span>
                                 <span className="text-xs text-gray-500 ml-1">/ night</span>
                             </div>
                         )}
@@ -313,20 +393,22 @@ const HotelServicesList: React.FC = () => {
                     {/* Services tags */}
                     {servicesList.length > 0 && (
                         <div className="pt-2 border-t border-gray-100 mt-1">
-                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                Services
-                            </p>
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Services</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {servicesList.slice(0, 3).map((s, idx) => (
                                     <span
                                         key={`${id}-${idx}`}
-                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200"
+                                        className="inline-flex items-center text-xs px-2 py-1 rounded border transition-colors duration-200"
+                                        style={isHovered
+                                            ? { backgroundColor: "rgba(0,89,138,0.07)", color: BRAND, borderColor: "rgba(0,89,138,0.25)" }
+                                            : { backgroundColor: "#f3f4f6", color: "#374151", borderColor: "#e5e7eb" }
+                                        }
                                     >
                                         {s}
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                    <span className="text-xs font-medium px-1 py-1" style={{ color: BRAND }}>
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -334,21 +416,35 @@ const HotelServicesList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Directions + Call — exact same as screenshot */}
+                    {/* Directions + Call */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
-                            onClick={(e) => { e.stopPropagation(); openDirections(hotel); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-600/5 transition-colors active:bg-blue-600/10"
+                            onClick={e => { e.stopPropagation(); openDirections(hotel); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{ border: `2px solid ${BRAND}`, color: BRAND, backgroundColor: "transparent" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                                (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLElement).style.color = BRAND;
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
                         <button
-                            onClick={(e) => { e.stopPropagation(); hotel.phone && openCall(hotel.phone); }}
-                            disabled={!hotel.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${hotel.phone
-                                ? "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            onClick={e => handleCallClick(e, hotel)}
+                            disabled={!phone}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={phone
+                                ? { backgroundColor: BRAND, color: "#fff" }
+                                : { backgroundColor: "#d1d5db", color: "#9ca3af", cursor: "not-allowed" }
+                            }
+                            onMouseEnter={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK; }}
+                            onMouseLeave={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND; }}
+                            title={phone ? `Call ${phone}` : "No phone number available"}
                         >
                             <span>📞</span> Call
                         </button>
@@ -358,26 +454,21 @@ const HotelServicesList: React.FC = () => {
         );
     };
 
-    // ── DUMMY CARDS — always renders first ───────────────────────────────────
+    // ── Dummy cards ───────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
-        return (
-            <div>
-                <CardComponent onViewDetails={handleView} userLocation={userLocation} />
-            </div>
-        );
+        return <CardComponent onViewDetails={handleView} userLocation={userLocation} />;
     };
 
-    // ── REAL API SECTION — renders second (mirrors screenshot "Nearby Services") ──
+    // ── Nearby services section ───────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BRAND }} />
                 </div>
             );
         }
-
         if (nearbyHotels.length === 0) {
             return (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
@@ -387,13 +478,14 @@ const HotelServicesList: React.FC = () => {
                 </div>
             );
         }
-
         return (
             <div className="space-y-4">
-                {/* "Nearby Services" header with count — matches screenshot exactly */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: BRAND }}
+                    >
                         {nearbyHotels.length}
                     </span>
                 </div>
@@ -405,58 +497,69 @@ const HotelServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND (matches screenshot)
+    // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div
+            className="min-h-screen"
+            style={{ background: "linear-gradient(to bottom, rgba(0,89,138,0.04), white)" }}
+        >
+            {/* ── Phone Popup ── */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    name={phonePopup.name}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {titleFromSlug(subcategory)}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Manage Hotel & Travel services
-                        </p>
+                        <h1 className="text-2xl font-bold text-gray-900">{titleFromSlug(subcategory)}</h1>
+                        <p className="text-sm text-gray-500 mt-1">Find hotel & travel services near you</p>
                     </div>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white"
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-600">Getting your location...</span>
+                    <div
+                        className="rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: "rgba(0,89,138,0.08)", border: "1px solid rgba(0,89,138,0.2)" }}
+                    >
+                        <div
+                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: BRAND, borderTopColor: "transparent" }}
+                        />
+                        <span className="text-sm" style={{ color: BRAND }}>Getting your location...</span>
                     </div>
                 )}
-
                 {locationError && (
                     <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
                         <p className="text-yellow-700 text-sm">{locationError}</p>
                     </div>
                 )}
-
                 {error && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
                         <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST — always shown */}
-                <div className="space-y-4">
-                    {renderDummyCards()}
-                </div>
+                {/* 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">{renderDummyCards()}</div>
 
-                {/* ✅ 2. API DATA SECOND — shown once location resolves */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
 
             </div>

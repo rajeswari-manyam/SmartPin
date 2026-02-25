@@ -42,7 +42,15 @@ const ThreeDotMenu: React.FC<ThreeDotMenuProps> = ({ onEdit, onDelete }) => {
                 <div className="absolute right-0 top-10 z-50 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden min-w-[130px]">
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(); setOpen(false); }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-[#00598a]/100 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 transition-colors"
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
+                            (e.currentTarget as HTMLButtonElement).style.color = "white";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLButtonElement).style.color = "#374151";
+                        }}
                     >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -53,7 +61,7 @@ const ThreeDotMenu: React.FC<ThreeDotMenuProps> = ({ onEdit, onDelete }) => {
                     <div className="h-px bg-gray-100" />
                     <button
                         onClick={(e) => { e.stopPropagation(); onDelete(); setOpen(false); }}
-                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-[#00598a]/100 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors"
                     >
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <polyline points="3 6 5 6 21 6" />
@@ -96,9 +104,7 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
 
     // ── Filter ────────────────────────────────────────────────────────────────
     const filteredStores = selectedSubcategory
-        ? stores.filter(s =>
-            s.storeType?.toLowerCase().includes(selectedSubcategory.toLowerCase())
-        )
+        ? stores.filter(s => s.storeType?.toLowerCase().includes(selectedSubcategory.toLowerCase()))
         : stores;
 
     // ── Handlers ─────────────────────────────────────────────────────────────
@@ -131,50 +137,46 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                 "_blank"
             );
         } else if (store.area || store.city) {
-            const addr = encodeURIComponent(
-                [store.area, store.city, store.state].filter(Boolean).join(", ")
-            );
+            const addr = encodeURIComponent([store.area, store.city, store.state].filter(Boolean).join(", "));
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
     };
 
-    const openCall = (phone: string) => { window.location.href = `tel:${phone}`; };
-
     // ============================================================================
-    // CARD — matches screenshot style
+    // CARD
     // ============================================================================
     const renderCard = (store: ShoppingStore) => {
         const id = store._id || "";
-        const location = [store.area, store.city, store.state]
-            .filter(Boolean).join(", ") || "Location not specified";
+        const location = [store.area, store.city, store.state].filter(Boolean).join(", ") || "Location not specified";
         const imageUrls = (store.images || []).filter(Boolean) as string[];
         const isActive = (store as any).status === "active" || (store as any).isActive;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300 cursor-pointer"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100
+                           hover:shadow-lg hover:border-[#00598a]/30 transition-all duration-200 cursor-pointer group"
                 onClick={() => handleView(id)}
             >
                 {/* ── Image ── */}
-                <div className="relative w-full" style={{ height: "200px" }}>
+                <div className="relative w-full overflow-hidden" style={{ height: "200px" }}>
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={store.storeName || "Store"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                        <div className="w-full h-full bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center group-hover:from-[#00598a]/5 group-hover:to-[#00598a]/10 transition-all duration-200">
                             <span className="text-7xl">🛒</span>
                         </div>
                     )}
 
-                    {/* Dark gradient overlay at bottom */}
+                    {/* Dark gradient overlay */}
                     <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/60 to-transparent" />
 
-                    {/* Store type badge — bottom left over image */}
+                    {/* Store type badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
                         <span className="text-white text-xs font-semibold bg-black/50 backdrop-blur-sm px-3 py-1 rounded-full">
                             {store.storeType || "Shopping & Retail"}
@@ -199,7 +201,7 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                 {/* ── Card Body ── */}
                 <div className="p-4">
                     {/* Name */}
-                    <h3 className="text-[17px] font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-[17px] font-bold text-gray-900 mb-1 truncate group-hover:text-[#00598a] transition-colors duration-200">
                         {store.storeName || "Unnamed Store"}
                     </h3>
 
@@ -211,7 +213,15 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
 
                     {/* Category pill + Active badge */}
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
-                        <span className="text-sm text-blue-600 bg-blue-50 border border-blue-100 px-3 py-1 rounded-full font-medium">
+                        <span
+                            className="text-sm font-medium px-3 py-1 rounded-full border transition-colors duration-200
+                                       group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]"
+                            style={{
+                                color: "#00598a",
+                                backgroundColor: "rgba(0,89,138,0.06)",
+                                borderColor: "rgba(0,89,138,0.2)",
+                            }}
+                        >
                             {store.storeType || "Shopping & Retail"}
                         </span>
                         {isActive !== undefined && (
@@ -241,17 +251,42 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                     )}
 
                     {/* Rating row */}
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center gap-2 mb-4">
                         <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                             ⭐ {(store as any).ratings || "N/A"}
                         </span>
                     </div>
 
-                    {/* Action buttons */}
+                    {/* ── Action Buttons ── */}
+                    <div className="pt-1 border-t border-gray-100 grid grid-cols-2 gap-2">
+                        {/* Directions */}
+                        <button
+                            onClick={e => { e.stopPropagation(); openDirections(store); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 rounded-xl font-medium text-sm transition-all active:scale-95"
+                            style={{ borderColor: "#00598a", color: "#00598a" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
+                                (e.currentTarget as HTMLButtonElement).style.color = "white";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLButtonElement).style.color = "#00598a";
+                            }}
+                        >
+                            📍 Directions
+                        </button>
 
-                       
-                      
-                 
+                        {/* View Details */}
+                        <button
+                            onClick={e => { e.stopPropagation(); handleView(id); }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-medium text-sm text-white transition-all active:scale-95"
+                            style={{ backgroundColor: "#00598a" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
+                        >
+                            👁️ View
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -278,7 +313,10 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                     </p>
                     <button
                         onClick={() => navigate("/add-shopping-form")}
-                        className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition-colors"
+                        className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold transition-all shadow-md hover:shadow-lg active:scale-95"
+                        style={{ backgroundColor: "#00598a" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
                     >
                         + Add Shopping Service
                     </button>

@@ -16,14 +16,14 @@ const API_MULTIPART = axios.create({
 
 
 interface RegisterWithOtpParams {
-    phone: string;
+    email: string;
     name: string;
     latitude: number;
     longitude: number;
 }
 
 interface VerifyOtpParams {
-    phone: string;
+    email: string;
     otp: string;
     fcmToken: string;
 }
@@ -36,7 +36,7 @@ interface ApiResponse {
     token?: string;
     user?: {
         id: string;
-        phone: string;
+        email: string;
         name: string;
         token?: string;
     };
@@ -45,7 +45,7 @@ interface ApiResponse {
 export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
-        formData.append("phone", params.phone);
+        formData.append("email", params.email);
         formData.append("name", params.name);
         formData.append("latitude", params.latitude.toString());
         formData.append("longitude", params.longitude.toString());
@@ -67,7 +67,7 @@ export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<Ap
 export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
-        formData.append("phone", params.phone);
+        formData.append("email", params.email);
         formData.append("otp", params.otp);
         formData.append("fcmToken", params.fcmToken); // 👈 NEW
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
@@ -84,10 +84,10 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
     }
 };
 
-export const resendOtp = async (phone: string): Promise<ApiResponse> => {
+export const resendOtp = async (email: string): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
-        formData.append("phone", phone);
+        formData.append("email", email);
 
         const response = await fetch(`${API_BASE_URL}/resend-otp`, {
             method: "POST",
@@ -1222,4 +1222,141 @@ export const getConfirmedWorkersCount = async (
         console.error("❌ getConfirmedWorkersCount error:", error);
         return 0;
     }
+};
+
+
+// ==================== NOTIFICATIONS ====================
+// Add these to your existing api.service.ts
+
+export interface Notification {
+    _id: string;
+    receiverId: string;
+    receiverModel: "User" | "Worker";
+    senderId: string;
+    senderModel: "User" | "Worker";
+    title: string;
+    message: string;
+    type: "NEW_JOB" | "JOB_ENQUIRY" | "JOB_CONFIRMED" | "PAYMENT" | "JOB_COMPLETED" | string;
+    jobId?: string;
+    isRead: boolean;
+    createdAt: string;
+    updatedAt: string;
+    __v?: number;
+}
+
+export interface GetAllNotificationsResponse {
+    success: boolean;
+    count: number;
+    data: Notification[];
+}
+
+export const getAllNotifications = async (
+    role: "User" | "Worker",
+    id: string
+): Promise<GetAllNotificationsResponse> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/getAllNotifications/${role}/${id}`,
+            { method: "GET", redirect: "follow" }
+        );
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ getAllNotifications error:", error);
+        throw error;
+    }
+};
+
+export const markNotificationAsRead = async (
+    notificationId: string
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/markNotificationRead/${notificationId}`,
+            { method: "PUT", redirect: "follow" }
+        );
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ markNotificationAsRead error:", error);
+        throw error;
+    }
+};
+
+// ==================== DELETE NOTIFICATION ====================
+export const deleteNotification = async (
+    notificationId: string
+): Promise<{ success: boolean; message: string }> => {
+    try {
+        const response = await fetch(
+            `${API_BASE_URL}/deleteNotification/${notificationId}`,
+            { method: "DELETE", redirect: "follow" }
+        );
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ deleteNotification error:", error);
+        throw error;
+    }
+};
+// =======================
+// NOTIFICATION TYPES
+// =======================
+// NotificationItem is a full alias for Notification — keeps types compatible.
+export type NotificationItem = Notification;
+
+export interface NotificationsResponse {
+  success: boolean;
+  count: number;
+  data: Notification[];
+}
+
+export interface NotificationCountResponse {
+  success: boolean;
+  count: number;
+}
+
+// =======================
+// READ NOTIFICATIONS
+// Returns { success, count, data: Notification[] }
+// =======================
+export const getReadNotifications = async (
+  role: "User" | "Worker",
+  id: string
+): Promise<NotificationsResponse> => {
+  const { data } = await axios.get<NotificationsResponse>(
+    `${API_BASE_URL}/read/${role}/${id}`
+  );
+  return data;
+};
+
+// =======================
+// UNREAD NOTIFICATIONS
+// NOTE: Your /unread endpoint returns { success, unreadCount } — just a count,
+// not a list. We call getAllNotifications and filter client-side instead.
+// =======================
+export const getUnreadNotifications = async (
+  role: "User" | "Worker",
+  id: string
+): Promise<NotificationsResponse> => {
+  const res = await getAllNotifications(role, id);
+  const unread = res.data.filter((n) => !n.isRead);
+  return { success: res.success, count: unread.length, data: unread };
+};
+
+// =======================
+// NOTIFICATION COUNT
+// /count returns { success, unreadCount } — normalise to `count`.
+// =======================
+export const getNotificationCount = async (
+  role: "User" | "Worker",
+  id: string
+): Promise<NotificationCountResponse> => {
+  const { data } = await axios.get<{ success: boolean; unreadCount?: number; count?: number }>(
+    `${API_BASE_URL}/count/${role}/${id}`
+  );
+  return {
+    success: data.success,
+    count: data.unreadCount ?? data.count ?? 0,
+  };
 };

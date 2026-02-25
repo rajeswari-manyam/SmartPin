@@ -78,7 +78,7 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches EventUserService card layout
+    // CARD
     // ============================================================================
     const renderCard = (service: IndustrialWorker) => {
         const id = service._id || "";
@@ -94,7 +94,21 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 cursor-pointer"
+                style={{ transition: 'transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease' }}
+                onMouseEnter={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(-4px)';
+                    el.style.boxShadow = '0 12px 32px rgba(0, 89, 138, 0.15)';
+                    el.style.borderColor = 'rgba(0, 89, 138, 0.3)';
+                }}
+                onMouseLeave={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = 'translateY(0)';
+                    el.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)';
+                    el.style.borderColor = 'rgb(243,244,246)';
+                }}
+                onClick={() => handleView(id)}
             >
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
@@ -106,12 +120,15 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-orange-600/5">
+                        <div
+                            className="w-full h-full flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(0, 89, 138, 0.05)' }}
+                        >
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
 
-                    {/* Category badge — bottom left over image */}
+                    {/* Category badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
                         <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {service.category || "Industrial"}
@@ -122,7 +139,10 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-600" />
+                                <div
+                                    className="animate-spin rounded-full h-5 w-5 border-b-2"
+                                    style={{ borderColor: '#00598a' }}
+                                />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -147,9 +167,16 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Category pill + Availability status — side by side */}
+                    {/* Category pill + Availability — side by side */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-orange-700 bg-orange-600/8 border border-orange-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border"
+                            style={{
+                                color: '#00598a',
+                                backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                borderColor: 'rgba(0, 89, 138, 0.2)',
+                            }}
+                        >
                             {service.subCategory || service.category || "Industrial"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -167,28 +194,49 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Service detail chips (shown when no description) */}
+                    {/* Detail chips (shown when no description) */}
                     {!description && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {service.chargeType && (
-                                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border"
+                                    style={{
+                                        color: '#00598a',
+                                        backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                        borderColor: 'rgba(0, 89, 138, 0.2)',
+                                    }}
+                                >
                                     {service.chargeType}
                                 </span>
                             )}
                             {service.experience && (
-                                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border"
+                                    style={{
+                                        color: '#00598a',
+                                        backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                        borderColor: 'rgba(0, 89, 138, 0.2)',
+                                    }}
+                                >
                                     🏭 {service.experience} yrs exp
                                 </span>
                             )}
                             {service.subCategory && (
-                                <span className="text-xs bg-orange-50 text-orange-700 px-2 py-0.5 rounded-full border border-orange-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border"
+                                    style={{
+                                        color: '#00598a',
+                                        backgroundColor: 'rgba(0, 89, 138, 0.07)',
+                                        borderColor: 'rgba(0, 89, 138, 0.2)',
+                                    }}
+                                >
                                     {service.subCategory}
                                 </span>
                             )}
                         </div>
                     )}
 
-                    {/* Rating row + optional phone + charge */}
+                    {/* Rating + phone + charge row */}
                     <div className="flex items-center gap-2 mb-4">
                         <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                             ⭐ {service.rating ? service.rating.toFixed(1) : "N/A"}
@@ -204,12 +252,25 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                         )}
 
                         {service.serviceCharge && (
-                            <span className="ml-auto text-sm font-bold text-orange-700">
+                            <span
+                                className="ml-auto text-sm font-bold"
+                                style={{ color: '#00598a' }}
+                            >
                                 ₹{service.serviceCharge.toLocaleString()}
                             </span>
                         )}
                     </div>
 
+                    {/* View Details button */}
+                    <button
+                        onClick={() => handleView(id)}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                    >
+                        View Details
+                    </button>
                 </div>
             </div>
         );
@@ -234,14 +295,15 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your industrial services to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={() => navigate("/add-industrial-service-form")}
-                        className="gap-1.5 bg-orange-600 hover:bg-orange-700"
+                        className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                     >
                         + Add Industrial Service
-                    </Button>
+                    </button>
                 </div>
             </div>
         );

@@ -126,8 +126,9 @@ const BusinessServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-const [showCallPopup, setShowCallPopup] = useState(false);
-const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+    const [showCallPopup, setShowCallPopup] = useState(false);
+    const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+
     // ── Get user's location on component mount ────────────────────────────────
     useEffect(() => {
         const getUserLocation = () => {
@@ -232,10 +233,11 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
         }
     };
 
-   const openCallPopup = (phone: string) => {
-    setSelectedPhone(phone);
-    setShowCallPopup(true);
-};
+    const openCallPopup = (phone: string) => {
+        setSelectedPhone(phone);
+        setShowCallPopup(true);
+    };
+
     const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
         const R = 6371;
         const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -251,7 +253,7 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
     const getImageUrls = (images?: string[]): string[] =>
         (images || []).filter(Boolean) as string[];
 
-    // ── Render Business Service Card (matching dummy card style) ──────────────
+    // ── Render Business Service Card ──────────────────────────────────────────
     const renderBusinessCard = (service: BusinessWorker) => {
         const id = service._id || "";
         const location = [service.area, service.city].filter(Boolean).join(", ") || "Location not set";
@@ -272,35 +274,39 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
         return (
             <div
                 key={id}
-               className="
-bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer
-border border-gray-100
-shadow-sm
-transition-all duration-200 ease-out
-hover:-translate-y-1 hover:shadow-xl
-hover:border-[#00598a]
-"
+                className="
+                    bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer
+                    border border-gray-100
+                    shadow-sm
+                    transition-all duration-200 ease-out
+                    hover:-translate-y-1 hover:shadow-xl
+                    hover:border-[#00598a]
+                "
                 onClick={() => handleView(service)}
             >
-                {/* Image Section - Fixed height like dummy cards */}
+                {/* Image Section */}
                 <div className="relative h-48 bg-gradient-to-br from-blue-50 to-blue-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
-                        <img src={imageUrls[0]} alt={serviceName} className="w-full h-full object-cover"
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        <img
+                            src={imageUrls[0]}
+                            alt={serviceName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-100">
                             <span className="text-5xl">{getCategoryIcon(category)}</span>
                         </div>
                     )}
 
-                    {/* Live Data Badge - Top Left */}
+                    {/* Live Data Badge */}
                     <div className="absolute top-3 left-3 z-10">
                         <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
                             Live Data
                         </span>
                     </div>
 
-                    {/* Image Counter - Bottom Right */}
+                    {/* Image Counter */}
                     {imageUrls.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
                             1 / {imageUrls.length}
@@ -308,7 +314,7 @@ hover:border-[#00598a]
                     )}
                 </div>
 
-                {/* Body - Consistent padding like dummy cards */}
+                {/* Body */}
                 <div className="p-4 flex flex-col gap-2.5">
                     <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
                         {serviceName}
@@ -359,8 +365,10 @@ hover:border-[#00598a]
                             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Services</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {servicesList.slice(0, 3).map((s, idx) => (
-                                    <span key={`${id}-${idx}`}
-                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200">
+                                    <span
+                                        key={`${id}-${idx}`}
+                                        className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border border-gray-200"
+                                    >
                                         {s}
                                     </span>
                                 ))}
@@ -373,26 +381,27 @@ hover:border-[#00598a]
                         </div>
                     )}
 
-                    {/* Action Buttons - Grid layout matching dummy cards */}
+                    {/* Action Buttons */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={(e) => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors active:bg-blue-100"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-[#00598a] text-[#00598a] rounded-lg font-medium text-sm hover:bg-[#00598a] hover:text-white transition-all duration-200"
                         >
                             <span>📍</span>Directions
                         </button>
                         <button
-                           onClick={(e) => {
-    e.stopPropagation();
-    if (service.phone) {
-        openCallPopup(service.phone);
-    }
-}}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (service.phone) {
+                                    openCallPopup(service.phone);
+                                }
+                            }}
                             disabled={!service.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                ? "bg-[#00598a] text-white hover:bg-[#00446a] active:bg-[#003355]"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 ${
+                                service.phone
+                                    ? "bg-[#00598a] text-white hover:bg-[#00446a] active:bg-[#003355]"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
                         >
                             <span>📞</span>Call
                         </button>
@@ -438,7 +447,7 @@ hover:border-[#00598a]
                     </span>
                 </div>
 
-                {/* Cards Grid - Match dummy cards layout */}
+                {/* Cards Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {nearbyServices.map(renderBusinessCard)}
                 </div>
@@ -450,104 +459,123 @@ hover:border-[#00598a]
     // MAIN RENDER
     // ============================================================================
     return (
-     <div className="min-h-screen bg-gray-50 relative">
-  <div className={showCallPopup ? "blur-sm select-none" : ""}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div className="min-h-screen bg-gray-50 relative">
 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">{getDisplayTitle(subcategory)}</h1>
-                        <p className="text-sm text-gray-500 mt-1">Manage Business & Professional services</p>
+            {/* ✅ Call Popup — OUTSIDE blur wrapper so it always renders sharp */}
+            {showCallPopup && selectedPhone && (
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                        onClick={() => setShowCallPopup(false)}
+                    />
+
+                    {/* Popup Card */}
+                    <div className="relative bg-white rounded-2xl p-6 w-[90%] max-w-sm shadow-2xl">
+                        {/* Close button */}
+                        <button
+                            onClick={() => setShowCallPopup(false)}
+                            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl font-bold leading-none"
+                        >
+                            ×
+                        </button>
+
+                        {/* Icon */}
+                        <div className="flex items-center justify-center w-14 h-14 bg-[#00598a]/10 rounded-full mx-auto mb-4">
+                            <span className="text-2xl">📞</span>
+                        </div>
+
+                        <h3 className="text-lg font-semibold text-gray-800 text-center mb-1">
+                            Call Business Service
+                        </h3>
+                        <p className="text-sm text-gray-500 text-center mb-4">
+                            You are about to call
+                        </p>
+
+                        {/* Phone number display */}
+                        <div className="bg-[#00598a]/5 border border-[#00598a]/20 rounded-xl px-4 py-3 text-center mb-5">
+                            <span className="text-2xl font-bold text-[#00598a] tracking-wide">
+                                {selectedPhone}
+                            </span>
+                        </div>
+
+                        {/* Buttons */}
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    window.location.href = `tel:${selectedPhone}`;
+                                    setShowCallPopup(false);
+                                }}
+                                className="flex-1 flex items-center justify-center gap-2 bg-[#00598a] text-white py-3 rounded-xl font-semibold hover:bg-[#00446a] active:bg-[#003355] transition-colors"
+                            >
+                                📞 Call Now
+                            </button>
+                            <button
+                                onClick={() => setShowCallPopup(false)}
+                                className="flex-1 border-2 border-gray-200 py-3 rounded-xl text-gray-600 font-semibold hover:bg-gray-50 hover:border-gray-300 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                        </div>
                     </div>
-
-                    <Button
-                        variant="primary"
-                        size="md"
-                        onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white"
-                    >
-                        + Create Business Service
-                    </Button>
                 </div>
+            )}
 
-                {/* Location Status */}
-                {fetchingLocation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+            {/* ✅ Main content — blurs when popup is open */}
+            <div className={showCallPopup ? "blur-sm pointer-events-none select-none" : ""}>
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">{getDisplayTitle(subcategory)}</h1>
+                            <p className="text-sm text-gray-500 mt-1">Manage Business & Professional services</p>
+                        </div>
+
+                        <Button
+                            variant="primary"
+                            size="md"
+                            onClick={handleAddPost}
+                            className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00446a] text-white"
+                        >
+                            + Create Business Service
+                        </Button>
                     </div>
-                )}
 
-                {locationError && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
-                        <p className="text-yellow-700 text-sm">{locationError}</p>
-                    </div>
-                )}
+                    {/* Location Status */}
+                    {fetchingLocation && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+                            <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                            <span className="text-sm text-blue-700">Getting your location...</span>
+                        </div>
+                    )}
 
-                {/* Error */}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium text-sm">{error}</p>
-                    </div>
-                )}
-                  {/* Popup OUTSIDE blur */}
-  {showCallPopup && selectedPhone && (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-    {/* Overlay */}
-     {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => setShowCallPopup(false)}
-      />
+                    {locationError && (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                            <p className="text-yellow-700 text-sm">{locationError}</p>
+                        </div>
+                    )}
 
-   {/* Popup */}
-      <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-2xl animate-scaleIn">
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
-          Call Business Service
-        </h3>
+                    {/* Error */}
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                            <p className="text-red-700 font-medium text-sm">{error}</p>
+                        </div>
+                    )}
 
+                    {/* DUMMY CARDS FIRST */}
+                    {shouldShowNearbyCards(subcategory) && (
+                        <div className="space-y-4">
+                            {renderCardsSection()}
+                        </div>
+                    )}
 
-    
-        <p className="text-sm text-gray-600 mb-4">
-          Phone Number
-          <span className="block mt-1 text-xl font-bold text-[#00598a]">
-            {selectedPhone}
-          </span>
-        </p>
+                    {/* YOUR SERVICES (API DATA) SECOND */}
+                    {userLocation && !fetchingLocation && renderYourServices()}
 
-       <div className="flex gap-3">
-          <button
-            onClick={() => {
-              window.location.href = `tel:${selectedPhone}`;
-              setShowCallPopup(false);
-            }}
-            className="flex-1 bg-[#00598a] text-white py-2.5 rounded-lg font-medium hover:bg-[#00446a]"
-          >
-            📞 Call Now
-          </button>
-    <button
-            onClick={() => setShowCallPopup(false)}
-            className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-gray-100"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  )}
-
-                {/* DUMMY CARDS FIRST */}
-                {shouldShowNearbyCards(subcategory) && (
-                    <div className="space-y-4">
-                        {renderCardsSection()}
-                    </div>
-                )}
-
-                {/* YOUR SERVICES (API DATA) SECOND */}
-                {userLocation && !fetchingLocation && renderYourServices()}
+                </div>
             </div>
-        </div>
+
         </div>
     );
 };

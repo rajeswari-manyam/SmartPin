@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     createEducationService,
@@ -18,14 +18,13 @@ const getEducationSubcategories = () => {
     return educationCategory ? educationCategory.items.map((item: any) => item.name) : [];
 };
 
-// ── Shared input: #00598a focus ring ─────────────────────────────────────────
+// ── Shared input styles ───────────────────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in #00598a
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
@@ -42,7 +41,7 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 );
 
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -51,6 +50,10 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
         )}
         {children}
     </div>
+);
+
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -119,6 +122,7 @@ const EducationForm: React.FC = () => {
     const [existingImages, setExistingImages] = useState<string[]>([]);
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
     const [locationLoading, setLocationLoading] = useState(false);
+    const isGPSDetected = useRef(false);
 
     // ── fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
@@ -163,6 +167,7 @@ const EducationForm: React.FC = () => {
     // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
+            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
                 const fullAddress = [formData.area, formData.city, formData.state, formData.pincode]
                     .filter(Boolean).join(', ');
@@ -236,6 +241,7 @@ const EducationForm: React.FC = () => {
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
+                isGPSDetected.current = true;
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
@@ -290,7 +296,6 @@ const EducationForm: React.FC = () => {
             fd.append('pincode', formData.pincode);
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
-
             selectedImages.forEach(img => fd.append('images', img, img.name));
 
             if (isEditMode) {
@@ -327,7 +332,7 @@ const EducationForm: React.FC = () => {
     // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
@@ -340,14 +345,14 @@ const EducationForm: React.FC = () => {
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -365,113 +370,132 @@ const EducationForm: React.FC = () => {
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1">Error</p>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: '#00598a', border: '1px solid #004a75' }}>
-                        ✓ {successMessage}
+                    <div className="p-4 rounded-xl text-white text-sm font-medium flex items-center gap-2" style={{ backgroundColor: '#00598a', border: '1px solid #004a75' }}>
+                        <span>✓</span> {successMessage}
                     </div>
                 )}
 
-                {/* 1. NAME */}
+                {/* ─── ROW 1: NAME + CATEGORY ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Institution/Teacher Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Enter name"
-                            className={inputBase}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Institution / Teacher Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="Enter name"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Category</FieldLabel>
+                            <select
+                                name="type"
+                                value={formData.type}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {educationTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 2. CONTACT */}
+                {/* ─── ROW 2: CONTACT ─── */}
                 <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Email</FieldLabel>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 3. CATEGORY */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Category</FieldLabel>
-                        <select
-                            name="type"
-                            value={formData.type}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectStyle}
-                        >
-                            {educationTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* 4. TEACHING DETAILS */}
+                {/* ─── ROW 3: TEACHING DETAILS ─── */}
                 <SectionCard title="Teaching Details">
-                    <div>
-                        <FieldLabel required>Subjects Taught</FieldLabel>
-                        <textarea
-                            value={subjectsInput}
-                            onChange={handleSubjectsChange}
-                            rows={3}
-                            placeholder="Mathematics, Physics, Chemistry, English"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter subjects separated by commas
-                        </p>
-                        {formData.subjects.length > 0 && (
-                            <div className="mt-3">
-                                <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>Selected Subjects:</p>
-                                <div className="flex flex-wrap gap-2">
+                    <TwoCol>
+                        {/* Subjects */}
+                        <div>
+                            <FieldLabel required>Subjects Taught</FieldLabel>
+                            <textarea
+                                value={subjectsInput}
+                                onChange={handleSubjectsChange}
+                                rows={3}
+                                placeholder="Mathematics, Physics, Chemistry, English"
+                                className={inputBase + ' resize-none'}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 Enter subjects separated by commas
+                            </p>
+                            {formData.subjects.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     {formData.subjects.map((subject, i) => (
                                         <span
                                             key={i}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-white"
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
                                             style={{ backgroundColor: '#e8f2f8', color: '#00598a' }}
                                         >
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
                                             {subject}
                                         </span>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
 
-                    <div>
-                        <FieldLabel>Qualifications</FieldLabel>
-                        <textarea
-                            value={qualificationsInput}
-                            onChange={handleQualificationsChange}
-                            rows={2}
-                            placeholder="B.Ed, M.Sc, Ph.D"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Enter qualifications separated by commas
-                        </p>
-                        {formData.qualifications.length > 0 && (
-                            <div className="mt-3">
-                                <div className="flex flex-wrap gap-2">
+                        {/* Qualifications */}
+                        <div>
+                            <FieldLabel>Qualifications</FieldLabel>
+                            <textarea
+                                value={qualificationsInput}
+                                onChange={handleQualificationsChange}
+                                rows={3}
+                                placeholder="B.Ed, M.Sc, Ph.D"
+                                className={inputBase + ' resize-none'}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 Enter qualifications separated by commas
+                            </p>
+                            {formData.qualifications.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     {formData.qualifications.map((qual, i) => (
                                         <span
                                             key={i}
@@ -481,38 +505,57 @@ const EducationForm: React.FC = () => {
                                         </span>
                                     ))}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 5. PROFESSIONAL DETAILS */}
+                {/* ─── ROW 4: PROFESSIONAL DETAILS ─── */}
                 <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-2 gap-3">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Experience (years)</FieldLabel>
-                            <input type="number" name="experience" value={formData.experience} onChange={handleInputChange} placeholder="Years" min="0" className={inputBase} />
+                            <input
+                                type="number"
+                                name="experience"
+                                value={formData.experience}
+                                onChange={handleInputChange}
+                                placeholder="Years of experience"
+                                min="0"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>Charges (₹)</FieldLabel>
-                            <input type="text" name="charges" value={formData.charges} onChange={handleInputChange} placeholder="Amount" className={inputBase} />
+                            <input
+                                type="text"
+                                name="charges"
+                                value={formData.charges}
+                                onChange={handleInputChange}
+                                placeholder="Amount"
+                                className={inputBase}
+                            />
                         </div>
-                    </div>
-                    <div>
-                        <FieldLabel>Charge Type</FieldLabel>
-                        <select
-                            name="chargeType"
-                            value={formData.chargeType}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectStyle}
-                        >
-                            {chargeTypeOptions.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                    </div>
+                    </TwoCol>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Charge Type</FieldLabel>
+                            <select
+                                name="chargeType"
+                                value={formData.chargeType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {chargeTypeOptions.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                        </div>
+                        {/* Empty right column for balance */}
+                        <div />
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 6. DESCRIPTION */}
+                {/* ─── ROW 5: DESCRIPTION ─── */}
                 <SectionCard title="Description">
                     <textarea
                         name="description"
@@ -524,7 +567,7 @@ const EducationForm: React.FC = () => {
                     />
                 </SectionCard>
 
-                {/* 7. LOCATION */}
+                {/* ─── ROW 6: LOCATION ─── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -532,19 +575,18 @@ const EducationForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: '#00598a' }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#004a75')}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#00598a')}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
                             }
                         </button>
                     }
                 >
-                    <div className="grid grid-cols-2 gap-3">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputBase} />
@@ -553,8 +595,8 @@ const EducationForm: React.FC = () => {
                             <FieldLabel required>City</FieldLabel>
                             <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputBase} />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    </TwoCol>
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputBase} />
@@ -563,12 +605,11 @@ const EducationForm: React.FC = () => {
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="PIN code" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    {/* Tip box */}
                     <div className="rounded-xl p-3" style={{ backgroundColor: '#e8f2f8', border: '1px solid #b3d4e8' }}>
                         <p className={`${typography.body.small}`} style={{ color: '#00598a' }}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
                         </p>
                     </div>
 
@@ -576,7 +617,7 @@ const EducationForm: React.FC = () => {
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected: </span>
-                                <span className="ml-1">
+                                <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -584,98 +625,108 @@ const EducationForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* 8. PORTFOLIO PHOTOS */}
+                {/* ─── ROW 7: PORTFOLIO PHOTOS ─── */}
                 <SectionCard title={`Portfolio Photos (${totalImagesCount}/5)`}>
-                    <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={maxImagesReached}
-                        />
-                        <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors ${maxImagesReached ? 'border-gray-200 bg-gray-50' : ''
-                                }`}
-                            style={!maxImagesReached ? { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' } : {}}
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#d0e8f2' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {maxImagesReached
-                                            ? 'Maximum 5 images reached'
-                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload photos of your institution, certificates, or teaching
-                                    </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: '#00598a' }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#d0e8f2' }}>
+                                        <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImagesCount} slots left)`}
                                         </p>
-                                    )}
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            Upload photos of your institution, certificates, or teaching
+                                        </p>
+                                        {selectedImages.length > 0 && (
+                                            <p className="text-sm font-medium mt-1" style={{ color: '#00598a' }}>
+                                                {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Image Grid */}
-                    {(existingImages.length > 0 || selectedImages.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {/* Existing images (not marked for deletion) */}
-                            {existingImages
-                                .filter(url => !imagesToDelete.includes(url))
-                                .map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                        {/* Previews */}
+                        {(existingImages.length > 0 || selectedImages.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages
+                                    .filter(url => !imagesToDelete.includes(url))
+                                    .map((url, i) => (
+                                        <div key={`ex-${i}`} className="relative aspect-square group">
+                                            <img
+                                                src={url}
+                                                alt={`Saved ${i + 1}`}
+                                                className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                                onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveExistingImage(url)}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                            <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
+                                                Saved
+                                            </span>
+                                        </div>
+                                    ))}
+
+                                {selectedImages.map((file, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
                                         <img
-                                            src={url}
-                                            alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                            onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error'; }}
+                                            src={imagePreviews[i]}
+                                            alt={`New ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: '#00598a' }}
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveExistingImage(url)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
+                                            onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
-                                            Saved
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(file.size / 1024 / 1024).toFixed(1)}MB
                                         </span>
                                     </div>
                                 ))}
-
-                            {/* New images */}
-                            {selectedImages.map((file, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img
-                                        src={imagePreviews[i]}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#00598a' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg opacity-0 group-hover:opacity-100 transition"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
-                                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                                        {(file.size / 1024 / 1024).toFixed(1)}MB
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center" style={{ minHeight: '180px' }}>
+                                <p className={`${typography.body.small} text-gray-400`}>
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
 
                     {/* Deleted images — undo section */}
                     {imagesToDelete.length > 0 && (
@@ -699,29 +750,41 @@ const EducationForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: '#00598a' }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#004a75')}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = '#00598a')}
-                    >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
+                    </button>
                 </div>
+
             </div>
         </div>
     );

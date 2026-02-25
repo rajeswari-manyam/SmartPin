@@ -51,7 +51,7 @@ const resolveCardKey = (subcategory?: string): CardKey => {
     if (n.includes("furniture")) return "furniture";
     if (n.includes("electronic")) return "electronic";
     if (n.includes("clothing") || n.includes("cloth")) return "clothing";
-    return "supermarket"; // default
+    return "supermarket";
 };
 
 const getDisplayTitle = (subcategory?: string): string => {
@@ -70,6 +70,93 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 };
 
 // ============================================================================
+// CALL POPUP COMPONENT
+// ============================================================================
+interface CallPopupProps {
+    phone: string;
+    storeName: string;
+    onClose: () => void;
+}
+
+const CallPopup: React.FC<CallPopupProps> = ({ phone, storeName, onClose }) => {
+    const handleBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (e.target === e.currentTarget) onClose();
+    };
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4"
+            onClick={handleBackdrop}
+        >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+                {/* Header */}
+                <div
+                    className="px-6 py-5 text-center"
+                    style={{ background: "linear-gradient(135deg, #00598a 0%, #007ab8 100%)" }}
+                >
+                    <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                    </div>
+                    <h3 className="text-white font-bold text-lg line-clamp-1">{storeName}</h3>
+                    <p className="text-white/70 text-sm mt-1">Contact Store</p>
+                </div>
+
+                {/* Phone display */}
+                <div className="px-6 py-6 text-center">
+                    <p className="text-gray-500 text-sm mb-2">Phone Number</p>
+                    <div className="flex items-center justify-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                        <span className="text-gray-400 text-lg">📞</span>
+                        <span className="text-2xl font-bold tracking-widest" style={{ color: "#00598a" }}>
+                            +91 {phone}
+                        </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="grid grid-cols-2 gap-3 mt-5">
+                        <a
+                            href={`tel:+91${phone}`}
+                            onClick={onClose}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-white text-sm transition-all hover:opacity-90 active:scale-95"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                            </svg>
+                            Call Now
+                        </a>
+                        <button
+                            onClick={onClose}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm border-2 transition-all active:scale-95"
+                            style={{ borderColor: "#00598a", color: "#00598a" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
+                                (e.currentTarget as HTMLButtonElement).style.color = "white";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLButtonElement).style.color = "#00598a";
+                            }}
+                        >
+                            ✕ Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 const ShoppingList: React.FC = () => {
@@ -83,6 +170,9 @@ const ShoppingList: React.FC = () => {
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
 
+    // Call popup state
+    const [callPopup, setCallPopup] = useState<{ phone: string; storeName: string } | null>(null);
+
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -95,7 +185,6 @@ const ShoppingList: React.FC = () => {
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
-                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => {
                 console.error(err);
@@ -106,100 +195,73 @@ const ShoppingList: React.FC = () => {
         );
     }, []);
 
-    // ── Fetch nearby stores when location is ready ───────────────────────────
+    // ── Fetch nearby stores ──────────────────────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-
         const fetchNearby = async () => {
             setLoading(true);
             setError("");
             try {
-                console.log("🛒 Fetching nearby stores...");
                 const res = await getNearbyShoppingStores(userLocation.latitude, userLocation.longitude, 10);
-                console.log("🛒 API Response:", res);
-                console.log("🛒 Total records:", res?.data ? (Array.isArray(res.data) ? res.data.length : 1) : 0);
-
                 if (res?.success && res.data) {
                     const all: ShoppingStore[] = Array.isArray(res.data) ? res.data : [res.data];
-
                     if (subcategory) {
-                        const targetType = subcategory
-                            .split("-")
-                            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-                            .join(" ");
-                        const filtered = all.filter(
-                            s => s.storeType &&
-                                s.storeType.toLowerCase().trim() === targetType.toLowerCase().trim()
-                        );
-                        console.log(`✅ Filtered stores for "${targetType}":`, filtered.length);
-                        setNearbyStores(filtered);
+                        const targetType = subcategory.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+                        setNearbyStores(all.filter(s => s.storeType && s.storeType.toLowerCase().trim() === targetType.toLowerCase().trim()));
                     } else {
-                        console.log("✅ Displaying all", all.length, "stores");
                         setNearbyStores(all);
                     }
                 } else {
                     setNearbyStores([]);
                 }
             } catch (e) {
-                console.error("❌ Error:", e);
                 setError("Failed to load nearby stores");
                 setNearbyStores([]);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchNearby();
-    }, [userLocation]); // ✅ no subcategory dependency — matches RealEstateList pattern
+    }, [userLocation]);
 
     // ── Navigation handlers ──────────────────────────────────────────────────
-    const handleView = (store: any) => {
-        const id = store._id || store.id;
-        console.log("Viewing store details:", id);
-        navigate(`/shopping/details/${id}`);
-    };
+    const handleView = (store: any) => navigate(`/shopping/details/${store._id || store.id}`);
 
     const handleAddPost = () =>
         navigate(subcategory ? `/add-shopping-form?subcategory=${subcategory}` : "/add-shopping-form");
 
     const openDirections = (store: ShoppingStore) => {
         if (store.latitude && store.longitude) {
-            window.open(
-                `https://www.google.com/maps/dir/?api=1&destination=${Number(store.latitude)},${Number(store.longitude)}`,
-                "_blank"
-            );
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${Number(store.latitude)},${Number(store.longitude)}`, "_blank");
         } else if (store.area || store.city) {
-            const addr = encodeURIComponent(
-                [store.area, store.city, store.state].filter(Boolean).join(", ")
-            );
+            const addr = encodeURIComponent([store.area, store.city, store.state].filter(Boolean).join(", "));
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
         }
     };
 
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
+    const handleCallClick = (e: React.MouseEvent, store: ShoppingStore) => {
+        e.stopPropagation();
+        if (!store.phone) return;
+        setCallPopup({ phone: store.phone, storeName: store.storeName || "Store" });
     };
 
-    // ── Dummy cards — always render first ───────────────────────────────────
+    // ── Dummy cards ──────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── Inline API store card — mirrors RealEstateList card style ────────────
+    // ── Store card ───────────────────────────────────────────────────────────
     const renderStoreCard = (store: ShoppingStore) => {
         const id = store._id || store.id || "";
-        const location =
-            [store.area, store.city, store.state].filter(Boolean).join(", ") || "Location not set";
+        const location = [store.area, store.city, store.state].filter(Boolean).join(", ") || "Location not set";
         const imageUrls = (store.images || []).filter(Boolean) as string[];
 
         let distance: string | null = null;
         if (userLocation && store.latitude && store.longitude) {
             const d = calculateDistance(
-                userLocation.latitude,
-                userLocation.longitude,
-                Number(store.latitude),
-                Number(store.longitude)
+                userLocation.latitude, userLocation.longitude,
+                Number(store.latitude), Number(store.longitude)
             );
             distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
@@ -207,32 +269,35 @@ const ShoppingList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
                 onClick={() => handleView(store)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={store.storeName || "Store"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100 group-hover:bg-[#00598a]/5 transition-colors duration-200">
                             <span className="text-5xl">🛒</span>
                         </div>
                     )}
 
-                    {/* Live Data — top left */}
+                    {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
                             Live Data
                         </span>
                     </div>
 
-                    {/* Open/Closed — top right */}
+                    {/* Open Now badge */}
                     <div className="absolute top-3 right-3 z-10">
                         <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-green-500 text-white">
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
@@ -248,26 +313,38 @@ const ShoppingList: React.FC = () => {
                 </div>
 
                 {/* ── Body ── */}
-                <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                <div className="p-4 flex flex-col gap-2.5 flex-1">
+                    {/* Store name */}
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-[#00598a] transition-colors duration-200">
                         {store.storeName || "Unnamed Store"}
                     </h2>
 
+                    {/* Store type badge */}
                     {store.storeType && (
-                        <p className="text-sm font-medium text-gray-700">{store.storeType}</p>
+                        <div>
+                            <span
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border font-medium"
+                                style={{ backgroundColor: "#00598a0d", color: "#00598a", borderColor: "#00598a33" }}
+                            >
+                                🛍️ {store.storeType}
+                            </span>
+                        </div>
                     )}
 
+                    {/* Location */}
                     <p className="text-sm text-gray-500 flex items-start gap-1.5">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
+                    {/* Distance */}
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: "#00598a" }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
 
+                    {/* Description */}
                     {store.description && (
                         <p className="text-sm text-gray-600 line-clamp-2 pt-1 border-t border-gray-100">
                             {store.description}
@@ -283,21 +360,39 @@ const ShoppingList: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Directions + Call */}
-                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 mt-auto">
+                        {/* Directions */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(store); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 rounded-lg font-medium text-sm transition-all active:scale-95"
+                            style={{ borderColor: "#00598a", color: "#00598a" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
+                                (e.currentTarget as HTMLButtonElement).style.color = "white";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLButtonElement).style.color = "#00598a";
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* Call */}
                         <button
-                            onClick={e => { e.stopPropagation(); store.phone && openCall(store.phone); }}
+                            onClick={e => handleCallClick(e, store)}
                             disabled={!store.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${store.phone
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all active:scale-95 ${!store.phone ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "text-white"}`}
+                            style={store.phone ? { backgroundColor: "#00598a" } : {}}
+                            onMouseEnter={e => {
+                                if (!store.phone) return;
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73";
+                            }}
+                            onMouseLeave={e => {
+                                if (!store.phone) return;
+                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
+                            }}
                         >
                             <span>📞</span> Call
                         </button>
@@ -307,12 +402,12 @@ const ShoppingList: React.FC = () => {
         );
     };
 
-    // ── Nearby services section — renders after dummy cards ──────────────────
+    // ── Nearby services section ──────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: "#00598a" }} />
                 </div>
             );
         }
@@ -329,10 +424,12 @@ const ShoppingList: React.FC = () => {
 
         return (
             <div className="space-y-4">
-                {/* Nearby Services header with count — mirrors RealEstateList */}
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: "#00598a" }}
+                    >
                         {nearbyStores.length}
                     </span>
                 </div>
@@ -344,10 +441,19 @@ const ShoppingList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND  (mirrors RealEstateList exactly)
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+            {/* ── Call Popup ── */}
+            {callPopup && (
+                <CallPopup
+                    phone={callPopup.phone}
+                    storeName={callPopup.storeName}
+                    onClose={() => setCallPopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -358,21 +464,22 @@ const ShoppingList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find stores near you</p>
                     </div>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center"
+                        className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-white text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
+                        style={{ backgroundColor: "#00598a" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
                     >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location fetching status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div className="border rounded-lg p-3 flex items-center gap-2" style={{ backgroundColor: "#00598a0d", borderColor: "#00598a33" }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full" style={{ borderColor: "#00598a", borderTopColor: "transparent" }} />
+                        <span className="text-sm font-medium" style={{ color: "#00598a" }}>Getting your location...</span>
                     </div>
                 )}
 
@@ -390,14 +497,11 @@ const ShoppingList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
-                <div className="space-y-4">
-                    {renderDummyCards()}
-                </div>
+                {/* 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">{renderDummyCards()}</div>
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
-
             </div>
         </div>
     );

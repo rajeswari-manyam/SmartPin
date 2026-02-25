@@ -1,9 +1,3 @@
-
-
-
-
-
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Bell, Home } from "lucide-react";
@@ -21,11 +15,15 @@ import WelcomePage from "../Auth/WelcomePage";
 import OTPVerification from "../Auth/OTPVerification";
 import LanguageSelector from "../LanguageSelector";
 import ProfileSidebar from "../overlays/ProfileSideBar";
-import { getUserById, API_BASE_URL } from "../../services/api.service";
+import {
+  getUserById,
+  getNotificationCount,
+  API_BASE_URL,
+} from "../../services/api.service";
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, logout } = useAuth();
-  const { accountType, setAccountType } = useAccount();
+  const { accountType, setAccountType, workerProfileId } = useAccount();
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,6 +36,9 @@ const Navbar: React.FC = () => {
   const [userName, setUserName] = useState(localStorage.getItem("userName") || "User");
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+
+  // ── Real unread notification count ──────────────────────────────────────
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Fetch user profile
   useEffect(() => {
@@ -72,6 +73,38 @@ const Navbar: React.FC = () => {
     fetchUserProfile();
   }, [isAuthenticated]);
 
+  // ── Fetch real unread notification count ──────────────────────────────────
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      if (!isAuthenticated) {
+        setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const userId   = localStorage.getItem("userId") || "";
+        const workerId = workerProfileId || localStorage.getItem("workerId") || "";
+
+        // Determine current role and ID based on accountType
+        const role = accountType === "worker" ? "Worker" : "User";
+        const id   = accountType === "worker" ? workerId : userId;
+
+        if (!id) return;
+
+        const res = await getNotificationCount(role as "User" | "Worker", id);
+        setUnreadCount(res.count ?? 0);
+      } catch (err) {
+        console.error("Failed to fetch notification count:", err);
+      }
+    };
+
+    fetchUnreadCount();
+
+    // Poll every 60 seconds to keep the badge fresh
+    const interval = setInterval(fetchUnreadCount, 60_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, accountType, workerProfileId]);
+
   // Sync profile on localStorage change
   useEffect(() => {
     const syncUserData = () => {
@@ -100,6 +133,17 @@ const Navbar: React.FC = () => {
       return;
     }
     navigate(path);
+    setIsMobileMenuOpen(false);
+  };
+
+  const handleNotificationClick = () => {
+    if (!isAuthenticated) {
+      setShowWelcomeModal(true);
+      return;
+    }
+    // Clear badge optimistically when navigating to notifications page
+    setUnreadCount(0);
+    navigate("/notifications");
     setIsMobileMenuOpen(false);
   };
 
@@ -139,47 +183,47 @@ const Navbar: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-           <div
-  onClick={() => navigate("/")}
-  className="
-    flex items-center space-x-2 cursor-pointer
-    transition-all duration-300
-    hover:scale-105
-    group
-  "
->
-         <div
-  className="
-    w-10 h-10 bg-primary rounded-lg
-    flex items-center justify-center
-    transition-all duration-300
-    group-hover:rotate-6
-    group-hover:shadow-lg
-  "
->
+            <div
+              onClick={() => navigate("/")}
+              className="
+                flex items-center space-x-2 cursor-pointer
+                transition-all duration-300
+                hover:scale-105
+                group
+              "
+            >
+              <div
+                className="
+                  w-10 h-10 bg-primary rounded-lg
+                  flex items-center justify-center
+                  transition-all duration-300
+                  group-hover:rotate-6
+                  group-hover:shadow-lg
+                "
+              >
                 <span className="text-white text-xl">⚡</span>
               </div>
-            <h1
-  className={combineTypography(
-    typography.logo.title,
-    "text-primary hidden sm:block transition-colors duration-300 group-hover:text-primary/80"
-  )}
->
+              <h1
+                className={combineTypography(
+                  typography.logo.title,
+                  "text-primary hidden sm:block transition-colors duration-300 group-hover:text-primary/80"
+                )}
+              >
                 ServiceHub
               </h1>
             </div>
 
             {/* Right Section */}
             <div className="flex items-center space-x-3">
-            <div
-  className="
-    transition-all duration-200
-    hover:scale-110
-    hover:text-primary
-  "
->
-  <LanguageSelector />
-</div>
+              <div
+                className="
+                  transition-all duration-200
+                  hover:scale-110
+                  hover:text-primary
+                "
+              >
+                <LanguageSelector />
+              </div>
 
               {/* Desktop Menu */}
               <div className="hidden lg:flex items-center space-x-1">
@@ -197,37 +241,39 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* Notification */}
-           <button
-  onClick={() => handleNavClick("/notifications")}
-  className="
-    relative p-1 text-gray-700
-    transition-all duration-300
-    hover:text-primary
-    hover:scale-110
-    hover:drop-shadow-lg
-  "
->
+              {/* Notification Bell with live count */}
+              <button
+                onClick={handleNotificationClick}
+                className="
+                  relative p-1 text-gray-700
+                  transition-all duration-300
+                  hover:text-primary
+                  hover:scale-110
+                  hover:drop-shadow-lg
+                "
+              >
                 <Bell className="w-6 h-6 hover:animate-pulse" />
-                <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
-                  <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
-                    3
-                  </span>
-                </div>
+                {unreadCount > 0 && (
+                  <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
+                    <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  </div>
+                )}
               </button>
 
               {/* Account Toggle Desktop */}
               {isAuthenticated && (
                 <div className="hidden lg:flex items-center">
-                 <div
-  className="
-    relative flex items-center
-    bg-gray-100 rounded-full p-1 h-10 w-36
-    transition-all duration-300
-    hover:shadow-lg
-    hover:ring-2 hover:ring-primary/30
-  "
->
+                  <div
+                    className="
+                      relative flex items-center
+                      bg-gray-100 rounded-full p-1 h-10 w-36
+                      transition-all duration-300
+                      hover:shadow-lg
+                      hover:ring-2 hover:ring-primary/30
+                    "
+                  >
                     <div
                       className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
                         bg-primary
@@ -236,20 +282,20 @@ const Navbar: React.FC = () => {
                     />
                     <button
                       onClick={() => handleSwitchAccount("user")}
-                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-primary"
-                        }`}
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${
+                        accountType === "user" ? "text-white" : "text-primary"
+                      }`}
                     >
                       Customer
                     </button>
                     <button
                       onClick={() => handleSwitchAccount("worker")}
-                 
-  className="
-    relative z-10 w-1/2 text-xs font-semibold
-    transition-colors duration-200
-    hover:text-white
-  "
->
+                      className="
+                        relative z-10 w-1/2 text-xs font-semibold
+                        transition-colors duration-200
+                        hover:text-white
+                      "
+                    >
                       Worker
                     </button>
                   </div>
@@ -267,17 +313,17 @@ const Navbar: React.FC = () => {
                   Login
                 </Button>
               ) : (
-             <button
-  onClick={handleProfileClick}
-  className="
-    hidden lg:block w-10 h-10 rounded-full overflow-hidden
-    border-2 border-transparent
-    transition-all duration-300
-    hover:border-primary
-    hover:scale-110
-    hover:shadow-xl
-  "
->
+                <button
+                  onClick={handleProfileClick}
+                  className="
+                    hidden lg:block w-10 h-10 rounded-full overflow-hidden
+                    border-2 border-transparent
+                    transition-all duration-300
+                    hover:border-primary
+                    hover:scale-110
+                    hover:shadow-xl
+                  "
+                >
                   {profilePic ? (
                     <img
                       src={profilePic}
@@ -319,7 +365,36 @@ const Navbar: React.FC = () => {
                 <MobileNavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
             )}
-            <MobileNavItem icon={Bell} label="Notification" path="/notifications" onClick={() => handleNavClick("/notifications")} />
+            {/* Mobile notification item with count */}
+            <button
+              onClick={handleNotificationClick}
+              className={`
+                group w-full text-left px-4 py-3
+                flex items-center gap-3
+                transition-all duration-200
+                ${location.pathname === "/notifications"
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                }
+              `}
+            >
+              <div className="relative">
+                <Bell className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="transition-all duration-200 group-hover:translate-x-1">
+                Notifications
+              </span>
+              {unreadCount > 0 && (
+                <span className="ml-auto text-xs font-semibold text-red-500">
+                  {unreadCount} unread
+                </span>
+              )}
+            </button>
           </div>
         )}
       </header>
@@ -331,15 +406,18 @@ const Navbar: React.FC = () => {
         onOpenOTP={openOTPModal}
       />
       {showOTPModal && (
-        <div className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999] flex items-center justify-center" style={{ backdropFilter: "blur(5px)", backgroundColor: "rgba(0, 0, 0, 0.65)" }}>
+        <div
+          className="fixed top-0 left-0 right-0 bottom-0 w-screen h-screen z-[9999] flex items-center justify-center"
+          style={{ backdropFilter: "blur(5px)", backgroundColor: "rgba(0, 0, 0, 0.65)" }}
+        >
           <div className="absolute inset-0 w-screen h-screen" onClick={() => setShowOTPModal(false)} />
           <div className="relative z-10">
             <OTPVerification
-              phoneNumber={phoneNumber}
+              email={phoneNumber}
               onBack={() => setShowOTPModal(false)}
               onClose={handleLoginSuccess}
               onContinue={handleLoginSuccess}
-              onResend={() => { }}
+              onResend={() => {}}
             />
           </div>
         </div>
@@ -364,6 +442,7 @@ const Navbar: React.FC = () => {
                 logout();
                 setProfilePic(null);
                 setShowProfileSidebar(false);
+                setUnreadCount(0);
               }}
             />
           </div>
@@ -382,60 +461,41 @@ interface NavItemProps {
   onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({
-  icon: Icon,
-  imgSrc,
-  label,
-  path,
-  onClick,
-}) => {
+const NavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === path;
 
   return (
- <button
-  onClick={onClick}
-  className={`
-    group flex items-center gap-2
-    px-3 py-1.5 rounded-xl
-    text-sm font-medium
-    transition-all duration-300
-    ${
-      isActive
-        ? "bg-[#00598a]/15 text-[#00598a] shadow-sm"
-        : "text-gray-700 hover:bg-[#00598a]/10"
-    }
-  `}
->
-  {imgSrc ? (
-    <img
-      src={imgSrc}
-      alt={label}
-      className="w-5 h-5 object-contain transition-transform duration-300 group-hover:scale-110"
-    />
-  ) : (
-    <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
-  )}
-
-  <span
-    className="
-      text-gray-700
-      transition-colors duration-300
-      group-hover:text-[#00598a]
-    "
-  >
-    {label}
-  </span>
-</button>
+    <button
+      onClick={onClick}
+      className={`
+        group flex items-center gap-2
+        px-3 py-1.5 rounded-xl
+        text-sm font-medium
+        transition-all duration-300
+        ${isActive
+          ? "bg-[#00598a]/15 text-[#00598a] shadow-sm"
+          : "text-gray-700 hover:bg-[#00598a]/10"
+        }
+      `}
+    >
+      {imgSrc ? (
+        <img
+          src={imgSrc}
+          alt={label}
+          className="w-5 h-5 object-contain transition-transform duration-300 group-hover:scale-110"
+        />
+      ) : (
+        <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
+      )}
+      <span className="text-gray-700 transition-colors duration-300 group-hover:text-[#00598a]">
+        {label}
+      </span>
+    </button>
   );
 };
-const MobileNavItem: React.FC<NavItemProps> = ({
-  icon: Icon,
-  imgSrc,
-  label,
-  path,
-  onClick,
-}) => {
+
+const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === path;
 
@@ -446,10 +506,9 @@ const MobileNavItem: React.FC<NavItemProps> = ({
         group w-full text-left px-4 py-3
         flex items-center gap-3
         transition-all duration-200
-        ${
-          isActive
-            ? "bg-primary/10 text-primary font-semibold"
-            : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+        ${isActive
+          ? "bg-primary/10 text-primary font-semibold"
+          : "text-gray-700 hover:bg-gray-100 hover:text-primary"
         }
       `}
     >
@@ -457,34 +516,16 @@ const MobileNavItem: React.FC<NavItemProps> = ({
         <img
           src={imgSrc}
           alt={label}
-          className="
-            w-5 h-5 object-contain
-            transition-transform duration-200
-            group-hover:scale-150
-          "
+          className="w-5 h-5 object-contain transition-transform duration-200 group-hover:scale-150"
         />
       ) : (
         Icon && (
-          <Icon
-            className="
-              w-5 h-5
-              transition-transform duration-200
-              group-hover:scale-150
-            "
-          />
+          <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
         )
       )}
-      <span
-        className="
-          transition-all duration-200
-          group-hover:translate-x-1
-        "
-      >
-        {label}
-      </span>
+      <span className="transition-all duration-200 group-hover:translate-x-1">{label}</span>
     </button>
   );
-}; 
-
+};
 
 export default Navbar;

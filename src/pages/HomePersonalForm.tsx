@@ -11,7 +11,8 @@ import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 
 const BRAND = '#00598a';
-const BRAND_DARK = '#004a75';
+const BRAND_DARK = '#004a73';
+const BRAND_DARKER = '#003d5c';
 const BRAND_LIGHT_BG = '#e8f2f8';
 const BRAND_LIGHT_BORDER = '#b3d4e8';
 
@@ -25,7 +26,7 @@ const getHomeSubcategories = () => {
 };
 
 const inputBase =
-    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
@@ -45,7 +46,7 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 );
 
 const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -54,6 +55,11 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
         )}
         {children}
     </div>
+);
+
+// ── Always 2 columns ──────────────────────────────────────────────────────────
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 // ============================================================================
@@ -84,7 +90,7 @@ const HomePersonalForm = () => {
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: localStorage.getItem('userName') || '',
-        phone: '',          // ← NEW
+        phone: '',
         serviceName: '',
         serviceType: defaultType,
         specializations: '',
@@ -114,7 +120,7 @@ const HomePersonalForm = () => {
                 setFormData((prev) => ({
                     ...prev,
                     userId: prev.userId,
-                    phone: data.phone || '',    // ← NEW
+                    phone: data.phone || '',
                     serviceName: data.title || '',
                     serviceType: data.subcategory || defaultType,
                     specializations: Array.isArray(data.description)
@@ -232,7 +238,7 @@ const HomePersonalForm = () => {
             const payload: CreateJobPayload & { phone?: string } = {
                 userId: formData.userId,
                 name: formData.name,
-                phone: formData.phone.trim(),   // ← NEW
+                phone: formData.phone.trim(),
                 title: formData.serviceName,
                 description: formData.specializations,
                 category: 'home-personal',
@@ -285,19 +291,20 @@ const HomePersonalForm = () => {
         : (typeof formData.specializations === 'string' ? formData.specializations : '');
 
     const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -315,133 +322,142 @@ const HomePersonalForm = () => {
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            {/* ── Wide container ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
-                        {error}
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1">Error</p>
+                                <p className="text-red-700">{error}</p>
+                            </div>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND }}>
-                        ✓ {successMessage}
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
+                        <div className="flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <p>{successMessage}</p>
+                        </div>
                     </div>
                 )}
 
-                {/* 1. SERVICE PROVIDER NAME */}
+                {/* ─── ROW 1: SERVICE NAME + SERVICE TYPE ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Provider Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="serviceName"
-                            value={formData.serviceName}
-                            onChange={handleInputChange}
-                            placeholder="e.g., Professional Maid Services"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* 2. CONTACT INFORMATION (Phone) — NEW */}
-                <SectionCard title="Contact Information">
-                    <div>
-                        <FieldLabel required>Phone Number</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                </SectionCard>
-
-                {/* 3. SERVICE TYPE */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Type</FieldLabel>
-                        <select
-                            name="serviceType"
-                            value={formData.serviceType}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectStyle}
-                        >
-                            {homeSubcategories.map((t) => (
-                                <option key={t} value={t}>{t}</option>
-                            ))}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* 4. SPECIALIZATIONS */}
-                <SectionCard title="Specializations & Skills">
-                    <div>
-                        <FieldLabel required>Your Specializations</FieldLabel>
-                        <textarea
-                            name="specializations"
-                            value={safeSpecializations}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="e.g., Experienced in residential cleaning, deep cleaning, laundry, dishwashing, floor care"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 List all your skills and specializations, separated by commas
-                        </p>
-                    </div>
-
-                    {/* Skill chips */}
-                    {safeSpecializations && safeSpecializations.trim() && (
-                        <div className="mt-3">
-                            <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Listed Skills ({safeSpecializations.split(',').filter(s => s.trim()).length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {safeSpecializations.split(',').map((s, i) => {
-                                    const trimmed = s.trim();
-                                    if (!trimmed) return null;
-                                    return (
-                                        <span
-                                            key={i}
-                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                                            style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
-                                        >
-                                            <span>✓</span>
-                                            {trimmed}
-                                        </span>
-                                    );
-                                })}
-                            </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Service Provider Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="serviceName"
+                                value={formData.serviceName}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Professional Maid Services"
+                                className={inputBase}
+                            />
                         </div>
-                    )}
+                        <div>
+                            <FieldLabel required>Service Type</FieldLabel>
+                            <select
+                                name="serviceType"
+                                value={formData.serviceType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {homeSubcategories.map((t) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 5. SERVICE CHARGES */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Charges (₹)</FieldLabel>
-                        <input
-                            type="number"
-                            name="servicecharges"
-                            value={formData.servicecharges}
-                            onChange={handleInputChange}
-                            placeholder="e.g., 500"
-                            min="1"
-                            step="0.01"
-                            className={inputBase}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Your hourly or daily rate in rupees
-                        </p>
-                    </div>
+                {/* ─── ROW 2: CONTACT INFORMATION ─── */}
+                <SectionCard title="Contact Information">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone Number</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        {/* Empty right column for balance */}
+                        <div />
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 6. LOCATION */}
+                {/* ─── ROW 3: SPECIALIZATIONS + SERVICE CHARGES ─── */}
+                <SectionCard title="Specializations & Pricing">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Your Specializations</FieldLabel>
+                            <textarea
+                                name="specializations"
+                                value={safeSpecializations}
+                                onChange={handleInputChange}
+                                rows={4}
+                                placeholder="e.g., Experienced in residential cleaning, deep cleaning, laundry, dishwashing, floor care"
+                                className={inputBase + ' resize-none'}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 List all your skills and specializations, separated by commas
+                            </p>
+                        </div>
+                        <div>
+                            <FieldLabel required>Service Charges (₹)</FieldLabel>
+                            <input
+                                type="number"
+                                name="servicecharges"
+                                value={formData.servicecharges}
+                                onChange={handleInputChange}
+                                placeholder="e.g., 500"
+                                min="1"
+                                step="0.01"
+                                className={inputBase}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 Your hourly or daily rate in rupees
+                            </p>
+
+                            {/* Skill chips preview */}
+                            {safeSpecializations && safeSpecializations.trim() && (
+                                <div className="mt-4">
+                                    <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
+                                        Listed Skills ({safeSpecializations.split(',').filter(s => s.trim()).length}):
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {safeSpecializations.split(',').map((s, i) => {
+                                            const trimmed = s.trim();
+                                            if (!trimmed) return null;
+                                            return (
+                                                <span
+                                                    key={i}
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+                                                    style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
+                                                >
+                                                    <span>✓</span>
+                                                    {trimmed}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </TwoCol>
+                </SectionCard>
+
+                {/* ─── ROW 4: LOCATION ─── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -449,43 +465,73 @@ const HomePersonalForm = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: BRAND }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
                             }
                         </button>
                     }
                 >
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Area + City */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="e.g., Madhapur" className={inputBase} />
+                            <input
+                                type="text"
+                                name="area"
+                                value={formData.area}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Madhapur"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g., Hyderabad" className={inputBase} />
+                            <input
+                                type="text"
+                                name="city"
+                                value={formData.city}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Hyderabad"
+                                className={inputBase}
+                            />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    </TwoCol>
+
+                    {/* State + PIN */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g., Telangana" className={inputBase} />
+                            <input
+                                type="text"
+                                name="state"
+                                value={formData.state}
+                                onChange={handleInputChange}
+                                placeholder="e.g., Telangana"
+                                className={inputBase}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g., 500016" className={inputBase} />
+                            <input
+                                type="text"
+                                name="pincode"
+                                value={formData.pincode}
+                                onChange={handleInputChange}
+                                placeholder="e.g., 500016"
+                                className={inputBase}
+                            />
                         </div>
-                    </div>
+                    </TwoCol>
 
                     {/* Tip box */}
                     <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
                         <p className={`${typography.body.small}`} style={{ color: BRAND }}>
-                            📍 <span className="font-medium">Tip:</span> Click the button to automatically detect your location, or enter your address manually above.
+                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
                         </p>
                     </div>
 
@@ -493,7 +539,7 @@ const HomePersonalForm = () => {
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location detected: </span>
-                                <span className="ml-1">
+                                <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -501,95 +547,141 @@ const HomePersonalForm = () => {
                     )}
                 </SectionCard>
 
-                {/* 7. PHOTOS */}
-                <SectionCard title="Service Photos (Optional)">
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={totalImages >= 5}
-                        />
-                        <div
-                            className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors"
-                            style={
-                                totalImages >= 5
-                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
-                            }
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {totalImages >= 5 ? 'Maximum limit reached' : 'Tap to upload service photos'}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Maximum 5 images · 5 MB each
-                                    </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                {/* ─── ROW 5: PHOTOS ─── */}
+                <SectionCard title={`Service Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : BRAND_LIGHT_BG,
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: 'rgba(0,89,138,0.12)' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
-                                    )}
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            Maximum 5 images · 5 MB each
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Image Previews */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>Saved</span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                        {/* Previews */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img
+                                            src={url}
+                                            alt={`Saved ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveExistingImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((preview, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img
+                                            src={preview}
+                                            alt={`Preview ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: BRAND }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div
+                                className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}
+                            >
+                                <p className={`${typography.body.small} text-gray-400`}>
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
                 </SectionCard>
 
-                {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-lg font-semibold text-white transition-opacity shadow-sm ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
-                    >
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
+                {/* ── Action Buttons — courier style ── */}
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={handleCancel}
                         type="button"
                         disabled={loading}
-                        className={`px-8 py-3.5 rounded-lg font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`px-10 py-3.5 rounded-xl font-semibold
+                            text-[#00598a] bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
+                    </button>
                 </div>
+
             </div>
         </div>
     );

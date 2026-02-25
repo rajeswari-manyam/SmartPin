@@ -55,6 +55,7 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
 
     const [digitalServices, setDigitalServices] = useState<DigitalWorker[]>(data as DigitalWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     // ✅ sync state when prop data arrives asynchronously from parent
     useEffect(() => {
@@ -91,7 +92,7 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches RealEstateUserService card layout
+    // CARD
     // ============================================================================
     const renderCard = (service: DigitalWorker) => {
         const id = service._id || "";
@@ -104,11 +105,21 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
         const description = service.bio || service.description || "";
         const displayName = service.serviceName || service.name || "Unnamed Service";
         const phone = (service as any).phone || (service as any).contactNumber || (service as any).phoneNumber;
+        const isHovered = hoveredCard === id;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-200"
+                style={{
+                    boxShadow: isHovered
+                        ? "0 8px 24px rgba(0, 89, 138, 0.15)"
+                        : undefined,
+                    borderColor: isHovered ? "#00598a" : undefined,
+                    transform: isHovered ? "translateY(-2px)" : undefined,
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
             >
                 {/* ── Image ── */}
                 <div className="relative h-52 bg-gray-100">
@@ -120,7 +131,10 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-indigo-600/5">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? "rgba(0, 89, 138, 0.06)" : "rgba(79, 70, 229, 0.05)" }}
+                        >
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
@@ -136,7 +150,10 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-indigo-600" />
+                                <div
+                                    className="animate-spin rounded-full h-5 w-5 border-b-2"
+                                    style={{ borderColor: "#00598a" }}
+                                />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -151,7 +168,10 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                 <div className="p-4">
 
                     {/* Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3
+                        className="text-lg font-bold text-gray-900 mb-1 truncate transition-colors duration-200"
+                        style={{ color: isHovered ? "#00598a" : undefined }}
+                    >
                         {displayName}
                     </h3>
 
@@ -163,7 +183,14 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
 
                     {/* Category pill + Availability status — side by side */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-indigo-700 bg-indigo-600/8 border border-indigo-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border transition-colors duration-200"
+                            style={{
+                                color: isHovered ? "#00598a" : "#4338ca",
+                                backgroundColor: isHovered ? "rgba(0, 89, 138, 0.07)" : "rgba(79, 70, 229, 0.05)",
+                                borderColor: isHovered ? "rgba(0, 89, 138, 0.25)" : "rgba(79, 70, 229, 0.2)",
+                            }}
+                        >
                             {service.subCategory || service.category || "Digital Service"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -185,17 +212,39 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                     {!description && servicesList.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {service.chargeType && (
-                                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200"
+                                    style={{
+                                        color: isHovered ? "#00598a" : "#4338ca",
+                                        backgroundColor: isHovered ? "rgba(0, 89, 138, 0.07)" : "#eef2ff",
+                                        borderColor: isHovered ? "rgba(0, 89, 138, 0.25)" : "#c7d2fe",
+                                    }}
+                                >
                                     {service.chargeType}
                                 </span>
                             )}
                             {service.experience && (
-                                <span className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                                <span
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200"
+                                    style={{
+                                        color: isHovered ? "#00598a" : "#4338ca",
+                                        backgroundColor: isHovered ? "rgba(0, 89, 138, 0.07)" : "#eef2ff",
+                                        borderColor: isHovered ? "rgba(0, 89, 138, 0.25)" : "#c7d2fe",
+                                    }}
+                                >
                                     💼 {service.experience} yrs exp
                                 </span>
                             )}
                             {servicesList.slice(0, 2).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                                <span
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200"
+                                    style={{
+                                        color: isHovered ? "#00598a" : "#4338ca",
+                                        backgroundColor: isHovered ? "rgba(0, 89, 138, 0.07)" : "#eef2ff",
+                                        borderColor: isHovered ? "rgba(0, 89, 138, 0.25)" : "#c7d2fe",
+                                    }}
+                                >
                                     {s}
                                 </span>
                             ))}
@@ -223,11 +272,32 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                         )}
 
                         {service.serviceCharge && (
-                            <span className="ml-auto text-sm font-bold text-indigo-700">
+                            <span
+                                className="ml-auto text-sm font-bold transition-colors duration-200"
+                                style={{ color: isHovered ? "#00598a" : "#4338ca" }}
+                            >
                                 ₹{Number(service.serviceCharge).toLocaleString()}
                             </span>
                         )}
                     </div>
+
+                    {/* View Details button — visible on hover */}
+                    <button
+                        onClick={() => handleView(id)}
+                        className="w-full py-2 rounded-xl text-sm font-semibold transition-all duration-200 border"
+                        style={{
+                            color: isHovered ? "#fff" : "#00598a",
+                            backgroundColor: isHovered ? "#00598a" : "transparent",
+                            borderColor: "#00598a",
+                            opacity: isHovered ? 1 : 0,
+                            pointerEvents: isHovered ? "auto" : "none",
+                            maxHeight: isHovered ? "40px" : "0px",
+                            overflow: "hidden",
+                            marginTop: isHovered ? "0" : "-8px",
+                        }}
+                    >
+                        View Details
+                    </button>
 
                 </div>
             </div>
@@ -257,7 +327,7 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-digital-service-form")}
-                        className="gap-1.5 bg-indigo-600 hover:bg-indigo-700"
+                        className="gap-1.5 !bg-[#00598a] hover:!bg-[#004a75]"
                     >
                         + Add Digital Service
                     </Button>

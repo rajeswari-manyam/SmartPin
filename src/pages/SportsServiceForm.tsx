@@ -62,16 +62,24 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 
 // ── Shared Tailwind input classes ─────────────────────────────────────────────
 const inputBase =
-    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-lg text-gray-800 ' +
-    'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
-    'focus:border-[#00598a] focus:ring-2 focus:ring-[#00598a]/20';
+    'w-full px-4 py-3 border border-gray-300 rounded-xl ' +
+    'focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ' +
+    'placeholder-gray-400 transition-all duration-200 bg-white text-gray-800 outline-none';
 
 const inputErr =
-    'w-full px-4 py-3.5 border border-red-400 rounded-xl text-lg text-gray-800 ' +
-    'placeholder-gray-400 bg-white outline-none transition-all duration-200 ' +
-    'focus:border-red-400 focus:ring-2 focus:ring-red-300/30';
+    'w-full px-4 py-3 border border-red-400 rounded-xl ' +
+    'focus:ring-2 focus:ring-red-300 focus:border-red-400 ' +
+    'placeholder-gray-400 transition-all duration-200 bg-white text-gray-800 outline-none';
 
-// ── Field errors type ─────────────────────────────────────────────────────────
+// ── select arrow style (matches CourierForm) ──────────────────────────────────
+const selectStyle: React.CSSProperties = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
+
 interface FieldErrors {
     serviceName?: string;
     phone?: string;
@@ -81,31 +89,33 @@ interface FieldErrors {
 
 // ── Micro-components ──────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className="block text-lg font-semibold text-gray-800 mb-2">
-        {children}{required && <span className="text-[#00598a] ml-1">*</span>}
+    <label className="block text-sm font-semibold text-gray-800 mb-2">
+        {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
 const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
-    msg ? <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
+    msg ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
 
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4 ${className}`}>
-        {children}
-    </div>
+// ── Two-column grid (mirrors CourierForm's TwoCol) ────────────────────────────
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
-const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
-    <div className="flex items-center justify-between mb-1">
-        <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-        {action}
-    </div>
-);
-
-const SelectWrap: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="relative">
+// ── Section card (mirrors CourierForm's SectionCard) ─────────────────────────
+const SectionCard: React.FC<{
+    title?: string;
+    children: React.ReactNode;
+    action?: React.ReactNode;
+}> = ({ title, children, action }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+        {title && (
+            <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-gray-900">{title}</h3>
+                {action}
+            </div>
+        )}
         {children}
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#00598a] pointer-events-none" />
     </div>
 );
 
@@ -129,14 +139,14 @@ const SportsForm: React.FC = () => {
     const defaultType = getSubFromUrl() || sportsTypes[0] || 'Gym & Fitness';
 
     // ── UI state ──────────────────────────────────────────────────────────────
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
+    const [loading, setLoading]               = useState(false);
+    const [loadingData, setLoadingData]       = useState(false);
+    const [error, setError]                   = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
     const [locationLoading, setLocationLoading] = useState(false);
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-    const [customService, setCustomService] = useState('');
+    const [fieldErrors, setFieldErrors]       = useState<FieldErrors>({});
+    const [customService, setCustomService]   = useState('');
     const [commonServices, setCommonServices] = useState<string[]>(getCommonServices(defaultType));
     const isGPSDetected = useRef(false);
 
@@ -144,7 +154,7 @@ const SportsForm: React.FC = () => {
     const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         serviceName: '',
-        phone: '',                          // ← NEW
+        phone: '',
         subCategory: defaultType,
         description: '',
         services: [] as string[],
@@ -159,9 +169,9 @@ const SportsForm: React.FC = () => {
         availability: true,
     });
 
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
+    const [selectedImages, setSelectedImages]   = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews]     = useState<string[]>([]);
+    const [existingImages, setExistingImages]   = useState<string[]>([]);
 
     // ── Fetch edit data ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -176,7 +186,7 @@ const SportsForm: React.FC = () => {
                     ...prev,
                     userId: data.userId || '',
                     serviceName: data.serviceName || '',
-                    phone: data.phone || '',          // ← NEW
+                    phone: data.phone || '',
                     subCategory: data.subCategory || defaultType,
                     description: data.description || '',
                     services: data.services || [],
@@ -201,7 +211,6 @@ const SportsForm: React.FC = () => {
         fetchData();
     }, [editId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Update common services when subcategory changes
     useEffect(() => {
         setCommonServices(getCommonServices(formData.subCategory));
     }, [formData.subCategory]);
@@ -224,9 +233,8 @@ const SportsForm: React.FC = () => {
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors]) {
+        if (fieldErrors[name as keyof FieldErrors])
             setFieldErrors(prev => ({ ...prev, [name]: undefined }));
-        }
     };
 
     const handleAddService = (service: string) => {
@@ -238,9 +246,8 @@ const SportsForm: React.FC = () => {
         if (fieldErrors.services) setFieldErrors(prev => ({ ...prev, services: undefined }));
     };
 
-    const handleRemoveService = (index: number) => {
+    const handleRemoveService = (index: number) =>
         setFormData(prev => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }));
-    };
 
     // ── Image helpers ─────────────────────────────────────────────────────────
     const totalImages = selectedImages.length + existingImages.length;
@@ -270,13 +277,10 @@ const SportsForm: React.FC = () => {
         setError('');
     };
 
-    const removeNewImg = (i: number) => {
-        setSelectedImages(p => p.filter((_, idx) => idx !== i));
-        setImagePreviews(p => p.filter((_, idx) => idx !== i));
-    };
+    const removeNewImg      = (i: number) => { setSelectedImages(p => p.filter((_, idx) => idx !== i)); setImagePreviews(p => p.filter((_, idx) => idx !== i)); };
     const removeExistingImg = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
-    // ── GPS location ──────────────────────────────────────────────────────────
+    // ── GPS ───────────────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true); setError(''); setLocationWarning('');
         setFieldErrors(prev => ({ ...prev, location: undefined }));
@@ -290,14 +294,14 @@ const SportsForm: React.FC = () => {
                     setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                    const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
                             ...prev, latitude: lat, longitude: lng,
-                            area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
-                            city: data.address.city || data.address.town || data.address.village || prev.city,
-                            state: data.address.state || prev.state,
+                            area:    data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
+                            city:    data.address.city   || data.address.town || data.address.village || prev.city,
+                            state:   data.address.state  || prev.state,
                             pincode: data.address.postcode || prev.pincode,
                         }));
                     }
@@ -326,7 +330,6 @@ const SportsForm: React.FC = () => {
     // ── Submit ────────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
         setError(''); setSuccessMessage('');
-
         const errs = validate();
         if (Object.keys(errs).length > 0) {
             setFieldErrors(errs);
@@ -334,30 +337,28 @@ const SportsForm: React.FC = () => {
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
-
         setLoading(true);
         try {
             const fd = new FormData();
-            fd.append('userId', formData.userId);
-            fd.append('serviceName', formData.serviceName);
-            fd.append('phone', formData.phone.trim());   // ← NEW
-            fd.append('description', formData.description);
-            fd.append('category', CATEGORY_NAME);
-            fd.append('subCategory', formData.subCategory);
+            fd.append('userId',        formData.userId);
+            fd.append('serviceName',   formData.serviceName);
+            fd.append('phone',         formData.phone.trim());
+            fd.append('description',   formData.description);
+            fd.append('category',      CATEGORY_NAME);
+            fd.append('subCategory',   formData.subCategory);
             fd.append('serviceCharge', formData.serviceCharge);
-            fd.append('chargeType', formData.chargeType);
-            fd.append('latitude', formData.latitude);
-            fd.append('longitude', formData.longitude);
-            fd.append('area', formData.area);
-            fd.append('city', formData.city);
-            fd.append('state', formData.state);
-            fd.append('pincode', formData.pincode);
-            fd.append('availability', formData.availability.toString());
+            fd.append('chargeType',    formData.chargeType);
+            fd.append('latitude',      formData.latitude);
+            fd.append('longitude',     formData.longitude);
+            fd.append('area',          formData.area);
+            fd.append('city',          formData.city);
+            fd.append('state',         formData.state);
+            fd.append('pincode',       formData.pincode);
+            fd.append('availability',  formData.availability.toString());
             formData.services.forEach(s => fd.append('services', s));
             selectedImages.forEach(f => fd.append('images', f, f.name));
-            if (isEditMode && existingImages.length > 0) {
+            if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
-            }
 
             if (isEditMode && editId) {
                 const res = await updateSportsActivity(editId, fd);
@@ -368,11 +369,7 @@ const SportsForm: React.FC = () => {
                 if (!res.success) throw new Error('Failed to create service');
                 setSuccessMessage('Service created successfully!');
             }
-
-            setTimeout(() => {
-                setAccountType('worker');
-                navigate('/my-business');
-            }, 1500);
+            setTimeout(() => { setAccountType('worker'); navigate('/my-business'); }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
@@ -386,22 +383,24 @@ const SportsForm: React.FC = () => {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
-                    <p className="text-lg text-gray-500">Loading...</p>
+                    <p className="text-gray-500">Loading...</p>
                 </div>
             </div>
         );
     }
+
+    const maxImagesReached = totalImages >= 5;
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-lg mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
-                        className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                         aria-label="Go back"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -409,65 +408,70 @@ const SportsForm: React.FC = () => {
                         </svg>
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900 leading-tight">
+                        <h1 className="text-xl font-bold text-gray-900">
                             {isEditMode ? 'Update Sports Service' : 'Add Sports Service'}
                         </h1>
-                        <p className="text-base text-gray-400 mt-0.5">
+                        <p className="text-sm text-gray-500 mt-0.5">
                             {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-10">
+            {/* ── Wide container ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4 pb-10">
 
-                {/* Global error banner */}
+                {/* Global error */}
                 {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex gap-2.5">
-                        <span className="text-red-500 shrink-0 mt-0.5 text-lg">⚠️</span>
-                        <div>
-                            <p className="text-lg font-semibold text-red-800 mb-0.5">Please fix the following</p>
-                            <p className="text-base text-red-600">{error}</p>
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-500 shrink-0 mt-0.5">⚠️</span>
+                            <div>
+                                <p className="font-semibold text-red-800 mb-0.5">Please fix the following</p>
+                                <p className="text-sm text-red-600">{error}</p>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                {/* Success banner */}
+                {/* Success */}
                 {successMessage && (
-                    <div className="p-4 rounded-xl bg-[#00598a] border border-[#004a75] text-white flex items-center gap-2">
-                        <span className="text-xl">✓</span>
-                        <p className="text-lg font-medium">{successMessage}</p>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                            <span className="text-green-600 mt-0.5">✓</span>
+                            <p className="text-sm text-green-700">{successMessage}</p>
+                        </div>
                     </div>
                 )}
 
                 {/* ── 1. Basic Information ── */}
-                <Card>
-                    <CardTitle title="Basic Information" />
-                    <div>
-                        <FieldLabel required>Service Name</FieldLabel>
-                        <input
-                            type="text" name="serviceName" value={formData.serviceName}
-                            onChange={handleChange}
-                            placeholder="e.g., Elite Fitness Training, Pro Cricket Academy"
-                            className={fieldErrors.serviceName ? inputErr : inputBase}
-                        />
-                        <FieldError msg={fieldErrors.serviceName} />
-                    </div>
-                    <div>
-                        <FieldLabel required>Category</FieldLabel>
-                        <SelectWrap>
+                <SectionCard title="Basic Information">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Service Name</FieldLabel>
+                            <input
+                                type="text" name="serviceName" value={formData.serviceName}
+                                onChange={handleChange}
+                                placeholder="e.g., Elite Fitness Training, Pro Cricket Academy"
+                                className={fieldErrors.serviceName ? inputErr : inputBase}
+                            />
+                            <FieldError msg={fieldErrors.serviceName} />
+                        </div>
+                        <div>
+                            <FieldLabel required>Sport Category</FieldLabel>
                             <select
                                 name="subCategory" value={formData.subCategory}
                                 onChange={handleChange}
-                                className={inputBase + ' appearance-none pr-10'}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
                             >
                                 {sportsTypes.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
-                        </SelectWrap>
-                        <p className="text-sm text-gray-400 mt-1">
-                            Parent category: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
-                        </p>
-                    </div>
+                            <p className="text-xs text-gray-400 mt-1">
+                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                            </p>
+                        </div>
+                    </TwoCol>
                     <div>
                         <FieldLabel>Description</FieldLabel>
                         <textarea
@@ -477,111 +481,118 @@ const SportsForm: React.FC = () => {
                             className={inputBase + ' resize-none'}
                         />
                     </div>
-                </Card>
+                </SectionCard>
 
-                {/* ── 2. Contact Information ── */}
-                <Card>
-                    <CardTitle title="Contact Information" />
-                    <div>
-                        <FieldLabel required>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            placeholder="Enter 10-digit mobile number"
-                            maxLength={10}
-                            className={fieldErrors.phone ? inputErr : inputBase}
-                        />
-                        <FieldError msg={fieldErrors.phone} />
-                    </div>
-                </Card>
-
-                {/* ── 3. Services Offered ── */}
-                <Card>
-                    <CardTitle title="Services Offered" />
-
-                    {/* Quick select chips */}
-                    <div>
-                        <p className="text-base font-medium text-gray-600 mb-2">Quick Select:</p>
-                        <div className="flex flex-wrap gap-2">
-                            {commonServices.map(service => {
-                                const selected = formData.services.includes(service);
-                                return (
-                                    <button
-                                        key={service}
-                                        type="button"
-                                        onClick={() => handleAddService(service)}
-                                        disabled={selected}
-                                        className={`px-3 py-1.5 rounded-full text-base font-medium transition-all ${
-                                            selected
-                                                ? 'bg-[#00598a] text-white cursor-not-allowed'
-                                                : 'bg-gray-100 text-gray-700 hover:bg-[#00598a] hover:text-white'
-                                        }`}
-                                    >
-                                        {selected ? '✓ ' : '+ '}{service}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Custom service input */}
-                    <div>
-                        <p className="text-base font-medium text-gray-600 mb-2">Add Custom Service:</p>
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={customService}
-                                onChange={e => setCustomService(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddService(customService); } }}
-                                placeholder="Type custom service..."
-                                className={inputBase}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => handleAddService(customService)}
-                                className="px-4 py-2.5 rounded-xl text-base font-bold text-white bg-[#00598a] hover:bg-[#004a75] transition-colors whitespace-nowrap"
-                            >
-                                Add
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Services error */}
-                    <FieldError msg={fieldErrors.services} />
-
-                    {/* Selected services tags */}
-                    {formData.services.length > 0 && (
+                {/* ── 2. Contact & Availability ── */}
+                <SectionCard title="Contact & Availability">
+                    <TwoCol>
                         <div>
-                            <p className="text-base font-semibold text-gray-700 mb-2">
-                                Selected ({formData.services.length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {formData.services.map((service, idx) => (
-                                    <span
-                                        key={idx}
-                                        className="inline-flex items-center gap-1.5 bg-[#00598a] text-white px-3 py-1.5 rounded-full text-base font-medium"
-                                    >
-                                        {service}
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveService(idx)}
-                                            className="hover:opacity-70 transition-opacity"
-                                        >
-                                            <X size={14} />
-                                        </button>
-                                    </span>
-                                ))}
+                            <FieldLabel required>Phone Number</FieldLabel>
+                            <input
+                                type="tel" name="phone" value={formData.phone}
+                                onChange={handleChange}
+                                placeholder="Enter 10-digit mobile number"
+                                maxLength={10}
+                                className={fieldErrors.phone ? inputErr : inputBase}
+                            />
+                            <FieldError msg={fieldErrors.phone} />
+                        </div>
+                        <div>
+                            <FieldLabel>Currently Available</FieldLabel>
+                            <div className="flex items-center gap-3 mt-1 h-[46px]">
+                                <button
+                                    type="button"
+                                    onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
+                                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${formData.availability ? 'bg-[#00598a]' : 'bg-gray-300'}`}
+                                >
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
+                                <span className="text-sm font-medium text-gray-700">
+                                    {formData.availability ? 'Yes, available' : 'Not available'}
+                                </span>
                             </div>
                         </div>
-                    )}
-                </Card>
+                    </TwoCol>
+                </SectionCard>
 
-                {/* ── 4. Pricing & Availability ── */}
-                <Card>
-                    <CardTitle title="Pricing & Availability" />
-                    <div className="grid grid-cols-2 gap-3">
+                {/* ── 3. Services Offered ── */}
+                <SectionCard title="Services Offered">
+                    <TwoCol>
+                        {/* Quick-select chips */}
+                        <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">Quick Select:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {commonServices.map(service => {
+                                    const selected = formData.services.includes(service);
+                                    return (
+                                        <button
+                                            key={service} type="button"
+                                            onClick={() => handleAddService(service)}
+                                            disabled={selected}
+                                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                                                selected
+                                                    ? 'bg-[#00598a] text-white cursor-not-allowed'
+                                                    : 'bg-gray-100 text-gray-700 hover:bg-[#00598a] hover:text-white'
+                                            }`}
+                                        >
+                                            {selected ? '✓ ' : '+ '}{service}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Custom + selected tags */}
+                        <div className="space-y-3">
+                            <div>
+                                <p className="text-sm font-semibold text-gray-700 mb-2">Add Custom Service:</p>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text" value={customService}
+                                        onChange={e => setCustomService(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddService(customService); } }}
+                                        placeholder="Type custom service..."
+                                        className={inputBase}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAddService(customService)}
+                                        className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c] transition-all whitespace-nowrap"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+                            </div>
+
+                            <FieldError msg={fieldErrors.services} />
+
+                            {formData.services.length > 0 && (
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-700 mb-2">
+                                        Selected ({formData.services.length}):
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {formData.services.map((service, idx) => (
+                                            <span
+                                                key={idx}
+                                                className="inline-flex items-center gap-1.5 bg-[#00598a] text-white px-3 py-1.5 rounded-full text-sm font-medium"
+                                            >
+                                                {service}
+                                                <button type="button" onClick={() => handleRemoveService(idx)} className="hover:opacity-70 transition-opacity">
+                                                    <X size={12} />
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </TwoCol>
+                </SectionCard>
+
+                {/* ── 4. Pricing ── */}
+                <SectionCard title="Pricing Details">
+                    <TwoCol>
                         <div>
                             <FieldLabel>Service Charge (₹)</FieldLabel>
                             <input
@@ -592,210 +603,188 @@ const SportsForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel>Charge Type</FieldLabel>
-                            <SelectWrap>
-                                <select
-                                    name="chargeType" value={formData.chargeType}
-                                    onChange={handleChange}
-                                    className={inputBase + ' appearance-none pr-10'}
-                                >
-                                    {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                            </SelectWrap>
+                            <select
+                                name="chargeType" value={formData.chargeType}
+                                onChange={handleChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
                         </div>
-                    </div>
-
-                    {/* Availability toggle */}
-                    <div className="flex items-center justify-between py-1">
-                        <span className="text-lg font-semibold text-gray-800">Currently Available</span>
-                        <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors ${
-                                formData.availability ? 'bg-[#00598a]' : 'bg-gray-300'
-                            }`}
-                        >
-                            <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
-                                formData.availability ? 'translate-x-6' : 'translate-x-1'
-                            }`} />
-                        </button>
-                    </div>
-                </Card>
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 5. Portfolio Photos ── */}
-                <Card>
-                    <CardTitle title="Portfolio Photos (Optional)" />
-
-                    {/* Upload zone */}
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect} className="hidden"
-                            disabled={totalImages >= 5}
-                        />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all ${
-                            totalImages >= 5
-                                ? 'border-gray-200 bg-gray-50'
-                                : 'border-[#00598a]/40 bg-[#e8f2f8]/30 hover:border-[#00598a] hover:bg-[#e8f2f8]/60'
-                        }`}>
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full bg-[#e8f2f8] flex items-center justify-center">
-                                    <Upload className="w-8 h-8 text-[#00598a]" />
-                                </div>
-                                <div>
-                                    <p className="text-lg font-semibold text-gray-700">
-                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload portfolio photos'}
-                                    </p>
-                                    <p className="text-base text-gray-400 mt-1">
-                                        Max 5 images · 5 MB each · JPG, PNG, WEBP
-                                    </p>
-                                    {totalImages > 0 && (
-                                        <p className="text-base font-semibold text-[#00598a] mt-1">
-                                            {totalImages}/5 uploaded ✓
+                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}>
+                            <input
+                                type="file" accept="image/*" multiple
+                                onChange={handleImageSelect} className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all h-full flex items-center justify-center ${
+                                    maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'
+                                }`}
+                                style={{
+                                    borderColor:     maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#eef7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#daeef6]">
+                                        <Upload className="w-8 h-8 text-[#00598a]" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {maxImagesReached ? 'Maximum 5 images reached' : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
-                                    )}
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Upload photos of your facilities or coaching sessions
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Thumbnail grid */}
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-2">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square group">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button
-                                        type="button" onClick={() => removeExistingImg(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1.5 left-1.5 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((src, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
-                                    <button
-                                        type="button" onClick={() => removeNewImg(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Card>
+                        {/* Thumbnails */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button type="button" onClick={() => removeExistingImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full">Saved</span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((src, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
+                                        <button type="button" onClick={() => removeNewImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center" style={{ minHeight: '180px' }}>
+                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── 6. Location Details ── */}
-                <Card>
-                    <CardTitle
-                        title="Location Details"
-                        action={
-                            <button
-                                type="button"
-                                onClick={getCurrentLocation}
-                                disabled={locationLoading}
-                                className="inline-flex items-center gap-1.5 py-2 px-3.5 rounded-lg bg-[#00598a] hover:bg-[#004a75] text-white text-base font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-                            >
-                                {locationLoading
-                                    ? <><span className="animate-spin text-base">⌛</span> Detecting…</>
-                                    : <><MapPin className="w-4 h-4" /> Auto Detect</>}
-                            </button>
-                        }
-                    />
-
+                <SectionCard
+                    title="Service Location"
+                    action={
+                        <button
+                            type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {locationLoading
+                                ? <><span className="animate-spin mr-1">⌛</span>Detecting…</>
+                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>}
+                        </button>
+                    }
+                >
                     {locationWarning && (
-                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3.5 flex items-start gap-2">
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 shrink-0">⚠️</span>
-                            <p className="text-base text-yellow-800">{locationWarning}</p>
+                            <p className="text-sm text-yellow-800">{locationWarning}</p>
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { name: 'area', label: 'Area', placeholder: 'Area name' },
-                            { name: 'city', label: 'City', placeholder: 'City' },
-                            { name: 'state', label: 'State', placeholder: 'State' },
-                            { name: 'pincode', label: 'PIN Code', placeholder: 'PIN code' },
-                        ].map(field => (
-                            <div key={field.name}>
-                                <FieldLabel required>{field.label}</FieldLabel>
-                                <input
-                                    type="text"
-                                    name={field.name}
-                                    value={(formData as any)[field.name]}
-                                    onChange={handleChange}
-                                    placeholder={field.placeholder}
-                                    className={inputBase}
-                                />
-                            </div>
-                        ))}
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area} onChange={handleChange} placeholder="e.g. Madhapur" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="e.g. Hyderabad" className={inputBase} />
+                        </div>
+                    </TwoCol>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="e.g. Telangana" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="e.g. 500081" className={inputBase} />
+                        </div>
+                    </TwoCol>
 
-                    {/* Location error */}
                     {fieldErrors.location && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3.5">
-                            <p className="text-base text-red-600 flex items-center gap-1.5">⚠️ {fieldErrors.location}</p>
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-600 flex items-center gap-1.5">⚠️ {fieldErrors.location}</p>
                         </div>
                     )}
 
-                    {/* GPS tip */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3.5 bg-[#e8f2f8] border border-[#b3d4e8]">
-                            <p className="text-base text-[#00598a]">
-                                📍 <span className="font-semibold">Tip:</span> Click Auto Detect or enter your address manually above.
+                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                            <p className="text-sm" style={{ color: '#7a4f00' }}>
+                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
                             </p>
                         </div>
                     )}
 
-                    {/* Location confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3.5">
-                            <p className="text-base text-green-800">
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className="text-sm text-green-800">
                                 <span className="font-semibold">✓ Location detected: </span>
-                                <span className="font-mono text-sm ml-1">
+                                <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
                         </div>
                     )}
-                </Card>
+                </SectionCard>
 
-                {/* ── Action Buttons ── */}
-                <div className="flex gap-3 pt-2 pb-8">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className="flex-1 py-4 rounded-xl font-bold text-lg text-white bg-[#00598a] hover:bg-[#004a75] flex items-center justify-center gap-2 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                    >
-                        {loading && (
-                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                        )}
-                        {loading
-                            ? (isEditMode ? 'Updating…' : 'Creating…')
-                            : successMessage
-                                ? '✓ Done'
-                                : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
-
+                {/* ── Action Buttons (matches CourierForm exactly) ── */}
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={() => window.history.back()}
                         type="button"
                         disabled={loading}
-                        className="px-8 py-4 rounded-xl font-bold text-lg text-white bg-[#00598a] hover:bg-[#004a75] transition-colors disabled:opacity-50"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all text-sm
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading || !!successMessage}
+                        type="button"
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            text-sm
+                            ${loading || !!successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                    >
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating…' : 'Creating…'}
+                            </span>
+                        ) : successMessage ? '✓ Done' : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
                 </div>
 

@@ -73,13 +73,12 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches HospitalUserService card layout
+    // CARD
     // ============================================================================
     const renderCard = (re: RealEstateWorker) => {
         const id = re._id || "";
         const imageUrls = (re.images || []).filter(Boolean) as string[];
-        const location = [re.area, re.city, re.state]
-            .filter(Boolean).join(", ") || "Location not specified";
+        const location = [re.area, re.city, re.state].filter(Boolean).join(", ") || "Location not specified";
         const amenitiesList = ensureArray(re.amenities);
         const isAvailable = re.availabilityStatus === "Available";
         const description = re.description || "";
@@ -89,24 +88,26 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group
+                           hover:shadow-lg hover:border-[#00598a]/30 transition-all duration-200 cursor-pointer"
+                onClick={() => handleView(id)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-52 bg-gray-100">
+                <div className="relative h-52 bg-gray-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={displayName}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-green-600/5">
+                        <div className="w-full h-full flex items-center justify-center bg-green-600/5 group-hover:bg-[#00598a]/8 transition-colors duration-200">
                             <span className="text-6xl">🏠</span>
                         </div>
                     )}
 
-                    {/* Property Type badge — bottom left over image */}
+                    {/* Property Type badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
                         <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {re.propertyType || "Real Estate"}
@@ -114,10 +115,10 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     </div>
 
                     {/* Action menu — top right */}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3" onClick={e => e.stopPropagation()}>
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-green-600" />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: "#00598a" }} />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -132,7 +133,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                 <div className="p-4">
 
                     {/* Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate group-hover:text-[#00598a] transition-colors duration-200">
                         {displayName}
                     </h3>
 
@@ -142,9 +143,13 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Category pill + Availability status — side by side */}
+                    {/* Category pill + Availability status */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-green-700 bg-green-600/8 border border-green-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border transition-colors duration-200
+                                       text-[#00598a] border-[#00598a]/20 group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]"
+                            style={{ backgroundColor: "rgba(0,89,138,0.06)" }}
+                        >
                             {re.propertyType || "Real Estate"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -162,26 +167,35 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Amenity / detail chips (shown when no description) */}
+                    {/* Amenity chips (shown when no description) */}
                     {!description && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {re.listingType && (
-                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                <span className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200
+                                                 bg-[#00598a]/6 text-[#00598a] border-[#00598a]/20
+                                                 group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]">
                                     {re.listingType}
                                 </span>
                             )}
                             {re.bedrooms > 0 && (
-                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                <span className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200
+                                                 bg-[#00598a]/6 text-[#00598a] border-[#00598a]/20
+                                                 group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]">
                                     🛏️ {re.bedrooms} BHK
                                 </span>
                             )}
                             {re.areaSize && (
-                                <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                <span className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200
+                                                 bg-[#00598a]/6 text-[#00598a] border-[#00598a]/20
+                                                 group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]">
                                     📏 {re.areaSize} sq ft
                                 </span>
                             )}
                             {amenitiesList.slice(0, 2).map((a, idx) => (
-                                <span key={idx} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                                <span key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200
+                                               bg-[#00598a]/6 text-[#00598a] border-[#00598a]/20
+                                               group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]">
                                     {a}
                                 </span>
                             ))}
@@ -193,7 +207,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Rating row + optional phone + price */}
+                    {/* Rating + phone + price row */}
                     <div className="flex items-center gap-2 mb-4">
                         <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                             ⭐ {(re as any).rating ? (re as any).rating : "N/A"}
@@ -209,12 +223,23 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         )}
 
                         {re.price && (
-                            <span className="ml-auto text-sm font-bold text-green-700">
+                            <span className="ml-auto text-sm font-bold" style={{ color: "#00598a" }}>
                                 ₹{Number(re.price).toLocaleString()}
                             </span>
                         )}
                     </div>
 
+                    {/* View Details button — visible on hover */}
+                    <div className="pt-1 border-t border-gray-100">
+                        <button
+                            onClick={e => { e.stopPropagation(); handleView(id); }}
+                            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200
+                                       border-2 border-[#00598a] text-[#00598a]
+                                       hover:bg-[#00598a] hover:text-white active:bg-[#004a73]"
+                        >
+                            View Details
+                        </button>
+                    </div>
                 </div>
             </div>
         );
@@ -239,14 +264,15 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
                         Start adding your property listings to showcase them here.
                     </p>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={() => navigate("/add-real-estate-form")}
-                        className="gap-1.5 bg-[#00598a] hover:bg-[#00598a]/100"
+                        className="px-5 py-2.5 rounded-xl font-semibold text-white text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
+                        style={{ backgroundColor: "#00598a" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
                     >
                         + Add Property
-                    </Button>
+                    </button>
                 </div>
             </div>
         );
@@ -262,7 +288,6 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                     <span>🏠</span> Real Estate Listings ({filteredRealEstates.length})
                 </h2>
             )}
-            {/* Grid layout — matches HospitalUserService */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredRealEstates.map(renderCard)}
             </div>

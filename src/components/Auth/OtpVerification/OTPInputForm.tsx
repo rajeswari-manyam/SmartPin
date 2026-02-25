@@ -6,7 +6,7 @@ import OTPInputBoxes from "./OTPInputBoxes";
 import VoiceIcon from "../../../assets/icons/Voice.png";
 
 interface OTPInputFormProps {
-    phoneNumber: string;
+    email: string;
     otp: string[];
     setOtp: React.Dispatch<React.SetStateAction<string[]>>;
     timer: number;
@@ -21,7 +21,7 @@ interface OTPInputFormProps {
 }
 
 const OTPInputForm: React.FC<OTPInputFormProps> = ({
-    phoneNumber,
+    email,
     otp,
     setOtp,
     timer,
@@ -84,7 +84,7 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                         Enter the 6-digit code sent to
                     </p>
                     <p className={`text-gray-900 font-semibold ${typography.body.base}`}>
-                        +91 {phoneNumber}
+                        {email}
                     </p>
                 </div>
 

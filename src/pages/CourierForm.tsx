@@ -9,7 +9,7 @@ import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext"; // ✅ NEW IMPORT
+import { useAccount } from "../context/AccountContext";
 
 // ── Charge type options — matching API exactly ───────────────────────────────
 const chargeTypeOptions: { label: string; value: string }[] = [
@@ -29,13 +29,21 @@ const getCourierSubcategories = () => {
 };
 
 // ============================================================================
-// SHARED INPUT CLASSES - Mobile First
+// SHARED INPUT CLASSES
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-orange-400 focus:border-orange-400 ` +
+    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
 
 // ============================================================================
 // REUSABLE LABEL
@@ -54,7 +62,7 @@ const SectionCard: React.FC<{
     children: React.ReactNode;
     action?: React.ReactNode;
 }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -63,6 +71,11 @@ const SectionCard: React.FC<{
         )}
         {children}
     </div>
+);
+
+// ── Always 2 columns with generous gap ──────────────────────────────────────
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 // ============================================================================
@@ -110,7 +123,8 @@ const CourierForm: React.FC = () => {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
-    const { setAccountType } = useAccount(); // ✅ NEW: get setAccountType from context
+    const { setAccountType } = useAccount();
+
     const courierCategories = getCourierSubcategories();
     const defaultCategory = getSubcategoryFromUrl() || courierCategories[0] || 'Local Delivery';
 
@@ -123,7 +137,7 @@ const CourierForm: React.FC = () => {
         bio: '',
         services: '' as string,
         serviceCharge: '',
-        chargeType: chargeTypeOptions[0].value,   // 'per km'
+        chargeType: chargeTypeOptions[0].value,
         area: '',
         city: '',
         state: '',
@@ -134,14 +148,9 @@ const CourierForm: React.FC = () => {
     });
 
     // ── images ───────────────────────────────────────────────────────────────
-    // NEW IMAGES: Files to be uploaded
     const [selectedImages, setSelectedImages] = useState<File[]>([]);
     const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-
-    // EXISTING IMAGES: URLs from backend (for edit mode)
     const [existingImages, setExistingImages] = useState<string[]>([]);
-
-    // IMAGES TO DELETE: Track which existing images user wants to remove
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
 
     // ── geo ──────────────────────────────────────────────────────────────────
@@ -182,10 +191,8 @@ const CourierForm: React.FC = () => {
                     experience: data.experience?.toString() || '0',
                 }));
 
-                // Load existing images from backend
                 if (Array.isArray(data.images)) {
                     setExistingImages(data.images);
-                    console.log('📸 Loaded existing images:', data.images.length);
                 }
             } catch (err) {
                 console.error(err);
@@ -236,7 +243,6 @@ const CourierForm: React.FC = () => {
         const files = Array.from(e.target.files || []);
         if (!files.length) return;
 
-        // Calculate available slots: 5 - (existing that will be kept + new images)
         const remainingExisting = existingImages.filter(img => !imagesToDelete.includes(img)).length;
         const availableSlots = 5 - (remainingExisting + selectedImages.length);
 
@@ -280,12 +286,10 @@ const CourierForm: React.FC = () => {
     };
 
     const handleRemoveExistingImage = (imageUrl: string) => {
-        // Mark for deletion instead of immediate removal
         setImagesToDelete(prev => [...prev, imageUrl]);
     };
 
     const handleRestoreExistingImage = (imageUrl: string) => {
-        // Un-mark from deletion
         setImagesToDelete(prev => prev.filter(url => url !== imageUrl));
     };
 
@@ -353,7 +357,6 @@ const CourierForm: React.FC = () => {
         setSuccessMessage('');
 
         try {
-            // Validation
             if (!formData.name.trim())
                 throw new Error('Please enter business name');
             if (!formData.serviceCharge.trim())
@@ -371,7 +374,6 @@ const CourierForm: React.FC = () => {
 
             const fd = new FormData();
 
-            // ✅ Required fields matching backend API exactly
             fd.append('userId', formData.userId);
             fd.append('serviceName', formData.name);
             fd.append('subCategory', formData.category);
@@ -384,7 +386,6 @@ const CourierForm: React.FC = () => {
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
-            // Description field (combining bio and services)
             let descriptionText = formData.bio?.trim() || 'Courier service';
             if (formData.services.trim()) {
                 const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
@@ -395,54 +396,24 @@ const CourierForm: React.FC = () => {
             }
             fd.append('description', descriptionText);
 
-            // Optional fields - only add if they have values
-            if (formData.email.trim()) {
-                fd.append('email', formData.email);
-            }
-            if (formData.phone.trim()) {
-                fd.append('phone', formData.phone);
-            }
-            if (formData.experience && formData.experience !== '0') {
+            if (formData.email.trim()) fd.append('email', formData.email);
+            if (formData.phone.trim()) fd.append('phone', formData.phone);
+            if (formData.experience && formData.experience !== '0')
                 fd.append('experience', formData.experience);
-            }
 
-            // ✅ IMAGES HANDLING - Match backend expectations
-            // 1. Append NEW image files (File objects)
             if (selectedImages.length > 0) {
-                selectedImages.forEach((img, index) => {
+                selectedImages.forEach((img) => {
                     fd.append('images', img, img.name);
-                    console.log(`📎 Appending new image ${index + 1}:`, img.name);
                 });
             }
 
-            // 2. For EDIT mode: Send remaining existing images that weren't deleted
             if (isEditMode) {
                 const remainingExisting = existingImages.filter(url => !imagesToDelete.includes(url));
-                if (remainingExisting.length > 0) {
+                if (remainingExisting.length > 0)
                     fd.append('existingImages', JSON.stringify(remainingExisting));
-                    console.log('📎 Keeping existing images:', remainingExisting.length);
-                }
-
-                // Optionally tell backend which images to delete
-                if (imagesToDelete.length > 0) {
+                if (imagesToDelete.length > 0)
                     fd.append('imagesToDelete', JSON.stringify(imagesToDelete));
-                    console.log('🗑️ Marked for deletion:', imagesToDelete.length);
-                }
             }
-
-            // Debug log
-            console.log('📤 Submitting courier service with data:', {
-                userId: formData.userId,
-                serviceName: formData.name,
-                subCategory: formData.category,
-                serviceCharge: formData.serviceCharge,
-                chargeType: formData.chargeType,
-                location: `${formData.area}, ${formData.city}`,
-                coordinates: `${formData.latitude}, ${formData.longitude}`,
-                newImagesCount: selectedImages.length,
-                existingImagesCount: isEditMode ? existingImages.filter(url => !imagesToDelete.includes(url)).length : 0,
-                imagesToDeleteCount: imagesToDelete.length
-            });
 
             let response;
             if (isEditMode && editId) {
@@ -453,15 +424,10 @@ const CourierForm: React.FC = () => {
 
             if (response.success) {
                 setSuccessMessage(isEditMode ? 'Service updated successfully!' : 'Service created successfully!');
-                            // ✅ FIX: Set worker mode before navigating so navbar shows worker menu
-
-            setTimeout(() => {
-
-                setAccountType("worker");
-
-                navigate("/my-business");
-
-            }, 1500);
+                setTimeout(() => {
+                    setAccountType("worker");
+                    navigate("/my-business");
+                }, 1500);
             } else {
                 throw new Error(response.message || 'Failed to submit');
             }
@@ -475,7 +441,6 @@ const CourierForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // Calculate displayed images count
     const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
     const totalImagesCount = remainingExistingCount + selectedImages.length;
     const maxImagesReached = totalImagesCount >= 5;
@@ -493,14 +458,14 @@ const CourierForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER — Mobile First
+    // RENDER — Wide layout, 2 fields per row
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
                         className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
@@ -520,8 +485,8 @@ const CourierForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            {/* ── Wide container — 2 fields per row ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
@@ -544,103 +509,96 @@ const CourierForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. NAME ──────────────────────────────────────── */}
+                {/* ─── ROW 1: BUSINESS NAME + CATEGORY ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Business Name</FieldLabel>
-                        <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Fast Courier, Quick Delivery"
-                            className={inputBase}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Business Name</FieldLabel>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Fast Courier, Quick Delivery"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Service Category</FieldLabel>
+                            <select
+                                name="category"
+                                value={formData.category}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {courierCategories.map((t: string) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT (optional) ────────────────────────── */}
+                {/* ─── ROW 2: CONTACT ─── */}
                 <SectionCard title="Contact Information (Optional)">
-                    <div>
-                        <FieldLabel>Phone</FieldLabel>
-                        <input
-                            type="tel"
-                            name="phone"
-                            value={formData.phone}
-                            onChange={handleInputChange}
-                            placeholder="Enter phone number"
-                            className={inputBase}
-                        />
-                    </div>
-                    <div>
-                        <FieldLabel>Email</FieldLabel>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            placeholder="Enter email address"
-                            className={inputBase}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Email</FieldLabel>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* ─── 3. CATEGORY ──────────────────────────────────── */}
-                <SectionCard>
-                    <div>
-                        <FieldLabel required>Service Category</FieldLabel>
-                        <select
-                            name="category"
-                            value={formData.category}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none bg-white'}
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                backgroundRepeat: 'no-repeat',
-                                backgroundPosition: 'right 0.75rem center',
-                                backgroundSize: '1.5em 1.5em',
-                                paddingRight: '2.5rem',
-                            }}
-                        >
-                            {courierCategories.map((t: string) => (
-                                <option key={t} value={t}>{t}</option>
-                            ))}
-                        </select>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. SERVICES & BIO ────────────────────────────── */}
+                {/* ─── ROW 3: SERVICE DESCRIPTION ─── */}
                 <SectionCard title="Service Description">
-                    <div>
-                        <FieldLabel>Brief Description</FieldLabel>
-                        <textarea
-                            name="bio"
-                            value={formData.bio}
-                            onChange={handleInputChange}
-                            rows={3}
-                            placeholder="Brief description of your courier service..."
-                            className={inputBase + ' resize-none'}
-                        />
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Brief Description</FieldLabel>
+                            <textarea
+                                name="bio"
+                                value={formData.bio}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="Brief description of your courier service..."
+                                className={inputBase + ' resize-none'}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Services Offered (Optional)</FieldLabel>
+                            <textarea
+                                name="services"
+                                value={formData.services}
+                                onChange={handleInputChange}
+                                rows={3}
+                                placeholder="e.g. Same Day Delivery, Parcel Pickup, Express Shipping"
+                                className={inputBase + ' resize-none'}
+                            />
+                            <p className={`${typography.misc.caption} mt-2`}>
+                                💡 Separate multiple services with commas
+                            </p>
 
-                    <div>
-                        <FieldLabel>Services Offered (Optional)</FieldLabel>
-                        <textarea
-                            name="services"
-                            value={formData.services}
-                            onChange={handleInputChange}
-                            rows={2}
-                            placeholder="e.g. Same Day Delivery, Parcel Pickup, Express Shipping"
-                            className={inputBase + ' resize-none'}
-                        />
-                        <p className={`${typography.misc.caption} mt-2`}>
-                            💡 Separate multiple services with commas
-                        </p>
-
-                        {/* Service Chips Preview */}
-                        {formData.services.trim() && (
-                            <div className="mt-3">
-                                <div className="flex flex-wrap gap-2">
+                            {/* Service Chips Preview */}
+                            {formData.services.trim() && (
+                                <div className="mt-3 flex flex-wrap gap-2">
                                     {formData.services.split(',').map((s, i) => {
                                         const trimmed = s.trim();
                                         if (!trimmed) return null;
@@ -658,14 +616,14 @@ const CourierForm: React.FC = () => {
                                         );
                                     })}
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* ─── 5. PRICING ───────────────────────────────────── */}
+                {/* ─── ROW 4: PRICING ─── */}
                 <SectionCard title="Pricing Details">
-                    <div className="grid grid-cols-2 gap-3">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
@@ -686,52 +644,50 @@ const CourierForm: React.FC = () => {
                                 value={formData.chargeType}
                                 onChange={handleInputChange}
                                 className={inputBase + ' appearance-none bg-white'}
-                                style={{
-                                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'right 0.75rem center',
-                                    backgroundSize: '1.5em 1.5em',
-                                    paddingRight: '2.5rem',
-                                }}
+                                style={selectStyle}
                             >
                                 {chargeTypeOptions.map(t => (
                                     <option key={t.value} value={t.value}>{t.label}</option>
                                 ))}
                             </select>
                         </div>
-                    </div>
-
-                    <div>
-                        <FieldLabel>Experience (years)</FieldLabel>
-                        <input
-                            type="number"
-                            name="experience"
-                            value={formData.experience}
-                            onChange={handleInputChange}
-                            placeholder="Years of experience"
-                            min="0"
-                            className={inputBase}
-                        />
-                    </div>
+                    </TwoCol>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Experience (years)</FieldLabel>
+                            <input
+                                type="number"
+                                name="experience"
+                                value={formData.experience}
+                                onChange={handleInputChange}
+                                placeholder="Years of experience"
+                                min="0"
+                                className={inputBase}
+                            />
+                        </div>
+                        {/* Empty right column for balance */}
+                        <div />
+                    </TwoCol>
                 </SectionCard>
 
-                {/* ─── 6. LOCATION ─────────────────────────────────── */}
+                {/* ─── ROW 5: LOCATION ─── */}
                 <SectionCard
                     title="Service Location"
                     action={
-                        <Button
-                            variant="success"
-                            size="sm"
+                        <button
+                            type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="!py-1.5 !px-3"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             {locationLoading ? (
                                 <><span className="animate-spin mr-1">⌛</span>Detecting...</>
                             ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1.5" />Auto Detect</>
+                                <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
                             )}
-                        </Button>
+                        </button>
                     }
                 >
                     {locationWarning && (
@@ -741,7 +697,8 @@ const CourierForm: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Area + City */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area}
@@ -752,9 +709,10 @@ const CourierForm: React.FC = () => {
                             <input type="text" name="city" value={formData.city}
                                 onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* State + PIN */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state}
@@ -765,7 +723,7 @@ const CourierForm: React.FC = () => {
                             <input type="text" name="pincode" value={formData.pincode}
                                 onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
                     <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
                         <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
@@ -776,8 +734,8 @@ const CourierForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set:</span>
-                                <span className="ml-1">
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-xs">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -785,98 +743,108 @@ const CourierForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ─── 7. PORTFOLIO PHOTOS ─────────────────────────── */}
+                {/* ─── ROW 6: PHOTOS ─── */}
                 <SectionCard title={`Service Photos (${totalImagesCount}/5)`}>
-                    {/* Upload Area */}
-                    <label className="cursor-pointer block">
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={maxImagesReached}
-                        />
-                        <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                            style={{
-                                borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
-                                backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
-                            }}
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
-                                    <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {maxImagesReached
-                                            ? 'Maximum 5 images reached'
-                                            : `Add Photos (${5 - totalImagesCount} slots left)`}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        Upload photos of your vehicles, packaging, or team
-                                    </p>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className="cursor-pointer block">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#fff0d6' }}>
+                                        <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImagesCount} slots left)`}
+                                        </p>
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            Upload photos of your vehicles, packaging, or team
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {/* Images Grid - Shows both existing and new images */}
-                    {(existingImages.length > 0 || selectedImages.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {/* EXISTING IMAGES (not marked for deletion) */}
-                            {existingImages
-                                .filter(url => !imagesToDelete.includes(url))
-                                .map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                        {/* Previews */}
+                        {(existingImages.length > 0 || selectedImages.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {/* EXISTING IMAGES */}
+                                {existingImages
+                                    .filter(url => !imagesToDelete.includes(url))
+                                    .map((url, i) => (
+                                        <div key={`ex-${i}`} className="relative aspect-square group">
+                                            <img
+                                                src={url}
+                                                alt={`Saved ${i + 1}`}
+                                                className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveExistingImage(url)}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                            <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
+                                                Saved
+                                            </span>
+                                        </div>
+                                    ))}
+
+                                {/* NEW IMAGES */}
+                                {selectedImages.map((file, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
                                         <img
-                                            src={url}
-                                            alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Image+Error';
-                                            }}
+                                            src={imagePreviews[i]}
+                                            alt={`New ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: '#00598a' }}
                                         />
                                         <button
                                             type="button"
-                                            onClick={() => handleRemoveExistingImage(url)}
+                                            onClick={() => handleRemoveNewImage(i)}
                                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
-                                            Saved
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(file.size / 1024 / 1024).toFixed(1)}MB
                                         </span>
                                     </div>
                                 ))}
-
-                            {/* NEW IMAGES (to be uploaded) */}
-                            {selectedImages.map((file, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img
-                                        src={imagePreviews[i]}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: '#00598a' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
-                                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                                        {(file.size / 1024 / 1024).toFixed(1)}MB
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className={`${typography.body.small} text-gray-400`}>
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
 
                     {/* Deleted Images (Undo section) */}
                     {imagesToDelete.length > 0 && (
@@ -900,13 +868,29 @@ const CourierForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        disabled={loading}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: loading ? '#00598a' : '#00598a' }}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -917,15 +901,8 @@ const CourierForm: React.FC = () => {
                             isEditMode ? 'Update Service' : 'Create Service'
                         )}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
                 </div>
+
             </div>
         </div>
     );

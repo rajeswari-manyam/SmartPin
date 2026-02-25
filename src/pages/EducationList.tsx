@@ -85,6 +85,7 @@ const EducationList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -128,12 +129,9 @@ const EducationList: React.FC = () => {
                 console.log("🎓 API Response (full):", JSON.stringify(raw, null, 2));
                 console.log("🎓 Top-level keys:", Object.keys(raw || {}));
 
-                // ── Robust extractor: walks every key to find the first array ──
                 const extractArray = (obj: any): EducationService[] => {
                     if (!obj) return [];
                     if (Array.isArray(obj)) return obj;
-
-                    // Check common key names first
                     const preferredKeys = [
                         "data", "educations", "education", "result",
                         "results", "records", "items", "list", "services"
@@ -143,7 +141,6 @@ const EducationList: React.FC = () => {
                             console.log(`🎓 Found array under key: "${key}" (${obj[key].length} items)`);
                             return obj[key];
                         }
-                        // One level deeper  e.g. { data: { educations: [...] } }
                         if (obj[key] && typeof obj[key] === "object") {
                             for (const innerKey of preferredKeys) {
                                 if (Array.isArray(obj[key][innerKey])) {
@@ -153,16 +150,12 @@ const EducationList: React.FC = () => {
                             }
                         }
                     }
-
-                    // Fallback: grab the first array found anywhere in the top-level object
                     for (const key of Object.keys(obj)) {
                         if (Array.isArray(obj[key]) && obj[key].length > 0) {
                             console.log(`🎓 Fallback — found array under key: "${key}" (${obj[key].length} items)`);
                             return obj[key];
                         }
                     }
-
-                    // Last resort: wrap single object
                     if (typeof obj === "object" && obj._id) return [obj];
                     return [];
                 };
@@ -219,6 +212,7 @@ const EducationList: React.FC = () => {
             [service.area, service.city, service.state].filter(Boolean).join(", ") || "Location not set";
         const imageUrls = (service.images || []).filter(Boolean) as string[];
         const subjects = toArray(service.subjects);
+        const isHovered = hoveredCard === id;
 
         let distance: string | null = null;
         if (userLocation && service.latitude && service.longitude) {
@@ -234,34 +228,55 @@ const EducationList: React.FC = () => {
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: isHovered ? '#00598a' : '#f3f4f6',
+                    boxShadow: isHovered
+                        ? '0 8px 24px rgba(0, 89, 138, 0.15)'
+                        : '0 1px 3px rgba(0,0,0,0.06)',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleView(service)}
             >
                 {/* Image */}
-                <div className="relative h-48 bg-gradient-to-br from-blue-600/5 to-blue-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={service.name || "Education Service"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? 'scale(1.03)' : 'scale(1)' }}
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : '#f3f4f6' }}
+                        >
                             <span className="text-5xl">🎓</span>
                         </div>
                     )}
 
                     {/* Live Data — top left */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: '#00598a' }}
+                        >
                             Live Data
                         </span>
                     </div>
 
                     {/* Service type — top right */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-indigo-500 text-white">
+                        <span
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md text-white"
+                            style={{ backgroundColor: '#004a73' }}
+                        >
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             {service.type || "Education"}
                         </span>
@@ -276,7 +291,10 @@ const EducationList: React.FC = () => {
 
                 {/* Body */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                    <h2
+                        className="text-lg font-semibold line-clamp-1 transition-colors duration-200"
+                        style={{ color: isHovered ? '#00598a' : '#111827' }}
+                    >
                         {service.name || "Unnamed Service"}
                     </h2>
 
@@ -290,7 +308,7 @@ const EducationList: React.FC = () => {
                     </p>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-blue-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: '#00598a' }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -309,7 +327,7 @@ const EducationList: React.FC = () => {
                                 <p className="text-xs text-gray-500 uppercase">
                                     {service.chargeType || "Charges"}
                                 </p>
-                                <p className="text-base font-bold text-blue-600">
+                                <p className="text-base font-bold" style={{ color: '#00598a' }}>
                                     ₹{Number(service.charges).toLocaleString()}
                                 </p>
                             </div>
@@ -324,12 +342,20 @@ const EducationList: React.FC = () => {
                             </p>
                             <div className="flex flex-wrap gap-1.5">
                                 {subjects.slice(0, 3).map((s, i) => (
-                                    <span key={i} className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-200">
-                                        <span className="text-blue-500">●</span> {s}
+                                    <span
+                                        key={i}
+                                        className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors duration-200"
+                                        style={{
+                                            backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : '#eff6ff',
+                                            color: isHovered ? '#00598a' : '#1d4ed8',
+                                            borderColor: isHovered ? 'rgba(0,89,138,0.3)' : '#bfdbfe',
+                                        }}
+                                    >
+                                        <span style={{ color: isHovered ? '#00598a' : '#3b82f6' }}>●</span> {s}
                                     </span>
                                 ))}
                                 {subjects.length > 3 && (
-                                    <span className="text-xs text-blue-600 font-medium px-1 py-1">
+                                    <span className="text-xs font-medium px-1 py-1" style={{ color: '#00598a' }}>
                                         +{subjects.length - 3} more
                                     </span>
                                 )}
@@ -341,17 +367,37 @@ const EducationList: React.FC = () => {
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(service); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-blue-600 text-blue-600 rounded-lg font-medium text-sm hover:bg-blue-50 transition-colors"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{
+                                border: '2px solid #00598a',
+                                color: '#00598a',
+                                backgroundColor: 'transparent',
+                            }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                                (e.currentTarget as HTMLElement).style.color = '#fff';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                                (e.currentTarget as HTMLElement).style.color = '#00598a';
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
                         <button
                             onClick={e => { e.stopPropagation(); service.phone && openCall(service.phone); }}
                             disabled={!service.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${service.phone
-                                ? "bg-blue-600 text-white hover:bg-blue-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={service.phone
+                                ? { backgroundColor: '#00598a', color: '#fff' }
+                                : { backgroundColor: '#d1d5db', color: '#9ca3af', cursor: 'not-allowed' }
+                            }
+                            onMouseEnter={e => {
+                                if (service.phone) (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73';
+                            }}
+                            onMouseLeave={e => {
+                                if (service.phone) (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a';
+                            }}
                         >
                             <span>📞</span> Call
                         </button>
@@ -366,7 +412,7 @@ const EducationList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#00598a' }} />
                 </div>
             );
         }
@@ -385,7 +431,10 @@ const EducationList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-blue-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: '#00598a' }}
+                    >
                         {nearbyEducation.length}
                     </span>
                 </div>
@@ -397,10 +446,10 @@ const EducationList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND
+    // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-50/30 to-white">
+        <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, rgba(0,89,138,0.04), white)' }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -411,21 +460,28 @@ const EducationList: React.FC = () => {
                         </h1>
                         <p className="text-sm text-gray-500 mt-1">Find education services near you</p>
                     </div>
-                    <Button
-                        variant="primary"
-                        size="md"
+                    <button
                         onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center"
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: '#00598a' }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                     >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-blue-600/10 border border-blue-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-blue-700">Getting your location...</span>
+                    <div
+                        className="rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: 'rgba(0,89,138,0.08)', border: '1px solid rgba(0,89,138,0.2)' }}
+                    >
+                        <div
+                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: '#00598a', borderTopColor: 'transparent' }}
+                        />
+                        <span className="text-sm" style={{ color: '#00598a' }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (

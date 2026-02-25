@@ -41,6 +41,7 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
 
     const [services, setServices] = useState<EducationService[]>(data as EducationService[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     // ── Filter ────────────────────────────────────────────────────────────────
     const strictFiltered = selectedSubcategory
@@ -76,7 +77,7 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches HospitalUserService card style
+    // CARD
     // ============================================================================
     const renderCard = (service: EducationService) => {
         const id = service._id || "";
@@ -88,23 +89,39 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
         const description = service.description || "";
         const isActive = (service as any).status !== false;
         const phone = (service as any).phone || (service as any).contactNumber || (service as any).phoneNumber;
+        const isHovered = hoveredCard === id;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm transition-all duration-200"
+                style={{
+                    borderWidth: '1px',
+                    borderStyle: 'solid',
+                    borderColor: isHovered ? '#00598a' : '#f3f4f6',
+                    boxShadow: isHovered
+                        ? '0 8px 24px rgba(0, 89, 138, 0.15)'
+                        : '0 1px 3px rgba(0,0,0,0.06)',
+                    transform: isHovered ? 'translateY(-2px)' : 'none',
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-52 bg-gray-100">
+                <div className="relative h-52">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={service.name || "Education Service"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? 'scale(1.03)' : 'scale(1)' }}
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-600/5">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? 'rgba(0,89,138,0.06)' : 'rgba(37,99,235,0.05)' }}
+                        >
                             <span className="text-6xl">🎓</span>
                         </div>
                     )}
@@ -120,7 +137,10 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
+                                <div
+                                    className="animate-spin rounded-full h-5 w-5 border-b-2"
+                                    style={{ borderColor: '#00598a' }}
+                                />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -135,19 +155,29 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                 <div className="p-4">
 
                     {/* Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3
+                        className="text-lg font-bold mb-1 truncate transition-colors duration-200"
+                        style={{ color: isHovered ? '#00598a' : '#111827' }}
+                    >
                         {service.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
                     <div className="flex items-center gap-1.5 mb-3">
-                        <span className="text-red-500 text-sm">📍</span>
+                        <span className="text-sm">📍</span>
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* Category pill + Active status — side by side */}
+                    {/* Category pill + Active status */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-blue-600 bg-blue-600/8 border border-blue-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border transition-colors duration-200"
+                            style={{
+                                color: isHovered ? '#00598a' : '#2563eb',
+                                backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : 'rgba(37,99,235,0.05)',
+                                borderColor: isHovered ? 'rgba(0,89,138,0.25)' : 'rgba(37,99,235,0.2)',
+                            }}
+                        >
                             {service.type || "Education & Training"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -165,11 +195,19 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                         <p className="text-sm text-gray-500 line-clamp-2 mb-3">{description}</p>
                     )}
 
-                    {/* Subjects chips (shown when no description) */}
+                    {/* Subjects chips */}
                     {!description && subjects.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {subjects.slice(0, 3).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-blue-600/5 text-blue-700 px-2 py-0.5 rounded-full">
+                                <span
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200"
+                                    style={{
+                                        color: isHovered ? '#00598a' : '#1d4ed8',
+                                        backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : 'rgba(37,99,235,0.05)',
+                                        borderColor: isHovered ? 'rgba(0,89,138,0.2)' : 'transparent',
+                                    }}
+                                >
                                     {s}
                                 </span>
                             ))}
@@ -179,11 +217,19 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Qualifications chips (shown when no description and no subjects) */}
+                    {/* Qualifications chips */}
                     {!description && subjects.length === 0 && qualifications.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {qualifications.slice(0, 3).map((q, idx) => (
-                                <span key={idx} className="text-xs bg-indigo-600/5 text-indigo-700 px-2 py-0.5 rounded-full">
+                                <span
+                                    key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200"
+                                    style={{
+                                        color: isHovered ? '#00598a' : '#4338ca',
+                                        backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : 'rgba(99,102,241,0.05)',
+                                        borderColor: isHovered ? 'rgba(0,89,138,0.2)' : 'transparent',
+                                    }}
+                                >
                                     🎓 {q}
                                 </span>
                             ))}
@@ -193,10 +239,17 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Experience / Charges row — mirrors hospital's star rating row */}
+                    {/* Experience / Charges row */}
                     <div className="flex items-center gap-2 mb-4">
                         {service.experience && (
-                            <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            <span
+                                className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full border transition-colors duration-200"
+                                style={{
+                                    color: isHovered ? '#00598a' : '#1d4ed8',
+                                    backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : '#eff6ff',
+                                    borderColor: isHovered ? 'rgba(0,89,138,0.25)' : '#bfdbfe',
+                                }}
+                            >
                                 🏅 {service.experience} yrs exp
                             </span>
                         )}
@@ -243,7 +296,7 @@ const EducationUserService: React.FC<EducationUserServiceProps> = ({
                         variant="primary"
                         size="md"
                         onClick={() => navigate("/add-education-form")}
-                        className="gap-1.5"
+                        className="gap-1.5 !bg-[#00598a] hover:!bg-[#004a75]"
                     >
                         + Add Education Service
                     </Button>

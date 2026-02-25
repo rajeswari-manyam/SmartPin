@@ -7,9 +7,6 @@ import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
 
 const BRAND = '#00598a';
-const BRAND_DARK = '#004a75';
-const BRAND_LIGHT_BG = '#e8f2f8';
-const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Task', 'Fixed Rate'];
 
@@ -20,14 +17,13 @@ const getDailyWageSubcategories = () => {
         : ['Loading/Unloading Workers', 'Cleaning Helpers', 'Construction Labor', 'Garden Workers', 'Event Helpers', 'Watchmen'];
 };
 
-// ── Shared input: #00598a focus ring ─────────────────────────────────────────
+// ── Shared input ──────────────────────────────────────────────────────────────
 const inputBase =
-    `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
-// Dropdown chevron in #00598a
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat' as const,
@@ -39,12 +35,16 @@ const selectStyle = {
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="ml-1" style={{ color: BRAND }}>*</span>}
+        {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
 
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
+const SectionCard: React.FC<{
+    title?: string;
+    children: React.ReactNode;
+    action?: React.ReactNode;
+}> = ({ title, children, action }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -53,6 +53,10 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
         )}
         {children}
     </div>
+);
+
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -271,10 +275,7 @@ const DailyWageForm: React.FC = () => {
                 const response = await updateLabour(editId, payload, selectedImages);
                 if (response.success) {
                     setSuccessMessage('Worker updated successfully!');
-                    setTimeout(() => {
-                        setAccountType("worker");
-                        navigate("/my-business");
-                    }, 1500);
+                    setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
                 } else throw new Error(response.message || 'Failed to update worker');
             } else {
                 const payload = {
@@ -300,10 +301,9 @@ const DailyWageForm: React.FC = () => {
 
     const handleCancel = () => window.history.back();
 
-    // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
@@ -313,21 +313,22 @@ const DailyWageForm: React.FC = () => {
     }
 
     const totalImages = selectedImages.length + existingImages.length;
+    const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
-    // RENDER
+    // RENDER — Wide layout, 2 fields per row (matching CourierForm)
     // ============================================================================
     return (
-        <div className="min-h-screen bg-white">
+        <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition"
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
-                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -339,11 +340,11 @@ const DailyWageForm: React.FC = () => {
                             {isEditMode ? 'Update worker listing' : 'Create new worker listing'}
                         </p>
                     </div>
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: BRAND }} />
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            {/* ── Wide container — 2 fields per row ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
@@ -358,33 +359,74 @@ const DailyWageForm: React.FC = () => {
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 rounded-xl text-white text-sm font-medium" style={{ backgroundColor: BRAND, border: `1px solid ${BRAND_DARK}` }}>
+                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
                         <div className="flex items-start gap-2">
-                            <span className="mt-0.5">✓</span>
+                            <span className="text-green-600 mt-0.5">✓</span>
                             <p>{successMessage}</p>
                         </div>
                     </div>
                 )}
 
-                {/* 1. WORKER CATEGORY */}
+                {/* ─── ROW 1: WORKER NAME + WORKER TYPE ─── */}
                 <SectionCard>
-                    <div>
-                        <FieldLabel required>Worker Type</FieldLabel>
-                        <select
-                            name="subCategory"
-                            value={formData.subCategory}
-                            onChange={handleInputChange}
-                            className={inputBase + ' appearance-none'}
-                            style={selectStyle}
-                        >
-                            {dailyWageCategories.map((t: string) => (
-                                <option key={t} value={t}>{t}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Worker Name (Optional)</FieldLabel>
+                            <input
+                                type="text"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleInputChange}
+                                placeholder="Enter worker name"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Worker Type</FieldLabel>
+                            <select
+                                name="subCategory"
+                                value={formData.subCategory}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
+                            >
+                                {dailyWageCategories.map((t: string) => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </TwoCol>
                 </SectionCard>
 
-                {/* 2. WORKER DETAILS */}
+                {/* ─── ROW 2: CONTACT ─── */}
+                <SectionCard title="Contact Information (Optional)">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Phone</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Email</FieldLabel>
+                            <input
+                                type="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
+                                className={inputBase}
+                            />
+                        </div>
+                    </TwoCol>
+                </SectionCard>
+
+                {/* ─── ROW 3: DESCRIPTION (full width) ─── */}
                 <SectionCard title="Worker Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
@@ -397,65 +439,57 @@ const DailyWageForm: React.FC = () => {
                             className={inputBase + ' resize-none'}
                         />
                     </div>
-                    <div>
-                        <FieldLabel>Worker Name (Optional)</FieldLabel>
-                        <input type="text" name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter worker name" className={inputBase} />
-                    </div>
                 </SectionCard>
 
-                {/* 3. CONTACT */}
-                <SectionCard title="Contact Information (Optional)">
-                    <div>
-                        <FieldLabel>Phone</FieldLabel>
-                        <input type="tel" name="phone" value={formData.phone} onChange={handleInputChange} placeholder="Enter phone number" className={inputBase} />
-                    </div>
-                    <div>
-                        <FieldLabel>Email</FieldLabel>
-                        <input type="email" name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter email address" className={inputBase} />
-                    </div>
-                </SectionCard>
-
-                {/* 4. WAGE DETAILS */}
+                {/* ─── ROW 4: WAGE + CHARGE TYPE + AVAILABILITY ─── */}
                 <SectionCard title="Wage Details">
-                    <div className="grid grid-cols-2 gap-3">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Daily Wage (₹)</FieldLabel>
                             <input
-                                type="number" name="dailyWage" value={formData.dailyWage}
-                                onChange={handleInputChange} placeholder="Amount" min="0" step="50" className={inputBase}
+                                type="number"
+                                name="dailyWage"
+                                value={formData.dailyWage}
+                                onChange={handleInputChange}
+                                placeholder="Amount"
+                                min="0"
+                                step="50"
+                                className={inputBase}
                             />
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <select
-                                name="chargeType" value={formData.chargeType} onChange={handleInputChange}
-                                className={inputBase + ' appearance-none'} style={selectStyle}
+                                name="chargeType"
+                                value={formData.chargeType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none'}
+                                style={selectStyle}
                             >
                                 {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
-                    </div>
+                    </TwoCol>
 
                     {/* Availability toggle */}
-                    <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center justify-between py-2 px-1">
                         <span className={`${typography.body.small} font-semibold text-gray-800`}>
                             Currently Available
                         </span>
                         <button
                             type="button"
                             onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors"
+                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200"
                             style={{ backgroundColor: formData.availability ? BRAND : '#d1d5db' }}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${formData.availability ? 'translate-x-6' : 'translate-x-1'
-                                    }`}
+                                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`}
                             />
                         </button>
                     </div>
                 </SectionCard>
 
-                {/* 5. LOCATION */}
+                {/* ─── ROW 5: LOCATION ─── */}
                 <SectionCard
                     title="Work Location"
                     action={
@@ -463,15 +497,15 @@ const DailyWageForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-white text-sm font-medium transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: BRAND }}
-                            onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                            onMouseLeave={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            {locationLoading
-                                ? <><span className="animate-spin mr-1 text-xs">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4" />Auto Detect</>
-                            }
+                            {locationLoading ? (
+                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                            ) : (
+                                <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                            )}
                         </button>
                     }
                 >
@@ -482,30 +516,36 @@ const DailyWageForm: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* Area + City */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="e.g. Indiranagar" className={inputBase} />
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="e.g. Indiranagar" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
                         </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    </TwoCol>
+
+                    {/* State + PIN */}
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. Karnataka" className={inputBase} />
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="e.g. Karnataka" className={inputBase} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    {/* Tip box */}
-                    <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
-                        <p className={`${typography.body.small}`} style={{ color: BRAND }}>
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                        <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
                             📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your work area manually.
                         </p>
                     </div>
@@ -522,83 +562,112 @@ const DailyWageForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* 6. PHOTOS */}
-                <SectionCard title="Photos (Optional)">
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                        <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect} className="hidden"
-                            disabled={totalImages >= 5}
-                        />
-                        <div
-                            className="border-2 border-dashed rounded-2xl p-8 text-center transition-colors"
-                            style={
-                                totalImages >= 5
-                                    ? { borderColor: '#e5e7eb', backgroundColor: '#f9fafb' }
-                                    : { borderColor: '#7ab3cc', backgroundColor: '#f0f7fb' }
-                            }
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: BRAND_LIGHT_BG }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {totalImages >= 5 ? 'Maximum 5 images reached' : 'Tap to upload photos'}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                        JPG, PNG, WebP — max 5 MB each
-                                    </p>
-                                    {selectedImages.length > 0 && (
-                                        <p className="text-sm font-medium mt-1" style={{ color: BRAND }}>
-                                            {selectedImages.length} new image{selectedImages.length > 1 ? 's' : ''} selected ✓
+                {/* ─── ROW 6: PHOTOS ─── */}
+                <SectionCard title={`Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file" accept="image/*" multiple
+                                onChange={handleImageSelect} className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f2f8' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
-                                    )}
+                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
+                                            JPG, PNG, WebP — max 5 MB each
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
-                                        Saved
-                                    </span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={preview} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                        {/* Previews */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
+                                            style={{ backgroundColor: BRAND }}>
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((preview, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={preview} alt={`Preview ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: BRAND }} />
+                                        <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className={`${typography.body.small} text-gray-400`}>
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        disabled={loading}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading}
                         type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-opacity shadow-md ${loading ? 'opacity-60 cursor-not-allowed' : ''} ${typography.body.base}`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => !loading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
@@ -609,15 +678,8 @@ const DailyWageForm: React.FC = () => {
                             isEditMode ? 'Update Worker' : 'Create Listing'
                         )}
                     </button>
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
                 </div>
+
             </div>
         </div>
     );

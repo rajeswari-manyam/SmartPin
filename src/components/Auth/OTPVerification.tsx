@@ -15,7 +15,7 @@ interface VoiceRecognitionResult {
 }
 
 interface OTPVerificationProps {
-    phoneNumber: string;
+    email: string;
     fcmToken?: string;
     onVerify?: (otp: string) => void;
     onResend?: () => void;
@@ -31,7 +31,8 @@ interface OTPVerifyResponse {
     user?: {
         id?: string;
         _id?: string;
-        phone: string;
+        email?: string;
+        phone?: string;
         name?: string;
         token?: string;
         fcmToken?: string;
@@ -41,7 +42,7 @@ interface OTPVerifyResponse {
 }
 
 const OTPVerification: React.FC<OTPVerificationProps> = ({
-    phoneNumber,
+    email,
     onResend,
     onBack,
     onContinue,
@@ -117,31 +118,31 @@ useEffect(() => {
         return mongoIdRegex.test(id);
     };
 
-    const hasLoggedInBefore = (phone: string): boolean => {
-        const loggedInPhones = localStorage.getItem("loggedInPhones");
-        if (!loggedInPhones) return false;
+    const hasLoggedInBefore = (emailAddr: string): boolean => {
+        const loggedInEmails = localStorage.getItem("loggedInEmails");
+        if (!loggedInEmails) return false;
 
         try {
-            const phones = JSON.parse(loggedInPhones);
-            return phones.includes(phone);
+            const emails = JSON.parse(loggedInEmails);
+            return emails.includes(emailAddr);
         } catch {
             return false;
         }
     };
 
-    const markPhoneAsLoggedIn = (phone: string) => {
-        const loggedInPhones = localStorage.getItem("loggedInPhones");
-        let phones: string[] = [];
+    const markEmailAsLoggedIn = (emailAddr: string) => {
+        const loggedInEmails = localStorage.getItem("loggedInEmails");
+        let emails: string[] = [];
 
         try {
-            phones = loggedInPhones ? JSON.parse(loggedInPhones) : [];
+            emails = loggedInEmails ? JSON.parse(loggedInEmails) : [];
         } catch {
-            phones = [];
+            emails = [];
         }
 
-        if (!phones.includes(phone)) {
-            phones.push(phone);
-            localStorage.setItem("loggedInPhones", JSON.stringify(phones));
+        if (!emails.includes(emailAddr)) {
+            emails.push(emailAddr);
+            localStorage.setItem("loggedInEmails", JSON.stringify(emails));
         }
     };
 
@@ -159,7 +160,7 @@ useEffect(() => {
 
         for (const { value } of possibleUserIds) {
             if (value && typeof value === 'string') {
-                if (value === phoneNumber) continue;
+                if (value === email) continue;
                 if (isValidMongoId(value)) return value;
                 if (value.length > 10) return value;
             }
@@ -181,7 +182,7 @@ useEffect(() => {
 const fcmToken = await generateFCMToken();
 
 const response: OTPVerifyResponse = await verifyOtp({
-  phone: phoneNumber,
+  email: email,
   otp: otpString,
   fcmToken: fcmToken || "",
 });
@@ -190,7 +191,7 @@ const response: OTPVerifyResponse = await verifyOtp({
 
                 const extractedUserId = extractUserId(response);
 
-                if (!extractedUserId || extractedUserId === phoneNumber) {
+                if (!extractedUserId || extractedUserId === email) {
                     alert("Authentication error. Please try again.");
                     setIsVerifying(false);
                     return;
@@ -198,7 +199,7 @@ const response: OTPVerifyResponse = await verifyOtp({
 
                 setUserId(extractedUserId);
                 localStorage.setItem("userId", extractedUserId);
-                localStorage.setItem("userPhone", phoneNumber);
+                localStorage.setItem("userEmail", email);
              if (fcmToken) {
     localStorage.setItem("fcmToken", fcmToken);
 }
@@ -226,9 +227,9 @@ const response: OTPVerifyResponse = await verifyOtp({
 
     const checkUserProfileAndProceed = async (userId: string) => {
         try {
-            const isFirstTimeForThisPhone = !hasLoggedInBefore(phoneNumber);
+            const isFirstTimeForThisEmail = !hasLoggedInBefore(email);
 
-            if (isFirstTimeForThisPhone) {
+            if (isFirstTimeForThisEmail) {
                 setShowFirstTimeModal(true);
             } else {
                 const userResponse = await getUserById(userId);
@@ -242,7 +243,7 @@ const response: OTPVerifyResponse = await verifyOtp({
                     const user = {
                         _id: userId,
                         id: userId,
-                        phone: phoneNumber,
+                        phone: email,
                         name: userData.name,
                         isVerified: true,
                         latitude: userData.latitude,
@@ -256,7 +257,7 @@ const response: OTPVerifyResponse = await verifyOtp({
                     const user = {
                         _id: userId,
                         id: userId,
-                        phone: phoneNumber,
+                        phone: email,
                         name: "User",
                         isVerified: true,
                     };
@@ -273,7 +274,7 @@ const response: OTPVerifyResponse = await verifyOtp({
     };
 
     const handleFirstTimeComplete = async (userName: string) => {
-        markPhoneAsLoggedIn(phoneNumber);
+        markEmailAsLoggedIn(email);
 
         try {
             const userResponse = await getUserById(userId);
@@ -287,7 +288,7 @@ const response: OTPVerifyResponse = await verifyOtp({
                 const user = {
                     _id: userId,
                     id: userId,
-                    phone: phoneNumber,
+                    phone: email,
                     name: userName,
                     isVerified: true,
                     latitude: userData.latitude,
@@ -301,7 +302,7 @@ const response: OTPVerifyResponse = await verifyOtp({
                 const user = {
                     _id: userId,
                     id: userId,
-                    phone: phoneNumber,
+                    phone: email,
                     name: userName,
                     isVerified: true,
                 };
@@ -313,7 +314,7 @@ const response: OTPVerifyResponse = await verifyOtp({
             const user = {
                 _id: userId,
                 id: userId,
-                phone: phoneNumber,
+                phone: email,
                 name: userName,
                 isVerified: true,
             };
@@ -332,7 +333,7 @@ const response: OTPVerifyResponse = await verifyOtp({
             setOtp(["", "", "", "", "", ""]);
             inputRefs.current[0]?.focus();
 
-            const response = await resendOtp(phoneNumber);
+            const response = await resendOtp(email);
 
             if (response.success) {
                 alert("OTP sent successfully!");
@@ -402,7 +403,7 @@ const response: OTPVerifyResponse = await verifyOtp({
         return (
             <>
                 <OTPInputForm
-                    phoneNumber={phoneNumber}
+                    email={email}
                     otp={otp}
                     setOtp={setOtp}
                     timer={timer}
@@ -416,7 +417,7 @@ const response: OTPVerifyResponse = await verifyOtp({
                     onVoiceInput={handleVoiceInput}
                 />
                 <UserModal
-                    phoneNumber={phoneNumber}
+                    phoneNumber={email}
                     userId={userId}
                     onComplete={handleFirstTimeComplete}
                 />
@@ -426,7 +427,7 @@ const response: OTPVerifyResponse = await verifyOtp({
 
     return (
         <OTPInputForm
-            phoneNumber={phoneNumber}
+            email={email}
             otp={otp}
             setOtp={setOtp}
             timer={timer}

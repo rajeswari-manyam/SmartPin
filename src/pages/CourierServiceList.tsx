@@ -57,6 +57,10 @@ const calculateDistance = (
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+// ── Brand color ──────────────────────────────────────────────────────────────
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a73"; // hover shade (slightly darker)
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -70,6 +74,14 @@ const CourierServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
+
+    // ── hover state trackers ─────────────────────────────────────────────────
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [hoveredDir, setHoveredDir] = useState<string | null>(null);
+    const [hoveredCall, setHoveredCall] = useState<string | null>(null);
+
+    // ── phone popup ──────────────────────────────────────────────────────────
+    const [phonePopup, setPhonePopup] = useState<{ name: string; phone: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -109,7 +121,6 @@ const CourierServicesList: React.FC = () => {
             try {
                 console.log("🚀 Fetching courier services...", userLocation);
 
-                // Hits: GET /getNearbyCourierServices?latitude=X&longitude=Y&distance=10
                 const response = await getNearbyCourierWorkers(
                     userLocation.latitude,
                     userLocation.longitude,
@@ -120,9 +131,6 @@ const CourierServicesList: React.FC = () => {
                 console.log("📦 Records count:", response?.data?.length ?? 0);
 
                 if (response.success && response.data) {
-                    // ✅ KEY FIX: NO subcategory filter — show ALL nearby results.
-                    // Filtering by subcategory slug was silently dropping every record
-                    // because the API category field never matched the URL slug format.
                     const allServices: CourierWorker[] = Array.isArray(response.data)
                         ? response.data
                         : [response.data];
@@ -143,7 +151,7 @@ const CourierServicesList: React.FC = () => {
         };
 
         fetchNearbyCourierServices();
-    }, [userLocation]); // ✅ subcategory removed from deps — we don't filter by it
+    }, [userLocation]);
 
     // ── Navigation ───────────────────────────────────────────────────────────
     const handleView = (courier: any) => {
@@ -172,12 +180,12 @@ const CourierServicesList: React.FC = () => {
         }
     };
 
-    const openCall = (phone: string) => {
-        window.location.href = `tel:${phone}`;
+    const openCall = (name: string, phone: string) => {
+        setPhonePopup({ name, phone });
     };
 
     // ============================================================================
-    // REAL API CARD — identical style to HospitalServicesList
+    // REAL API CARD
     // ============================================================================
     const renderCourierCard = (courier: CourierWorker) => {
         const id = courier._id || courier.id || "";
@@ -202,14 +210,29 @@ const CourierServicesList: React.FC = () => {
             distance = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
         }
 
+        const isCardHovered = hoveredCard === id;
+        const isDirHovered = hoveredDir === id;
+        const isCallHovered = hoveredCall === id;
+
         return (
             <div
                 key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    border: `1px solid ${isCardHovered ? BRAND : "#f3f4f6"}`,
+                    boxShadow: isCardHovered
+                        ? `0 8px 25px -5px ${BRAND}40`
+                        : "0 1px 3px 0 rgb(0 0 0 / 0.1)",
+                }}
                 onClick={() => handleView(courier)}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
             >
                 {/* ── Image ── */}
-                <div className="relative h-48 bg-gradient-to-br from-indigo-600/5 to-indigo-600/10 overflow-hidden">
+                <div
+                    className="relative h-48 overflow-hidden"
+                    style={{ background: `linear-gradient(135deg, ${BRAND}10, ${BRAND}1a)` }}
+                >
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
@@ -229,17 +252,19 @@ const CourierServicesList: React.FC = () => {
 
                     {/* Live Data badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-indigo-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: BRAND }}
+                        >
                             Live Data
                         </span>
                     </div>
 
                     {/* Availability badge */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${courier.availability
-                                ? "bg-green-500 text-white"
-                                : "bg-red-500 text-white"
-                            }`}>
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md ${
+                            courier.availability ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                        }`}>
                             <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
                             {courier.availability ? "Available" : "Busy"}
                         </span>
@@ -266,7 +291,7 @@ const CourierServicesList: React.FC = () => {
                     </div>
 
                     {distance && (
-                        <p className="text-sm font-semibold text-indigo-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: BRAND }}>
                             <span>📍</span> {distance} away
                         </p>
                     )}
@@ -279,7 +304,14 @@ const CourierServicesList: React.FC = () => {
 
                     {courier.category && (
                         <div className="pt-1">
-                            <span className="inline-flex items-center gap-1 text-xs bg-indigo-600/5 text-indigo-600 px-2.5 py-1 rounded-md border border-indigo-600/20 font-medium">
+                            <span
+                                className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border font-medium"
+                                style={{
+                                    backgroundColor: `${BRAND}12`,
+                                    color: BRAND,
+                                    borderColor: `${BRAND}40`,
+                                }}
+                            >
                                 📦 {courier.category}
                             </span>
                         </div>
@@ -300,7 +332,7 @@ const CourierServicesList: React.FC = () => {
                         ) : <span />}
                         {courier.serviceCharge && (
                             <div className="text-right">
-                                <span className="text-sm font-bold text-indigo-600">
+                                <span className="text-sm font-bold" style={{ color: BRAND }}>
                                     ₹{courier.serviceCharge}
                                 </span>
                                 {courier.chargeType && (
@@ -327,7 +359,10 @@ const CourierServicesList: React.FC = () => {
                                     </span>
                                 ))}
                                 {servicesList.length > 3 && (
-                                    <span className="text-xs text-indigo-600 font-medium px-1 py-1">
+                                    <span
+                                        className="text-xs font-medium px-1 py-1"
+                                        style={{ color: BRAND }}
+                                    >
                                         +{servicesList.length - 3} more
                                     </span>
                                 )}
@@ -335,20 +370,44 @@ const CourierServicesList: React.FC = () => {
                         </div>
                     )}
 
+                    {/* ── CTA Buttons ── */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+
+                        {/* Directions — outlined, fills on hover */}
                         <button
                             onClick={(e) => { e.stopPropagation(); openDirections(courier); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-indigo-600 text-indigo-600 rounded-lg font-medium text-sm hover:bg-indigo-600/5 transition-colors active:bg-indigo-600/10"
+                            onMouseEnter={() => setHoveredDir(id)}
+                            onMouseLeave={() => setHoveredDir(null)}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-150"
+                            style={{
+                                border: `2px solid ${BRAND}`,
+                                color: isDirHovered ? "#fff" : BRAND,
+                                backgroundColor: isDirHovered ? BRAND : "transparent",
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
+
+                        {/* Call — solid, darkens on hover */}
                         <button
-                            onClick={(e) => { e.stopPropagation(); courier.phone && openCall(courier.phone); }}
+                            onClick={(e) => { e.stopPropagation(); courier.phone && openCall(courier.name || 'Courier Service', courier.phone); }}
+                            onMouseEnter={() => setHoveredCall(id)}
+                            onMouseLeave={() => setHoveredCall(null)}
                             disabled={!courier.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${courier.phone
-                                    ? "bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                }`}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-150"
+                            style={
+                                courier.phone
+                                    ? {
+                                        backgroundColor: isCallHovered ? BRAND_DARK : BRAND,
+                                        color: "#fff",
+                                        cursor: "pointer",
+                                    }
+                                    : {
+                                        backgroundColor: "#d1d5db",
+                                        color: "#6b7280",
+                                        cursor: "not-allowed",
+                                    }
+                            }
                         >
                             <span>📞</span> Call
                         </button>
@@ -373,7 +432,10 @@ const CourierServicesList: React.FC = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+                    <div
+                        className="animate-spin rounded-full h-8 w-8 border-b-2"
+                        style={{ borderColor: BRAND }}
+                    />
                 </div>
             );
         }
@@ -392,7 +454,10 @@ const CourierServicesList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-indigo-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: BRAND }}
+                    >
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -407,59 +472,130 @@ const CourierServicesList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <>
+            <div className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">
-                            {titleFromSlug(subcategory)}
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Manage Courier & Delivery services
-                        </p>
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">
+                                {titleFromSlug(subcategory)}
+                            </h1>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Manage Courier & Delivery services
+                            </p>
+                        </div>
+                        <Button
+                            variant="primary"
+                            size="md"
+                            onClick={handleAddPost}
+                            className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white"
+                        >
+                            + Add Courier Service
+                        </Button>
                     </div>
-                    <Button
-                        variant="primary"
-                        size="md"
-                        onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white"
-                    >
-                        + Add Courier Service
-                    </Button>
+
+                    {/* Location status */}
+                    {fetchingLocation && (
+                        <div
+                            className="rounded-lg p-3 flex items-center gap-2 border"
+                            style={{
+                                backgroundColor: `${BRAND}15`,
+                                borderColor: `${BRAND}30`,
+                            }}
+                        >
+                            <div
+                                className="animate-spin h-4 w-4 rounded-full border-2"
+                                style={{ borderColor: BRAND, borderTopColor: "transparent" }}
+                            />
+                            <span className="text-sm font-medium" style={{ color: BRAND }}>
+                                Getting your location...
+                            </span>
+                        </div>
+                    )}
+
+                    {locationError && (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                            <p className="text-yellow-700 text-sm">{locationError}</p>
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                            <p className="text-red-700 font-medium text-sm">{error}</p>
+                        </div>
+                    )}
+
+                    {/* Dummy Cards — ALWAYS shown */}
+                    <div className="space-y-4">
+                        {renderCardsSection()}
+                    </div>
+
+                    {/* Real API Cards — shown once location resolves */}
+                    {userLocation && !fetchingLocation && renderYourServices()}
+
                 </div>
-
-                {/* Location status */}
-                {fetchingLocation && (
-                    <div className="bg-indigo-600/10 border border-indigo-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-indigo-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-indigo-600">Getting your location...</span>
-                    </div>
-                )}
-
-                {locationError && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
-                        <p className="text-yellow-700 text-sm">{locationError}</p>
-                    </div>
-                )}
-
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium text-sm">{error}</p>
-                    </div>
-                )}
-
-                {/* ✅ Dummy Cards — ALWAYS shown */}
-                <div className="space-y-4">
-                    {renderCardsSection()}
-                </div>
-
-                {/* ✅ Real API Cards — shown once location resolves */}
-                {userLocation && !fetchingLocation && renderYourServices()}
-
             </div>
-        </div>
+
+            {/* ── Phone Popup Modal ── */}
+            {phonePopup && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+                    onClick={() => setPhonePopup(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-6 pt-6 pb-4 text-center" style={{ borderBottom: "1px solid #f3f4f6" }}>
+                            <div
+                                className="w-14 h-14 rounded-full flex items-center justify-center text-2xl mx-auto mb-3"
+                                style={{ backgroundColor: "#00598a15" }}
+                            >
+                                📞
+                            </div>
+                            <h3 className="text-lg font-bold text-gray-900">{phonePopup.name}</h3>
+                            <p className="text-sm text-gray-500 mt-0.5">Courier Service</p>
+                        </div>
+
+                        {/* Phone number */}
+                        <div className="px-6 py-5 text-center">
+                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
+                                Phone Number
+                            </p>
+                            <a
+                                href={`tel:${phonePopup.phone}`}
+                                className="text-3xl font-bold tracking-wide transition-colors"
+                                style={{ color: "#00598a" }}
+                            >
+                                {phonePopup.phone}
+                            </a>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="grid grid-cols-2 gap-3 px-6 pb-6">
+                            <button
+                                onClick={() => setPhonePopup(null)}
+                                className="px-4 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <a
+                                href={`tel:${phonePopup.phone}`}
+                                className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-white text-sm transition-colors"
+                                style={{ backgroundColor: "#00598a" }}
+                                onClick={() => setPhonePopup(null)}
+                            >
+                                <span>📞</span> Call Now
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
     );
 };
 
