@@ -56,7 +56,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showSuccess, setShowSuccess] = useState(false);
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
     const [userId, setUserId] = useState<string>("");
- 
+
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const voiceService = VoiceService.getInstance();
     const navigate = useNavigate();
@@ -72,39 +72,39 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     }, [otp]);
 
 
-// ✅ WEBSITE OTP AUTO-FILL (SINGLE, CORRECT IMPLEMENTATION)
-useEffect(() => {
-    const abortController = new AbortController();
+    // ✅ WEBSITE OTP AUTO-FILL (SINGLE, CORRECT IMPLEMENTATION)
+    useEffect(() => {
+        const abortController = new AbortController();
 
-    if (!("OTPCredential" in window)) {
-        console.log("❌ Web OTP API not supported");
-        return;
-    }
+        if (!("OTPCredential" in window)) {
+            console.log("❌ Web OTP API not supported");
+            return;
+        }
 
-    navigator.credentials.get({
-        otp: { transport: ["sms"] },
-        signal: abortController.signal,
-    } as any)
-        .then((credential: any) => {
-            if (credential?.code) {
-                console.log("📩 OTP auto-filled:", credential.code);
+        navigator.credentials.get({
+            otp: { transport: ["sms"] },
+            signal: abortController.signal,
+        } as any)
+            .then((credential: any) => {
+                if (credential?.code) {
+                    console.log("📩 OTP auto-filled:", credential.code);
 
-                const otpDigits = credential.code
-                    .replace(/\D/g, "")
-                    .slice(0, 6)
-                    .split("");
+                    const otpDigits = credential.code
+                        .replace(/\D/g, "")
+                        .slice(0, 6)
+                        .split("");
 
-                setOtp(otpDigits);
-            }
-        })
-        .catch((err) => {
-            if (err.name !== "AbortError") {
-                console.log("OTP auto-fill error:", err.message);
-            }
-        });
+                    setOtp(otpDigits);
+                }
+            })
+            .catch((err) => {
+                if (err.name !== "AbortError") {
+                    console.log("OTP auto-fill error:", err.message);
+                }
+            });
 
-    return () => abortController.abort();
-}, []);
+        return () => abortController.abort();
+    }, []);
 
     useEffect(() => {
         if (timer > 0 && !showSuccess && !showFirstTimeModal) {
@@ -170,22 +170,24 @@ useEffect(() => {
     };
 
     const handleVerifyOTP = async (otpString: string) => {
-        if (!otpString || otpString.length !== 6 || isVerifying) {
-            return;
-        }
+        if (!otpString || otpString.length !== 6 || isVerifying) return;
 
         try {
             setIsVerifying(true);
-            console.log("🔐 Verifying OTP:", otpString);
 
-   // 🔑 Generate FCM token once user verifies OTP
-const fcmToken = await generateFCMToken();
+            // ✅ FCM is optional — never let it block OTP verification
+            let fcmToken = "";
+            try {
+                fcmToken = (await generateFCMToken()) || "";
+            } catch (fcmErr) {
+                console.warn("FCM token generation failed (non-fatal):", fcmErr);
+            }
 
-const response: OTPVerifyResponse = await verifyOtp({
-  email: email,
-  otp: otpString,
-  fcmToken: fcmToken || "",
-});
+            const response: OTPVerifyResponse = await verifyOtp({
+                email: email,
+                otp: otpString,
+                fcmToken,
+            });
             if (response.success) {
                 console.log("✅ OTP verified!");
 
@@ -200,9 +202,9 @@ const response: OTPVerifyResponse = await verifyOtp({
                 setUserId(extractedUserId);
                 localStorage.setItem("userId", extractedUserId);
                 localStorage.setItem("userEmail", email);
-             if (fcmToken) {
-    localStorage.setItem("fcmToken", fcmToken);
-}
+                if (fcmToken) {
+                    localStorage.setItem("fcmToken", fcmToken);
+                }
                 const token = response.token || response.user?.token || response.data?.token;
                 if (token) localStorage.setItem("token", token);
 

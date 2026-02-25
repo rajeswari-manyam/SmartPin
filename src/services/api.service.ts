@@ -41,7 +41,6 @@ interface ApiResponse {
         token?: string;
     };
 }
-
 export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<ApiResponse> => {
     try {
         const formData = new URLSearchParams();
@@ -56,8 +55,15 @@ export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<Ap
             body: formData,
         });
 
+        const data = await response.json();
+
+        // 409 = email already exists, but OTP is still sent — treat as success
+        if (response.status === 409) {
+            return { success: true, ...data };
+        }
+
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
+        return data;
     } catch (error) {
         console.error("Register with OTP error:", error);
         throw error;

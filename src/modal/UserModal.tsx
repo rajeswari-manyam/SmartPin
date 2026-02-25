@@ -1,7 +1,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import Button from "../components/ui/Buttons";
-import { API_BASE_URL } from "../services/api.service";  // ✅ ADD THIS IMPORT
+import { API_BASE_URL } from "../services/api.service";
 
 interface UserModalProps {
     phoneNumber: string;
@@ -23,7 +23,6 @@ const UserModal: React.FC<UserModalProps> = ({
     const [longitude, setLongitude] = React.useState<number | null>(null);
     const [locationError, setLocationError] = React.useState<string | null>(null);
 
-    // ✅ Get current location on mount
     React.useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -66,7 +65,6 @@ const UserModal: React.FC<UserModalProps> = ({
                 name: name.trim(),
             };
 
-            // ✅ Add location if available
             if (latitude !== null && longitude !== null) {
                 updateData.latitude = latitude.toString();
                 updateData.longitude = longitude.toString();
@@ -75,7 +73,6 @@ const UserModal: React.FC<UserModalProps> = ({
                 console.log("⚠️ No location available, updating name only");
             }
 
-            // ✅ FIXED: Use API_BASE_URL instead of hardcoded IP
             const response = await fetch(`${API_BASE_URL}/updateUserById/${userId}`, {
                 method: "PUT",
                 headers: {
@@ -120,12 +117,10 @@ const UserModal: React.FC<UserModalProps> = ({
     };
 
     return (
+        // ✅ Removed backdrop overlay (no bg-black/50 or backdrop-blur-sm)
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
                 <div className="bg-[#00598a] px-6 py-8 text-center">
-
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">😊</span>
                     </div>
@@ -164,10 +159,10 @@ const UserModal: React.FC<UserModalProps> = ({
                     </div>
 
                     <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
-
                         <p className="text-xs text-gray-500 mb-1">Registered Phone</p>
+                        {/* ✅ Removed "+91" prefix */}
                         <p className="text-sm font-semibold text-gray-900">
-                            +91 {phoneNumber}
+                            {phoneNumber}
                         </p>
 
                         {latitude && longitude ? (
@@ -188,27 +183,14 @@ const UserModal: React.FC<UserModalProps> = ({
                         )}
                     </div>
 
-                    <div className="space-y-3">
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting || !name.trim()}
-                            className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
-
-
-                        >
-                            {isSubmitting ? "Updating..." : "Continue"}
-                        </Button>
-
-                        <button
-                            type="button"
-                            onClick={handleSkip}
-                            disabled={isSubmitting}
-                            className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
-
-                        >
-                            Skip for now
-                        </button>
-                    </div>
+                    {/* ✅ Removed "Skip for now" button */}
+                    <Button
+                        type="submit"
+                        disabled={isSubmitting || !name.trim()}
+                        className="w-full py-3 bg-[#F0F0F0] text-gray-700 rounded-xl font-semibold hover:brightness-95 transition-colors disabled:opacity-50"
+                    >
+                        {isSubmitting ? "Updating..." : "Continue"}
+                    </Button>
                 </form>
 
                 <Button
