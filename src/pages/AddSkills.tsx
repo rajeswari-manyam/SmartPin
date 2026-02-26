@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ImagePlus, X, Upload } from "lucide-react";
+import { ArrowLeft, ImagePlus, X, Upload, MapPin } from "lucide-react";
 import Button from "../components/ui/Buttons";
 import ServiceChargesSection from "../components/WorkerProfile/ServiceCharges";
 import { addWorkerSkill, AddWorkerSkillPayload } from "../services/api.service";
@@ -17,7 +17,16 @@ interface SubCategoryGroup {
 
 const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
 
-const LANGUAGES = ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Malayalam", "Marathi", "Bengali", "Gujarati", "Punjabi", "Urdu", "Odia"];
+// Indian states list
+const INDIAN_STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry",
+];
 
 const AddSkillsScreen: React.FC = () => {
   const navigate = useNavigate();
@@ -33,11 +42,15 @@ const AddSkillsScreen: React.FC = () => {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
-  // Extra fields (UI only)
+  // Location fields (replacing single location input + language)
+  const [state, setState] = useState("");
+  const [area, setArea] = useState("");
+  const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
+
+  // Other fields
   const [experience, setExperience] = useState("");
   const [availability, setAvailability] = useState("");
-  const [location, setLocation] = useState("");
-  const [language, setLanguage] = useState("");
 
   const filteredSubcategories = selectedCategory
     ? (subcategoryGroups.find(g => String(g.categoryId) === selectedCategory)?.items || [])
@@ -77,6 +90,11 @@ const AddSkillsScreen: React.FC = () => {
 
     if (!selectedCategory || !selectedSubcategory || !chargeAmount) {
       alert("Please fill all required fields");
+      return;
+    }
+
+    if (pincode && !/^\d{6}$/.test(pincode)) {
+      alert("Please enter a valid 6-digit pincode");
       return;
     }
 
@@ -186,8 +204,8 @@ const AddSkillsScreen: React.FC = () => {
             </div>
           </div>
 
-          {/* Row 2: Skills Description + Location */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Row 2: Skills Description + Experience + Availability */}
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className={labelClass}>Skills Description</label>
               <input
@@ -198,20 +216,6 @@ const AddSkillsScreen: React.FC = () => {
                 disabled={loading}
               />
             </div>
-            <div>
-              <label className={labelClass}>Location / Area</label>
-              <input
-                className={inputClass}
-                placeholder="e.g., Hyderabad, Madhapur"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-          </div>
-
-          {/* Row 3: Experience + Language + Availability (3 columns) */}
-          <div className="grid grid-cols-3 gap-4">
             <div>
               <label className={labelClass}>Years of Experience</label>
               <input
@@ -224,20 +228,6 @@ const AddSkillsScreen: React.FC = () => {
                 onChange={(e) => setExperience(e.target.value)}
                 disabled={loading}
               />
-            </div>
-            <div>
-              <label className={labelClass}>Language Spoken</label>
-              <select
-                className={inputClass}
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                disabled={loading}
-              >
-                <option value="">Select language</option>
-                {LANGUAGES.map(lang => (
-                  <option key={lang} value={lang}>{lang}</option>
-                ))}
-              </select>
             </div>
             <div>
               <label className={labelClass}>Availability</label>
@@ -254,6 +244,83 @@ const AddSkillsScreen: React.FC = () => {
                 <option value="Flexible">Flexible</option>
                 <option value="On Call">On Call</option>
               </select>
+            </div>
+          </div>
+
+          {/* ── Location Section ─────────────────────────────────── */}
+          <div>
+            {/* Section header */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center">
+                <MapPin size={14} className="text-blue-500" />
+              </div>
+              <span className={`${typography.form.label} text-gray-700 font-semibold`}>
+                Service Location
+              </span>
+            </div>
+
+            {/* Row A: State + City */}
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className={labelClass}>
+                  State <span className="text-red-500">*</span>
+                </label>
+                <select
+                  className={inputClass}
+                  value={state}
+                  onChange={(e) => setState(e.target.value)}
+                  disabled={loading}
+                >
+                  <option value="">Select state</option>
+                  {INDIAN_STATES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelClass}>
+                  City <span className="text-red-500">*</span>
+                </label>
+                <input
+                  className={inputClass}
+                  placeholder="e.g., Hyderabad"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            </div>
+
+            {/* Row B: Area + Pincode */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelClass}>Area / Locality</label>
+                <input
+                  className={inputClass}
+                  placeholder="e.g., Madhapur, Gachibowli"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+              <div>
+                <label className={labelClass}>Pincode</label>
+                <input
+                  className={inputClass}
+                  placeholder="e.g., 500081"
+                  value={pincode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setPincode(val);
+                  }}
+                  maxLength={6}
+                  inputMode="numeric"
+                  disabled={loading}
+                />
+                {pincode && pincode.length !== 6 && (
+                  <p className="mt-1 text-xs text-red-500">Enter a valid 6-digit pincode</p>
+                )}
+              </div>
             </div>
           </div>
 
