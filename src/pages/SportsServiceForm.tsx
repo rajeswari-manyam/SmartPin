@@ -7,10 +7,13 @@ import {
     SportsWorker,
 } from '../services/Sports.service';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+const BRAND = '#00598a';
 const chargeTypeOptions = ['Hour', 'Day', 'Session', 'Month', 'Package'];
 const CATEGORY_NAME = 'Sports & Activities';
 
@@ -71,7 +74,7 @@ const inputErr =
     'focus:ring-2 focus:ring-red-300 focus:border-red-400 ' +
     'placeholder-gray-400 transition-all duration-200 bg-white text-gray-800 outline-none';
 
-// ── select arrow style (matches CourierForm) ──────────────────────────────────
+// ── select arrow style ───────────────────────────────────────────────────────
 const selectStyle: React.CSSProperties = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat',
@@ -97,12 +100,12 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
     msg ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
 
-// ── Two-column grid (mirrors CourierForm's TwoCol) ────────────────────────────
+// ── Two-column grid ───────────────────────────────────────────────────────────
 const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="grid grid-cols-2 gap-6">{children}</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
 );
 
-// ── Section card (mirrors CourierForm's SectionCard) ─────────────────────────
+// ── Section card ─────────────────────────────────────────────────────────────
 const SectionCard: React.FC<{
     title?: string;
     children: React.ReactNode;
@@ -136,6 +139,13 @@ const SportsForm: React.FC = () => {
     const isEditMode = !!editId;
 
     const sportsTypes = getSportsSubcategories();
+    
+    // ── Prepare subcategory options with icons ───────────────────────────────
+    const subcategoryOptions = sportsTypes.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+    
     const defaultType = getSubFromUrl() || sportsTypes[0] || 'Gym & Fitness';
 
     // ── UI state ──────────────────────────────────────────────────────────────
@@ -382,7 +392,7 @@ const SportsForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className="text-gray-500">Loading...</p>
                 </div>
             </div>
@@ -396,8 +406,8 @@ const SportsForm: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-                <div className="max-w-6xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
                         className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
@@ -418,8 +428,8 @@ const SportsForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Wide container ── */}
-            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4 pb-10">
+            {/* ── Container ── */}
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4 pb-10">
 
                 {/* Global error */}
                 {error && (
@@ -436,11 +446,9 @@ const SportsForm: React.FC = () => {
 
                 {/* Success */}
                 {successMessage && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                        <div className="flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">✓</span>
-                            <p className="text-sm text-green-700">{successMessage}</p>
-                        </div>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <p className="text-sm text-green-700 font-medium">{successMessage}</p>
                     </div>
                 )}
 
@@ -459,14 +467,16 @@ const SportsForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Sport Category</FieldLabel>
-                            <select
-                                name="subCategory" value={formData.subCategory}
-                                onChange={handleChange}
-                                className={inputBase + ' appearance-none'}
-                                style={selectStyle}
-                            >
-                                {sportsTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <IconSelect
+                                label=""
+                                value={formData.subCategory}
+                                placeholder="Select sport category"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subCategory: val }))
+                                }
+                                disabled={loading}
+                            />
                             <p className="text-xs text-gray-400 mt-1">
                                 Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
                             </p>
@@ -557,7 +567,8 @@ const SportsForm: React.FC = () => {
                                     <button
                                         type="button"
                                         onClick={() => handleAddService(customService)}
-                                        className="px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c] transition-all whitespace-nowrap"
+                                        className="px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-all whitespace-nowrap"
+                                        style={{ backgroundColor: BRAND }}
                                     >
                                         Add
                                     </button>
@@ -575,7 +586,8 @@ const SportsForm: React.FC = () => {
                                         {formData.services.map((service, idx) => (
                                             <span
                                                 key={idx}
-                                                className="inline-flex items-center gap-1.5 bg-[#00598a] text-white px-3 py-1.5 rounded-full text-sm font-medium"
+                                                className="inline-flex items-center gap-1.5 text-white px-3 py-1.5 rounded-full text-sm font-medium"
+                                                style={{ backgroundColor: BRAND }}
                                             >
                                                 {service}
                                                 <button type="button" onClick={() => handleRemoveService(idx)} className="hover:opacity-70 transition-opacity">
@@ -606,7 +618,7 @@ const SportsForm: React.FC = () => {
                             <select
                                 name="chargeType" value={formData.chargeType}
                                 onChange={handleChange}
-                                className={inputBase + ' appearance-none'}
+                                className={inputBase + ' appearance-none bg-white'}
                                 style={selectStyle}
                             >
                                 {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
@@ -630,14 +642,14 @@ const SportsForm: React.FC = () => {
                                     maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'
                                 }`}
                                 style={{
-                                    borderColor:     maxImagesReached ? '#d1d5db' : '#00598a',
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#eef7fb',
+                                    borderColor:     maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
                                     minHeight: '180px',
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center bg-[#daeef6]">
-                                        <Upload className="w-8 h-8 text-[#00598a]" />
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-700">
@@ -661,12 +673,17 @@ const SportsForm: React.FC = () => {
                                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className="absolute bottom-2 left-2 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full">Saved</span>
+                                        <span 
+                                            className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
+                                            style={{ backgroundColor: BRAND }}
+                                        >
+                                            Saved
+                                        </span>
                                     </div>
                                 ))}
                                 {imagePreviews.map((src, i) => (
                                     <div key={`new-${i}`} className="relative aspect-square group">
-                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
                                         <button type="button" onClick={() => removeNewImg(i)}
                                             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                             <X className="w-4 h-4" />
@@ -692,11 +709,12 @@ const SportsForm: React.FC = () => {
                     action={
                         <button
                             type="button" onClick={getCurrentLocation} disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting…</>
-                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>}
+                                ? <><span className="animate-spin text-sm">⌛</span>Detecting...</>
+                                : <><MapPin className="w-4 h-4" /> Auto Detect</>}
                         </button>
                     }
                 >
@@ -735,9 +753,9 @@ const SportsForm: React.FC = () => {
                     )}
 
                     {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-                            <p className="text-sm" style={{ color: '#7a4f00' }}>
-                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
+                        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+                            <p className="text-sm text-amber-800">
+                                📍 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -745,7 +763,7 @@ const SportsForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className="text-sm text-green-800">
-                                <span className="font-semibold">✓ Location detected: </span>
+                                <span className="font-semibold">✓ Location set: </span>
                                 <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
@@ -754,37 +772,33 @@ const SportsForm: React.FC = () => {
                     )}
                 </SectionCard>
 
-                {/* ── Action Buttons (matches CourierForm exactly) ── */}
-                <div className="flex gap-4 pt-2 pb-8 justify-end">
-                    <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-                            bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all text-sm
-                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
+                {/* ── Action Buttons ── */}
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg
-                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                            text-sm
-                            ${loading || !!successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg text-sm ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                        style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="animate-spin">⏳</span>
-                                {isEditMode ? 'Updating…' : 'Creating…'}
+                                {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
-                        ) : successMessage ? '✓ Done' : (isEditMode ? 'Update Service' : 'Create Service')}
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
+                    </button>
+                    <button
+                        onClick={() => window.history.back()}
+                        type="button"
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all text-sm ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
                     </button>
                 </div>
 

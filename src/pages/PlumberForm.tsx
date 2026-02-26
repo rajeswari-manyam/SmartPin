@@ -5,6 +5,8 @@ import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
 import typography from "../styles/typography";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
 const BRAND = '#00598a';
@@ -19,7 +21,13 @@ const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
-    `text-lg text-gray-800 bg-white`;          // ← text-base → text-lg
+    `text-base text-gray-800 bg-white`;
+
+const inputError =
+    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
+    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `text-base text-gray-800 bg-white`;
 
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
@@ -31,7 +39,7 @@ const selectStyle = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className="block text-base font-semibold text-gray-800 mb-2">   {/* text-sm → text-base */}
+    <label className="block text-base font-semibold text-gray-800 mb-2">
         {children}{required && <span className="text-red-500 ml-1">*</span>}
     </label>
 );
@@ -44,7 +52,7 @@ const SectionCard: React.FC<{
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
-                <h3 className="text-lg font-bold text-gray-900">{title}</h3>   {/* text-base → text-lg */}
+                <h3 className="text-lg font-bold text-gray-900">{title}</h3>
                 {action}
             </div>
         )}
@@ -53,7 +61,7 @@ const SectionCard: React.FC<{
 );
 
 const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="grid grid-cols-2 gap-6">{children}</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
 );
 
 // ── Geocoding ─────────────────────────────────────────────────────────────────
@@ -106,6 +114,13 @@ const PlumberForm = () => {
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     const plumberSubcategories = getPlumberSubcategories();
+    
+    // ── Prepare subcategory options with icons ───────────────────────────────
+    const subcategoryOptions = plumberSubcategories.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+    
     const defaultSubcategory = getSubcategoryFromUrl() || plumberSubcategories[0] || 'Plumbing Services';
 
     const [formData, setFormData] = useState({
@@ -355,7 +370,7 @@ const PlumberForm = () => {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
-                    <p className="text-lg text-gray-600">Loading...</p>   {/* text-base → text-lg */}
+                    <p className="text-base text-gray-600">Loading...</p>
                 </div>
             </div>
         );
@@ -368,8 +383,8 @@ const PlumberForm = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-                <div className="max-w-6xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button
                         onClick={handleCancel}
                         className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
@@ -379,18 +394,18 @@ const PlumberForm = () => {
                         </svg>
                     </button>
                     <div className="flex-1">
-                        <h1 className="text-2xl font-bold text-gray-900">   {/* text-xl → text-2xl */}
+                        <h1 className="text-xl font-bold text-gray-900">
                             {isEditMode ? 'Update Plumber Service' : 'Add Plumber Service'}
                         </h1>
-                        <p className="text-base text-gray-500 mt-0.5">   {/* text-sm → text-base */}
+                        <p className="text-sm text-gray-500 mt-0.5">
                             {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Wide container ── */}
-            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+            {/* ── Container ── */}
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
@@ -398,8 +413,8 @@ const PlumberForm = () => {
                         <div className="flex items-start gap-2">
                             <span className="text-red-600 mt-0.5">⚠️</span>
                             <div className="flex-1">
-                                <p className="font-semibold text-red-800 mb-1 text-base">Error</p>   {/* added text-base */}
-                                <p className="text-red-700 text-base">{error}</p>   {/* text-sm → text-base */}
+                                <p className="font-semibold text-red-800 mb-1 text-base">Please fix the following</p>
+                                <p className="text-red-700 text-base">{error}</p>
                             </div>
                         </div>
                     </div>
@@ -407,7 +422,7 @@ const PlumberForm = () => {
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
                         <span className="text-green-600 mt-0.5">✓</span>
-                        <p className="text-base text-green-700">{successMessage}</p>   {/* text-sm → text-base */}
+                        <p className="text-base text-green-700 font-medium">{successMessage}</p>
                     </div>
                 )}
 
@@ -422,7 +437,7 @@ const PlumberForm = () => {
                                 value={formData.title}
                                 onChange={handleInputChange}
                                 placeholder="e.g. Professional Plumbing Services"
-                                className={inputBase}
+                                className={fieldErrors.title ? inputError : inputBase}
                             />
                             {fieldErrors.title && (
                                 <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.title}</p>
@@ -430,17 +445,16 @@ const PlumberForm = () => {
                         </div>
                         <div>
                             <FieldLabel required>Subcategory</FieldLabel>
-                            <select
-                                name="subcategory"
+                            <IconSelect
+                                label=""
                                 value={formData.subcategory}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {plumberSubcategories.map((sub: string) => (
-                                    <option key={sub} value={sub}>{sub}</option>
-                                ))}
-                            </select>
+                                placeholder="Select subcategory"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subcategory: val }))
+                                }
+                                disabled={loading}
+                            />
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -456,7 +470,7 @@ const PlumberForm = () => {
                                 value={formData.phone}
                                 onChange={handleInputChange}
                                 placeholder="Enter phone number"
-                                className={inputBase}
+                                className={fieldErrors.phone ? inputError : inputBase}
                             />
                             {fieldErrors.phone && (
                                 <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.phone}</p>
@@ -470,7 +484,7 @@ const PlumberForm = () => {
                                 onChange={handleInputChange}
                                 rows={3}
                                 placeholder="Describe your services, experience, and specializations..."
-                                className={inputBase + ' resize-none'}
+                                className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                             />
                             {fieldErrors.description && (
                                 <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.description}</p>
@@ -541,14 +555,13 @@ const PlumberForm = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-base font-medium text-white
-                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading ? (
-                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                <><span className="animate-spin text-sm">⌛</span>Detecting...</>
                             ) : (
-                                <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                                <><MapPin className="w-4 h-4" /> Auto Detect</>
                             )}
                         </button>
                     }
@@ -556,7 +569,7 @@ const PlumberForm = () => {
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-                            <p className="text-base text-yellow-800">{locationWarning}</p>   {/* text-sm → text-base */}
+                            <p className="text-base text-yellow-800">{locationWarning}</p>
                         </div>
                     )}
 
@@ -592,15 +605,15 @@ const PlumberForm = () => {
                         </div>
                     )}
 
-                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-                        <p className="text-base" style={{ color: '#7a4f00' }}>   {/* text-sm → text-base */}
-                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
+                    <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+                        <p className="text-base text-amber-800">
+                            📍 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                         </p>
                     </div>
 
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className="text-base text-green-800">   {/* text-sm → text-base */}
+                            <p className="text-base text-green-800">
                                 <span className="font-semibold">✓ Location set: </span>
                                 <span className="font-mono text-sm">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
@@ -627,24 +640,24 @@ const PlumberForm = () => {
                                 className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 style={{
                                     borderColor: maxImagesReached ? '#d1d5db' : BRAND,
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
                                     minHeight: '180px',
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
                                         <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                     </div>
                                     <div>
-                                        <p className="text-lg font-medium text-gray-700">   {/* text-base → text-lg */}
+                                        <p className="text-base font-medium text-gray-700">
                                             {maxImagesReached
                                                 ? 'Maximum 5 images reached'
                                                 : `Add Photos (${5 - selectedImages.length} slots left)`}
                                         </p>
-                                        <p className="text-base text-gray-500 mt-1">   {/* text-sm → text-base */}
+                                        <p className="text-sm text-gray-500 mt-1">
                                             Upload photos of your work or tools
                                         </p>
-                                        <p className="text-sm text-gray-400 mt-0.5">Max 5 images · 5 MB each · JPG, PNG</p>
+                                        <p className="text-xs text-gray-400 mt-0.5">Max 5 images · 5 MB each · JPG, PNG</p>
                                     </div>
                                 </div>
                             </div>
@@ -680,7 +693,7 @@ const PlumberForm = () => {
                         ) : (
                             <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
                                 style={{ minHeight: '180px' }}>
-                                <p className="text-base text-gray-400">   {/* text-sm → text-base */}
+                                <p className="text-base text-gray-400">
                                     Uploaded images will appear here
                                 </p>
                             </div>
@@ -689,38 +702,32 @@ const PlumberForm = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8 justify-end">
-                    <button
-                        onClick={handleCancel}
-                        type="button"
-                        disabled={loading}
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-                            bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all text-lg                        
-                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg
-                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                            text-lg                                        
-                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg text-base ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                        style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="animate-spin">⏳</span>
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
-                        ) : successMessage ? '✓ Done' : (
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                        ) : (
                             isEditMode ? 'Update Service' : 'Create Service'
                         )}
+                    </button>
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
                     </button>
                 </div>
 

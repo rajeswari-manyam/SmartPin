@@ -4,9 +4,25 @@ import { addRealEstateService, updateRealEstateService, getRealEstateServiceById
 import typography from "../styles/typography";
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
-const propertyTypeOptions = ['Apartment', 'Villa', 'Independent House', 'Plot', 'Commercial', 'Office Space'];
-const listingTypeOptions = ['Rent', 'Sale', 'Lease'];
+// ── Property type options with icon keys matching SUBCATEGORY_ICONS ──────────
+const propertyTypeOptions = [
+    { name: 'Apartment',         icon: SUBCATEGORY_ICONS['Property Dealers']         },
+    { name: 'Villa',             icon: SUBCATEGORY_ICONS['Rent Lease Listings']       },
+    { name: 'Independent House', icon: SUBCATEGORY_ICONS['Builders Developers']       },
+    { name: 'Plot',              icon: SUBCATEGORY_ICONS['Construction Contractors']  },
+    { name: 'Commercial',        icon: SUBCATEGORY_ICONS['Interior Designers']        },
+    { name: 'Office Space',      icon: SUBCATEGORY_ICONS['Interior Designers']        },
+];
+
+const listingTypeOptions = [
+    { name: 'Rent',  icon: SUBCATEGORY_ICONS['Rent Lease Listings']  },
+    { name: 'Sale',  icon: SUBCATEGORY_ICONS['Property Dealers']     },
+    { name: 'Lease', icon: SUBCATEGORY_ICONS['Builders Developers']  },
+];
+
 const furnishingStatusOptions = ['Fully-Furnished', 'Semi-Furnished', 'Unfurnished'];
 const availabilityStatusOptions = ['Available', 'Sold', 'Rented', 'Under Construction'];
 
@@ -104,8 +120,8 @@ const RealEstateForm = () => {
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
         name: '',
-        propertyType: propertyTypeOptions[0],
-        listingType: listingTypeOptions[0],
+        propertyType: propertyTypeOptions[0].name,
+        listingType: listingTypeOptions[0].name,
         email: '',
         phone: '',
         price: '',
@@ -145,8 +161,8 @@ const RealEstateForm = () => {
                     ...prev,
                     userId: data.userId || prev.userId,
                     name: data.name || '',
-                    propertyType: data.propertyType || propertyTypeOptions[0],
-                    listingType: data.listingType || listingTypeOptions[0],
+                    propertyType: data.propertyType || propertyTypeOptions[0].name,
+                    listingType: data.listingType || listingTypeOptions[0].name,
                     email: data.email || '',
                     phone: data.phone || '',
                     price: data.price?.toString() || '',
@@ -342,7 +358,7 @@ const RealEstateForm = () => {
     );
 
     // ============================================================================
-    // RENDER — Wide layout matching CourierForm exactly
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -404,21 +420,28 @@ const RealEstateForm = () => {
                         <div />
                     </TwoCol>
                     <TwoCol>
+                        {/* ── Property Type — IconSelect ── */}
                         <div>
                             <FieldLabel required>Property Type</FieldLabel>
-                            <select name="propertyType" value={formData.propertyType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
-                                {propertyTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <IconSelect
+                                label="Property Type"
+                                value={formData.propertyType}
+                                placeholder="Select property type"
+                                options={propertyTypeOptions}
+                                onChange={(val) => setFormData(prev => ({ ...prev, propertyType: val }))}
+                            />
                         </div>
+
+                        {/* ── Listing Type — IconSelect ── */}
                         <div>
                             <FieldLabel required>Listing Type</FieldLabel>
-                            <select name="listingType" value={formData.listingType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'} style={selectStyle}>
-                                {listingTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <IconSelect
+                                label="Listing Type"
+                                value={formData.listingType}
+                                placeholder="Select listing type"
+                                options={listingTypeOptions}
+                                onChange={(val) => setFormData(prev => ({ ...prev, listingType: val }))}
+                            />
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -719,4 +742,4 @@ const RealEstateForm = () => {
     );
 };
 
-export default RealEstateForm; 
+export default RealEstateForm;

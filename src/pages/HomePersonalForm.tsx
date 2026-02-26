@@ -9,6 +9,8 @@ import {
 import typography from '../styles/typography';
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
+import IconSelect from '../components/common/IconDropDown';
+import { SUBCATEGORY_ICONS } from '../assets/subcategoryIcons';
 
 const BRAND = '#00598a';
 const BRAND_DARK = '#004a73';
@@ -30,14 +32,6 @@ const inputBase =
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
-
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2300598a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
-};
 
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
     <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
@@ -85,6 +79,13 @@ const HomePersonalForm = () => {
     const [successMessage, setSuccessMessage] = useState('');
 
     const homeSubcategories = getHomeSubcategories();
+
+    // ── Build icon-aware options for IconSelect (same pattern as ArtForm) ────
+    const subcategoryOptions = homeSubcategories.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+
     const defaultType = getSubcategoryFromUrl() || homeSubcategories[0] || 'Maid Services';
 
     const [formData, setFormData] = useState({
@@ -360,19 +361,23 @@ const HomePersonalForm = () => {
                                 className={inputBase}
                             />
                         </div>
+
+                        {/* ── IconSelect replaces plain <select> ── */}
                         <div>
                             <FieldLabel required>Service Type</FieldLabel>
-                            <select
-                                name="serviceType"
+                            <IconSelect
+                                label=""
                                 value={formData.serviceType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none'}
-                                style={selectStyle}
-                            >
-                                {homeSubcategories.map((t) => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                            </select>
+                                placeholder="Select service type"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData((prev) => ({ ...prev, serviceType: val }))
+                                }
+                                disabled={loading}
+                            />
+                            <p className={`${typography.body.small} text-gray-400 mt-1`}>
+                                Category: <span className="font-medium text-gray-500">Home &amp; Personal</span>
+                            </p>
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -646,7 +651,7 @@ const HomePersonalForm = () => {
                     </TwoCol>
                 </SectionCard>
 
-                {/* ── Action Buttons — courier style ── */}
+                {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         onClick={handleCancel}

@@ -1,18 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import FoodServiceAPI from "../services/FoodService.service";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
-import subcategories from "../data/subcategories.json";
 import { useAccount } from "../context/AccountContext";
 
-import { X, Upload, MapPin, Store, Phone, Mail, Tag, Plus, ChevronDown } from "lucide-react";
+// ── Same imports as AddSkillsScreen ──────────────────────────────────────────
+import { categories } from "../components/categories/Categories";
+import SubCategoriesData from "../components/data/SubCategories.json";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
+import { X, Upload, MapPin, Plus } from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────────────────────
 const BRAND = '#00598a';
 
-const foodServiceTypes = subcategories.subcategories
-    .find(cat => cat.categoryId === 1)!
-    .items.map(item => ({ value: item.name, icon: item.icon }));
+interface SubCategoryGroup {
+    categoryId: number;
+    items: { name: string; icon?: string }[];
+}
+
+const subcategoryGroups: SubCategoryGroup[] = (SubCategoriesData as any).subcategories || [];
 
 const inputCls =
     'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
@@ -68,11 +76,19 @@ const FoodServiceForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState("");
     const isGPSDetected = useRef(false);
 
+    // ── Category / Subcategory ────────────────────────────────────────────────
+    const [selectedCategory, setSelectedCategory] = useState("");
+    const [selectedSubcategory, setSelectedSubcategory] = useState("");
+
+    const filteredSubcategories = selectedCategory
+        ? (subcategoryGroups.find(g => String(g.categoryId) === selectedCategory)?.items || [])
+        : [];
+
+    // ── Form fields ───────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
         createdBy: resolveUserId(),
         name: "",
-        type: "Restaurant",
         icon: "🍽️",
         phone: "",
         email: "",
@@ -106,12 +122,18 @@ const FoodServiceForm: React.FC = () => {
                 if (res.success && res.data) {
                     const d = res.data;
                     const uid = (d as any).createdBy || (d as any).userId || formData.userId;
+
+                    const savedCategory = (d as any).category || "";
+                    const savedSubcategory = (d as any).type || "";
+                    const matchedCat = categories.find(c => c.name === savedCategory);
+                    if (matchedCat) setSelectedCategory(matchedCat.id);
+                    setSelectedSubcategory(savedSubcategory);
+
                     setFormData(prev => ({
                         ...prev,
                         userId: uid,
                         createdBy: uid,
                         name: d.name || "",
-                        type: d.type || "Restaurant",
                         icon: d.icon || "🍽️",
                         phone: (d as any).phone || "",
                         email: (d as any).email || "",
@@ -128,6 +150,7 @@ const FoodServiceForm: React.FC = () => {
                         cuisineType: (d as any).cuisineType || "",
                         priceRange: (d as any).priceRange || "",
                     }));
+
                     if ((d as any).specialties) {
                         const arr = Array.isArray((d as any).specialties)
                             ? (d as any).specialties as string[]
@@ -137,7 +160,6 @@ const FoodServiceForm: React.FC = () => {
                     if (Array.isArray((d as any).images)) setExistingImages((d as any).images);
                 }
             } catch (err) {
-                console.error(err);
                 setError("Failed to load service data");
             } finally {
                 setLoadingData(false);
@@ -146,14 +168,14 @@ const FoodServiceForm: React.FC = () => {
         fetchData();
     }, [id]);
 
-    // ── Auto-geocode on manual address entry ──────────────────────────────────
+    // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const geocode = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
                 try {
                     const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(", ");
-                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q= ${encodeURIComponent(addr)}&limit=1`);
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`);
                     const data = await res.json();
                     if (data.length > 0) {
                         setFormData(prev => ({ ...prev, latitude: data[0].lat, longitude: data[0].lon }));
@@ -167,12 +189,12 @@ const FoodServiceForm: React.FC = () => {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        if (name === "type") {
-            const selected = foodServiceTypes.find(t => t.value === value);
-            setFormData(prev => ({ ...prev, type: value, icon: selected?.icon || "🍽️" }));
-        } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
-        }
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubcategoryChange = (val: string) => {
+        setSelectedSubcategory(val);
+        setFormData(prev => ({ ...prev, icon: "🍽️" }));
     };
 
     // ── Specialty tags ────────────────────────────────────────────────────────
@@ -226,7 +248,7 @@ const FoodServiceForm: React.FC = () => {
                 if (pos.coords.accuracy > 500) setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
                 try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat= ${lat}&lon=${lng}`);
+                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
                         setFormData(prev => ({
@@ -256,6 +278,8 @@ const FoodServiceForm: React.FC = () => {
             if (!uid) throw new Error("User not logged in. Please log out and log back in.");
 
             if (!formData.name.trim()) throw new Error("Business name is required.");
+            if (!selectedCategory) throw new Error("Please select a category.");
+            if (!selectedSubcategory) throw new Error("Please select a subcategory / business type.");
             if (!formData.phone.trim()) throw new Error("Phone number is required.");
             if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim())) throw new Error("Please enter a valid phone number.");
             if (!specialties.length) throw new Error("Please add at least one specialty.");
@@ -264,11 +288,14 @@ const FoodServiceForm: React.FC = () => {
             if (!/^\d{6}$/.test(formData.pincode.trim())) throw new Error("PIN code must be exactly 6 digits.");
             if (!formData.latitude || !formData.longitude) throw new Error("Please detect your location.");
 
+            const categoryName = categories.find(c => c.id === selectedCategory)?.name || "";
+
             const fd = new FormData();
             fd.append("userId", uid);
             fd.append("createdBy", uid);
             fd.append("name", formData.name.trim());
-            fd.append("type", formData.type);
+            fd.append("category", categoryName);
+            fd.append("type", selectedSubcategory);
             fd.append("icon", formData.icon);
             fd.append("area", formData.area.trim());
             fd.append("city", formData.city.trim());
@@ -305,14 +332,12 @@ const FoodServiceForm: React.FC = () => {
             if (parsed.success === false) throw new Error(parsed.message || "Server error");
 
             setSuccessMessage(isEditMode ? "Service updated successfully!" : "Service created successfully!");
-
             setTimeout(() => {
                 setAccountType("worker");
                 navigate("/my-business");
             }, 1500);
 
         } catch (err: any) {
-            console.error("❌ Submit error:", err);
             setError(err.message || "Failed to submit form");
         } finally {
             setLoading(false);
@@ -338,9 +363,9 @@ const FoodServiceForm: React.FC = () => {
     return (
         <div className="min-h-screen bg-gray-50">
 
-            {/* Sticky Header */}
+            {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button onClick={() => window.history.back()} className="p-2 rounded-full hover:bg-gray-100 transition">
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -357,45 +382,75 @@ const FoodServiceForm: React.FC = () => {
                 </div>
             </div>
 
-            <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+            {/* ── Main container — max-w-5xl for wider layout ── */}
+            <div className="max-w-5xl mx-auto px-4 py-5 space-y-4">
 
                 {/* Alerts */}
                 {error && (
                     <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <span className="text-red-500 mt-0.5 flex-shrink-0">✕</span>
-                        <p className={`${typography.form.error}`}>{error}</p>
+                        <span className="text-red-600 mt-0.5 flex-shrink-0">⚠️</span>
+                        <div>
+                            <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
+                            <p className={`${typography.form.error} text-red-700`}>{error}</p>
+                        </div>
                     </div>
                 )}
                 {successMessage && (
-                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                        <p className={`${typography.body.small} text-green-700`}>✓ {successMessage}</p>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                        <span className="text-green-600 text-lg">✓</span>
+                        <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                     </div>
                 )}
 
-                {/* 1. Business Name & Type - Two columns */}
+                {/* ─── 1. BUSINESS NAME + CATEGORY + BUSINESS TYPE ──────────── */}
                 <Card>
+                    {/* Business Name — full width */}
+                    <div className="mb-4">
+                        <FieldLabel required>Business Name</FieldLabel>
+                        <input
+                            type="text"
+                            name="name"
+                            value={formData.name}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Royal Restaurant"
+                            className={inputCls}
+                        />
+                    </div>
+
+                    {/* Category + Business Type — two columns */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <FieldLabel required>Business Name</FieldLabel>
-                            <input type="text" name="name" value={formData.name} onChange={handleInputChange}
-                                placeholder="e.g., Royal Restaurant" className={inputCls} />
+                            <FieldLabel required>Category</FieldLabel>
+                            <IconSelect
+                                label="Category"
+                                value={selectedCategory}
+                                placeholder="Select category"
+                                options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
+                                onChange={(val) => {
+                                    setSelectedCategory(val);
+                                    setSelectedSubcategory("");
+                                }}
+                                disabled={loading}
+                            />
                         </div>
                         <div>
                             <FieldLabel required>Business Type</FieldLabel>
-                            <div className="relative">
-                                <select name="type" value={formData.type} onChange={handleInputChange}
-                                    className={inputCls + ' appearance-none pr-10'}>
-                                    {foodServiceTypes.map(t => (
-                                        <option key={t.value} value={t.value}>{t.icon} {t.value}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            </div>
+                            <IconSelect
+                                label="Business Type"
+                                value={selectedSubcategory}
+                                placeholder={selectedCategory ? "Select type" : "Select category first"}
+                                disabled={!selectedCategory || loading}
+                                options={filteredSubcategories.map(s => ({
+                                    name: s.name,
+                                    icon: SUBCATEGORY_ICONS[s.name],
+                                }))}
+                                onChange={handleSubcategoryChange}
+                            />
                         </div>
                     </div>
                 </Card>
 
-                {/* 2. Contact Information - Two columns */}
+                {/* ─── 2. CONTACT INFORMATION ───────────────────────────────── */}
                 <Card>
                     <CardTitle title="Contact Information" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -412,7 +467,7 @@ const FoodServiceForm: React.FC = () => {
                     </div>
                 </Card>
 
-                {/* 3. Specialties - Full width with two column input */}
+                {/* ─── 3. SPECIALTIES ───────────────────────────────────────── */}
                 <Card>
                     <FieldLabel required>Specialties / Menu Items</FieldLabel>
                     <div className="flex gap-2">
@@ -448,7 +503,7 @@ const FoodServiceForm: React.FC = () => {
                     )}
                 </Card>
 
-                {/* 4. Additional Details - Two columns */}
+                {/* ─── 4. ADDITIONAL DETAILS ────────────────────────────────── */}
                 <Card>
                     <CardTitle title="Additional Details" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,7 +530,7 @@ const FoodServiceForm: React.FC = () => {
                     </div>
                 </Card>
 
-                {/* 5. Description - Full width */}
+                {/* ─── 5. DESCRIPTION ───────────────────────────────────────── */}
                 <Card>
                     <FieldLabel>Description</FieldLabel>
                     <textarea name="description" value={formData.description} onChange={handleInputChange}
@@ -483,20 +538,25 @@ const FoodServiceForm: React.FC = () => {
                         className={inputCls + ' resize-none'} />
                 </Card>
 
-                {/* 6. Location - Two columns */}
+                {/* ─── 6. LOCATION ──────────────────────────────────────────── */}
                 <Card>
                     <CardTitle
                         title="Location Details"
                         action={
-                            <button type="button" onClick={getCurrentLocation} disabled={locationLoading}
-                                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg ${typography.misc.badge} text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
-                                style={{ backgroundColor: BRAND }}>
+                            <button
+                                type="button"
+                                onClick={getCurrentLocation}
+                                disabled={locationLoading}
+                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                                style={{ backgroundColor: BRAND }}
+                            >
                                 {locationLoading
                                     ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
                                     : <><MapPin className="w-4 h-4" /> Auto Detect</>}
                             </button>
                         }
                     />
+
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2 mb-3">
                             <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
@@ -504,6 +564,7 @@ const FoodServiceForm: React.FC = () => {
                         </div>
                     )}
 
+                    {/* Area + City */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area / Locality</FieldLabel>
@@ -515,6 +576,10 @@ const FoodServiceForm: React.FC = () => {
                             <input type="text" name="city" value={formData.city} onChange={handleInputChange}
                                 placeholder="e.g., Hyderabad" className={inputCls} />
                         </div>
+                    </div>
+
+                    {/* State + PIN Code */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state} onChange={handleInputChange}
@@ -527,92 +592,109 @@ const FoodServiceForm: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="mt-4 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
-                        <p className={`${typography.body.xs} font-medium`} style={{ color: '#92400e' }}>
-                            💡 <span className="font-semibold">Tip:</span> Use auto-detect to fill location automatically from your device GPS
-                        </p>
-                    </div>
+                    {/* Tip */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="mt-4 rounded-xl p-3.5 bg-amber-50 border border-amber-200">
+                            <p className={`${typography.body.xs} font-medium text-amber-800`}>
+                                💡 <span className="font-semibold">Tip:</span> Use auto-detect to fill location automatically from your device GPS
+                            </p>
+                        </div>
+                    )}
 
+                    {/* Confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3.5">
+                        <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-3.5">
                             <p className={`${typography.body.xs} font-medium text-green-800`}>
                                 <span className="font-bold">✓ Location detected: </span>
-                                {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
+                                <span className="font-mono ml-1">
+                                    {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
+                                </span>
                             </p>
                         </div>
                     )}
                 </Card>
 
-                {/* 7. Photos - Full width */}
+                {/* ─── 7. PHOTOS ────────────────────────────────────────────── */}
                 <Card>
                     <CardTitle title="Food Service Photos (Optional)" />
-                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
+                    <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect}
                             className="hidden" disabled={totalImages >= 5} />
-                        <div className="border-2 border-dashed rounded-xl p-8 text-center"
-                            style={{ borderColor: totalImages >= 5 ? '#d1d5db' : '#c7d9e6' }}>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5 ? 'border-gray-200 bg-gray-50' : 'hover:opacity-90'}`}
+                            style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
+                        >
                             <div className="flex flex-col items-center gap-3">
-                                <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
-                                    <Upload className="w-7 h-7" style={{ color: BRAND }} />
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                 </div>
                                 <div>
-                                    <p className={`${typography.form.label} text-gray-600`}>
-                                        {totalImages >= 5 ? 'Maximum limit reached (5 images)' : 'Tap to upload photos'}
+                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                        {totalImages >= 5 ? 'Maximum 5 images reached' : 'Tap to upload photos'}
                                     </p>
-                                    <p className={`${typography.body.xs} text-gray-400 mt-1`}>Maximum 5 images · 5 MB each</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · 5 MB each</p>
                                 </div>
                             </div>
                         </div>
                     </label>
 
                     {(existingImages.length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-2 mt-3">
+                        <div className="grid grid-cols-3 gap-3 mt-4">
                             {existingImages.map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square">
-                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl" />
+                                <div key={`ex-${i}`} className="relative aspect-square group">
+                                    <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-1.5 left-1.5 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: BRAND }}>
-                                        Saved
-                                    </span>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: BRAND }}>Saved</span>
                                 </div>
                             ))}
                             {imagePreviews.map((src, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square">
-                                    <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: BRAND }} />
                                     <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow">
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-1.5 left-1.5 bg-green-600 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}>
-                                        New
-                                    </span>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}>New</span>
                                 </div>
                             ))}
                         </div>
                     )}
                 </Card>
 
-                {/* Action Buttons */}
-                <div className="flex gap-3 pt-2 pb-8">
-                    <button type="button" onClick={handleSubmit} disabled={loading}
-                        className={`flex-1 py-4 rounded-xl font-bold ${typography.nav.button} text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70`}
-                        style={{ backgroundColor: BRAND }}>
-                        {loading && (
-                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
+                {/* ── Action Buttons ── */}
+                <div className="flex gap-4 pt-2 pb-8">
+                    <button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={loading || !!successMessage}
+                        className={`flex-1 py-3.5 rounded-xl font-bold ${typography.nav.button} text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70`}
+                        style={{ backgroundColor: BRAND }}
+                    >
+                        {loading ? (
+                            <span className="flex items-center gap-2">
+                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : successMessage ? (
+                            <span className="flex items-center gap-2"><span>✓</span> Done</span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
                         )}
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : (isEditMode ? 'Update Service' : 'Create Service')}
                     </button>
-                    <button type="button" onClick={() => window.history.back()} disabled={loading}
-                        className={`px-8 py-4 rounded-xl font-semibold ${typography.nav.button} text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50`}>
+                    <button
+                        type="button"
+                        onClick={() => window.history.back()}
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-semibold ${typography.nav.button} text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
                         Cancel
                     </button>
                 </div>

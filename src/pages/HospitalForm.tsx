@@ -7,9 +7,11 @@ import {
     CreateHospitalPayload,
 } from '../services/HospitalService.service';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin, Plus, ChevronDown } from 'lucide-react';
+import { X, Upload, MapPin, Plus } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { typography } from '../styles/typography';
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 const BRAND = '#00598a';
 const BRAND_DARK = '#004a73';
@@ -50,7 +52,6 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
     </label>
 );
 
-// Always 2 columns with generous gap — same as CourierForm
 const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="grid grid-cols-2 gap-6">{children}</div>
 );
@@ -301,7 +302,7 @@ const HospitalForm: React.FC = () => {
     const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
-    // RENDER — Wide layout, 2 fields per row (mirrors CourierForm)
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -364,17 +365,24 @@ const HospitalForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Type</FieldLabel>
-                            <div className="relative">
-                                <select
-                                    name="hospitalType"
-                                    value={formData.hospitalType}
-                                    onChange={handleChange}
-                                    className={inputCls + ' appearance-none pr-10'}
-                                >
-                                    {hospitalTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            </div>
+                            {/*
+                             * ── IconSelect replaces the old plain <select> ──
+                             * Options are built from hospitalTypes (categoryId=2 subcategories).
+                             * Each entry maps its name to the matching PNG in SUBCATEGORY_ICONS
+                             * (e.g. "Hospitals" → HospitalsIcon, "Clinics" → ClinicsIcon, etc.)
+                             */}
+                            <IconSelect
+                                label="Hospital Type"
+                                value={formData.hospitalType}
+                                placeholder="Select hospital type"
+                                options={hospitalTypes.map(t => ({
+                                    name: t,
+                                    icon: SUBCATEGORY_ICONS[t],
+                                }))}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, hospitalType: val }))
+                                }
+                            />
                         </div>
                     </TwoCol>
                 </Card>
@@ -394,7 +402,6 @@ const HospitalForm: React.FC = () => {
                                 className={inputCls}
                             />
                         </div>
-                        {/* Empty right col for balance — add email/alt phone if needed */}
                         <div />
                     </TwoCol>
                 </Card>
@@ -415,7 +422,12 @@ const HospitalForm: React.FC = () => {
                                     <option key={d} value={d}>{d}</option>
                                 ))}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                            <svg
+                                className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
                         </div>
 
                         {/* Custom input + Add */}
@@ -541,7 +553,6 @@ const HospitalForm: React.FC = () => {
                         }
                     />
 
-                    {/* Area + City */}
                     <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
@@ -553,7 +564,6 @@ const HospitalForm: React.FC = () => {
                         </div>
                     </TwoCol>
 
-                    {/* State + PIN */}
                     <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
@@ -565,7 +575,6 @@ const HospitalForm: React.FC = () => {
                         </div>
                     </TwoCol>
 
-                    {/* Tip */}
                     <div className="mt-4 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
                         <p className={`${typography.body.xs} font-medium`} style={{ color: '#92400e' }}>
                             💡 <span className="font-semibold">Tip:</span> Click "Auto Detect" to fill location automatically from your device GPS.
@@ -588,7 +597,6 @@ const HospitalForm: React.FC = () => {
                 <Card>
                     <CardTitle title={`Portfolio Photos (${totalImages}/5)`} />
                     <TwoCol>
-                        {/* Upload zone */}
                         <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                             <input
                                 type="file"
@@ -622,7 +630,6 @@ const HospitalForm: React.FC = () => {
                             </div>
                         </label>
 
-                        {/* Previews */}
                         {(existingImages.length > 0 || imagePreviews.length > 0) ? (
                             <div className="grid grid-cols-3 gap-3">
                                 {existingImages.map((url, i) => (
@@ -675,7 +682,7 @@ const HospitalForm: React.FC = () => {
                     </TwoCol>
                 </Card>
 
-                {/* ── Action Buttons — courier style, right-aligned ── */}
+                {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
                         type="button"

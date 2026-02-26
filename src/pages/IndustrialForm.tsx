@@ -6,10 +6,14 @@ import {
     getIndustrialServiceById,
 } from '../services/IndustrialService.service';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+const BRAND = '#00598a';
+
 const chargeTypeOptions = ['per hour', 'per day', 'per project', 'fixed rate', 'negotiable', 'per event'];
 
 const getIndustrialSubcategories = (): string[] => {
@@ -91,7 +95,7 @@ const SectionCard: React.FC<{
 );
 
 const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="grid grid-cols-2 gap-6">{children}</div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
 );
 
 // ── Geocoding ─────────────────────────────────────────────────────────────────
@@ -127,6 +131,13 @@ const IndustrialForm: React.FC = () => {
     const isEditMode = !!editId;
 
     const industrialTypes = getIndustrialSubcategories();
+    
+    // ── Prepare subcategory options with icons ───────────────────────────────
+    const subcategoryOptions = industrialTypes.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+    
     const defaultType = getSubFromUrl() || industrialTypes[0] || 'Borewell Services';
 
     // ── UI state ──────────────────────────────────────────────────────────────
@@ -393,7 +404,7 @@ const IndustrialForm: React.FC = () => {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00598a] mx-auto mb-4" />
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                     <p className="text-base text-gray-500">Loading...</p>
                 </div>
             </div>
@@ -408,8 +419,8 @@ const IndustrialForm: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-                <div className="max-w-6xl mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button
                         onClick={() => window.history.back()}
                         className="p-2 -ml-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -430,8 +441,8 @@ const IndustrialForm: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Wide container ── */}
-            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+            {/* ── Container ── */}
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Global error banner */}
                 {error && (
@@ -446,9 +457,9 @@ const IndustrialForm: React.FC = () => {
 
                 {/* Success banner */}
                 {successMessage && (
-                    <div className="p-4 rounded-xl bg-[#00598a] border border-[#004a75] text-white flex items-center gap-2">
-                        <span className="text-xl">✓</span>
-                        <p className="text-base font-medium">{successMessage}</p>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                        <span className="text-green-600 text-lg">✓</span>
+                        <p className="text-sm text-green-700 font-medium">{successMessage}</p>
                     </div>
                 )}
 
@@ -469,15 +480,16 @@ const IndustrialForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Service Type</FieldLabel>
-                            <select
-                                name="subCategory"
+                            <IconSelect
+                                label=""
                                 value={formData.subCategory}
-                                onChange={handleChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {industrialTypes.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                                placeholder="Select service type"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subCategory: val }))
+                                }
+                                disabled={loading}
+                            />
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -596,8 +608,8 @@ const IndustrialForm: React.FC = () => {
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full bg-[#e8f2f8] flex items-center justify-center">
-                                        <Upload className="w-8 h-8 text-[#00598a]" />
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                     </div>
                                     <div>
                                         <p className="text-base font-semibold text-gray-700">
@@ -626,14 +638,17 @@ const IndustrialForm: React.FC = () => {
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
-                                        <span className="absolute bottom-1.5 left-1.5 bg-[#00598a] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                        <span 
+                                            className="absolute bottom-1.5 left-1.5 text-white text-xs px-2 py-0.5 rounded-full font-medium"
+                                            style={{ backgroundColor: BRAND }}
+                                        >
                                             Saved
                                         </span>
                                     </div>
                                 ))}
                                 {imagePreviews.map((src, i) => (
                                     <div key={`new-${i}`} className="relative aspect-square group">
-                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-[#00598a]" />
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
                                         <button
                                             type="button"
                                             onClick={() => removeNewImg(i)}
@@ -664,13 +679,12 @@ const IndustrialForm: React.FC = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
-                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting…</>
-                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                : <><MapPin className="w-4 h-4" /> Auto Detect</>
                             }
                         </button>
                     }
@@ -743,9 +757,9 @@ const IndustrialForm: React.FC = () => {
 
                     {/* GPS tip */}
                     {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3.5" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-                            <p className="text-sm" style={{ color: '#7a4f00' }}>
-                                📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
+                        <div className="rounded-xl p-3.5 bg-amber-50 border border-amber-200">
+                            <p className="text-sm text-amber-800">
+                                📍 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -764,41 +778,32 @@ const IndustrialForm: React.FC = () => {
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8 justify-end">
-                    <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-                            bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all text-base
-                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg text-base
-                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                            ${loading || !!successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg text-base ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                        style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                </svg>
-                                {isEditMode ? 'Updating…' : 'Creating…'}
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
-                        ) : successMessage
-                            ? '✓ Done'
-                            : isEditMode ? 'Update Service' : 'Create Service'
-                        }
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Create Service'
+                        )}
+                    </button>
+                    <button
+                        onClick={() => window.history.back()}
+                        type="button"
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all text-base ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
                     </button>
                 </div>
 

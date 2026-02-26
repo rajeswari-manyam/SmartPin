@@ -12,6 +12,8 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin, Plus, ChevronDown } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";       // ← added
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";   // ← added
 
 const BRAND = '#00598a';
 
@@ -19,16 +21,23 @@ const BRAND = '#00598a';
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Service', 'Fixed Rate'];
 
 // ── Pull agriculture subcategories from JSON ─────────────────────────────────
-const getAgricultureSubcategories = (): string[] => {
+const getAgricultureSubcategories = (): { name: string }[] => {
     const agricultureCategory = subcategoriesData.subcategories.find(
         (cat: any) => cat.categoryId === 19
     );
     return agricultureCategory
-        ? agricultureCategory.items.map((item: any) => item.name)
-        : ['Tractor Service', 'Water Pump Service', 'Fertilizer Dealer', 'Seed Dealer', 'Farming Tools', 'Veterinary Services'];
+        ? agricultureCategory.items.map((item: any) => ({ name: item.name }))
+        : [
+            { name: 'Tractor Service' },
+            { name: 'Water Pump Service' },
+            { name: 'Fertilizer Dealer' },
+            { name: 'Seed Dealer' },
+            { name: 'Farming Tools' },
+            { name: 'Veterinary Services' },
+          ];
 };
 
-const AGRICULTURE_CATEGORIES = getAgricultureSubcategories();
+const AGRICULTURE_SUBCATEGORIES = getAgricultureSubcategories();
 
 // ============================================================================
 // SHARED INPUT CLASSES
@@ -102,7 +111,7 @@ const AgricultureForm: React.FC = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
 
-    const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_CATEGORIES[0] || 'Tractor Service';
+    const defaultCategory = getSubcategoryFromUrl() || AGRICULTURE_SUBCATEGORIES[0]?.name || 'Tractor Service';
     const { setAccountType } = useAccount();
 
     const [formData, setFormData] = useState({
@@ -227,13 +236,6 @@ const AgricultureForm: React.FC = () => {
         setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(prev => prev.filter((_, idx) => idx !== i));
-        setImagePreviews(prev => prev.filter((_, idx) => idx !== i));
-    };
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages(prev => prev.filter((_, idx) => idx !== i));
-
     // ── geolocation ───────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true);
@@ -292,7 +294,6 @@ const AgricultureForm: React.FC = () => {
         setError('');
         setSuccessMessage('');
 
-        // Simple validation
         if (!formData.serviceName.trim()) { setError('Service name is required.'); return; }
         if (!formData.phone.trim()) { setError('Phone number is required.'); return; }
         if (!formData.description.trim()) { setError('Description is required.'); return; }
@@ -379,6 +380,12 @@ const AgricultureForm: React.FC = () => {
 
     const totalImages = selectedImages.length + existingImages.length;
 
+    // ── IconSelect options: map subcategory names → { name, icon } ────────────
+    const subcategoryOptions = AGRICULTURE_SUBCATEGORIES.map(s => ({
+        name: s.name,
+        icon: SUBCATEGORY_ICONS[s.name],   // resolved from the shared icon map
+    }));
+
     // ============================================================================
     // RENDER
     // ============================================================================
@@ -387,7 +394,7 @@ const AgricultureForm: React.FC = () => {
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-3xl mx-auto flex items-center gap-3">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button onClick={handleCancel} className="p-2 rounded-full hover:bg-gray-100 transition">
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -405,7 +412,7 @@ const AgricultureForm: React.FC = () => {
             </div>
 
             {/* ── Content ── */}
-            <div className="max-w-3xl mx-auto px-4 py-5 space-y-4">
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
@@ -420,58 +427,73 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* 1. Service Name & Category - Two columns */}
+                {/* 1. Service Name & Category */}
                 <Card>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Service Name</FieldLabel>
-                            <input type="text" name="serviceName" value={formData.serviceName}
-                                onChange={handleInputChange} placeholder="e.g. Krishna Tractor Service" className={inputCls} />
+                            <input
+                                type="text"
+                                name="serviceName"
+                                value={formData.serviceName}
+                                onChange={handleInputChange}
+                                placeholder="e.g. Krishna Tractor Service"
+                                className={inputCls}
+                                disabled={loading}
+                            />
                         </div>
                         <div>
+                            {/* ── IconSelect replaces the plain <select> ── */}
                             <FieldLabel required>Service Category</FieldLabel>
-                            <div className="relative">
-                                <select name="subCategory" value={formData.subCategory}
-                                    onChange={handleInputChange} className={inputCls + ' appearance-none pr-10'}>
-                                    {AGRICULTURE_CATEGORIES.map(t => <option key={t} value={t}>{t}</option>)}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            </div>
+                            <IconSelect
+                                label="Service Category"
+                                value={formData.subCategory}
+                                placeholder="Select subcategory"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subCategory: val }))
+                                }
+                                disabled={loading}
+                            />
                         </div>
                     </div>
                 </Card>
 
-                {/* 2. Contact Information - Two columns */}
+                {/* 2. Contact Information */}
                 <Card>
                     <CardTitle title="Contact Information" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Phone</FieldLabel>
                             <input type="tel" name="phone" value={formData.phone}
-                                onChange={handleInputChange} placeholder="Enter phone number" className={inputCls} />
+                                onChange={handleInputChange} placeholder="Enter phone number"
+                                className={inputCls} disabled={loading} />
                         </div>
                         <div>
                             <FieldLabel>Alternate Phone (Optional)</FieldLabel>
-                            <input type="tel" name="altPhone" 
+                            <input type="tel" name="altPhone"
                                 placeholder="Enter alternate phone" className={inputCls} disabled />
                         </div>
                     </div>
                 </Card>
 
-                {/* 3. Pricing - Two columns */}
+                {/* 3. Pricing */}
                 <Card>
                     <CardTitle title="Pricing Details" />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange} placeholder="Amount" min="1" step="0.01" className={inputCls} />
+                                onChange={handleInputChange} placeholder="Amount" min="1" step="0.01"
+                                className={inputCls} disabled={loading} />
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <div className="relative">
                                 <select name="chargeType" value={formData.chargeType}
-                                    onChange={handleInputChange} className={inputCls + ' appearance-none pr-10'}>
+                                    onChange={handleInputChange}
+                                    className={inputCls + ' appearance-none pr-10'}
+                                    disabled={loading}>
                                     {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                                 </select>
                                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
@@ -480,20 +502,20 @@ const AgricultureForm: React.FC = () => {
                     </div>
                 </Card>
 
-                {/* 4. Description - Full width */}
+                {/* 4. Description */}
                 <Card>
                     <FieldLabel required>Description</FieldLabel>
                     <textarea name="description" value={formData.description} onChange={handleInputChange}
                         rows={4} placeholder="Describe your agriculture service, equipment, or products..."
-                        className={inputCls + ' resize-none'} />
+                        className={inputCls + ' resize-none'} disabled={loading} />
                 </Card>
 
-                {/* 5. Location - Two columns */}
+                {/* 5. Location */}
                 <Card>
                     <CardTitle
                         title="Location Details"
                         action={
-                            <button type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                            <button type="button" onClick={getCurrentLocation} disabled={locationLoading || loading}
                                 className={`flex items-center gap-1.5 px-4 py-2 rounded-lg ${typography.misc.badge} text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
                                 style={{ backgroundColor: BRAND }}>
                                 {locationLoading
@@ -508,23 +530,26 @@ const AgricultureForm: React.FC = () => {
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
-
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="Area name" className={inputCls} />
+                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
+                                placeholder="Area name" className={inputCls} disabled={loading} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="City" className={inputCls} />
+                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
+                                placeholder="City" className={inputCls} disabled={loading} />
                         </div>
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="State" className={inputCls} />
+                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
+                                placeholder="State" className={inputCls} disabled={loading} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pinCode" value={formData.pinCode} onChange={handleInputChange} placeholder="PIN code" className={inputCls} />
+                            <input type="text" name="pinCode" value={formData.pinCode} onChange={handleInputChange}
+                                placeholder="PIN code" className={inputCls} disabled={loading} />
                         </div>
                     </div>
 
@@ -544,12 +569,12 @@ const AgricultureForm: React.FC = () => {
                     )}
                 </Card>
 
-                {/* 6. Photos - Full width */}
+                {/* 6. Photos */}
                 <Card>
                     <CardTitle title="Portfolio Photos (Optional)" />
                     <label className={`block ${totalImages >= 5 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
                         <input type="file" accept="image/*" multiple onChange={handleImageSelect}
-                            className="hidden" disabled={totalImages >= 5} />
+                            className="hidden" disabled={totalImages >= 5 || loading} />
                         <div className="border-2 border-dashed rounded-xl p-8 text-center"
                             style={{ borderColor: totalImages >= 5 ? '#d1d5db' : '#c7d9e6' }}>
                             <div className="flex flex-col items-center gap-3">

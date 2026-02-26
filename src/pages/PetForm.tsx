@@ -5,6 +5,11 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
+
+const BRAND = '#00598a';
+const CATEGORY_NAME = 'Pet Services';
 
 // ── Pull pet service subcategories from JSON (categoryId 13) ────────────────
 const getPetServiceSubcategories = () => {
@@ -19,7 +24,13 @@ const priceTypeOptions = ['Per Service', 'Per Hour', 'Per Day', 'Per Month'];
 // ============================================================================
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
+    `focus:outline-none focus:border-[#00598a] focus:ring-1 focus:ring-[#00598a] ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `${typography.form.input} bg-white`;
+
+const inputError =
+    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
+    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
 
@@ -43,7 +54,7 @@ const SectionCard: React.FC<{
     children: React.ReactNode;
     action?: React.ReactNode;
 }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
             <div className="flex items-center justify-between mb-1">
                 <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -52,10 +63,6 @@ const SectionCard: React.FC<{
         )}
         {children}
     </div>
-);
-
-const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 // ============================================================================
@@ -90,6 +97,22 @@ const resolveUserId = (): string => {
 };
 
 // ============================================================================
+// FIELD ERRORS
+// ============================================================================
+interface FieldErrors {
+    serviceName?: string;
+    phone?: string;
+    email?: string;
+    price?: string;
+    description?: string;
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    location?: string;
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 const PetForm = () => {
@@ -111,8 +134,13 @@ const PetForm = () => {
     const [successMessage, setSuccessMessage] = useState('');
     const [locationWarning, setLocationWarning] = useState('');
     const [locationLoading, setLocationLoading] = useState(false);
+    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     const petCategories = getPetServiceSubcategories();
+    const subcategoryOptions = petCategories.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
     const defaultCategory = getSubcategoryFromUrl() || petCategories[0] || 'Pet Shops';
 
     const [formData, setFormData] = useState({
@@ -172,7 +200,6 @@ const PetForm = () => {
                 }));
                 if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                console.error(err);
                 setError('Failed to load service data');
             } finally { setLoadingData(false); }
         };
@@ -196,6 +223,9 @@ const PetForm = () => {
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name as keyof FieldErrors]) {
+            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
     };
 
     // ── Image helpers ────────────────────────────────────────────────────────
@@ -232,7 +262,10 @@ const PetForm = () => {
 
     // ── GPS location ─────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
-        setLocationLoading(true); setError(''); setLocationWarning('');
+        setLocationLoading(true);
+        setError('');
+        setLocationWarning('');
+        setFieldErrors(prev => ({ ...prev, location: undefined }));
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async (pos) => {
@@ -264,34 +297,54 @@ const PetForm = () => {
 
     // ── Submit ───────────────────────────────────────────────────────────────
     const handleSubmit = async () => {
-        setLoading(true); setError(''); setSuccessMessage('');
+        setError('');
+        setSuccessMessage('');
+
+        const errors: FieldErrors = {};
+        if (!formData.serviceName.trim()) errors.serviceName = 'Service name is required';
+        if (!formData.phone.trim()) {
+            errors.phone = 'Phone number is required';
+        } else if (!/^[6-9]\d{9}$/.test(formData.phone.trim())) {
+            errors.phone = 'Enter a valid 10-digit Indian mobile number';
+        }
+        if (!formData.email.trim()) errors.email = 'Email is required';
+        if (!formData.price.trim()) errors.price = 'Price is required';
+        if (!formData.description.trim()) errors.description = 'Description is required';
+        if (!formData.area.trim()) errors.area = 'Area is required';
+        if (!formData.city.trim()) errors.city = 'City is required';
+        if (!formData.state.trim()) errors.state = 'State is required';
+        if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
+        if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
+
+        if (Object.keys(errors).length > 0) {
+            setFieldErrors(errors);
+            setError('Please fix the errors below before submitting');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setLoading(true);
         try {
             let uid = formData.userId;
             if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
             if (!uid) throw new Error('User not logged in. Please log out and log back in.');
 
-            if (!formData.serviceName || !formData.phone || !formData.email)
-                throw new Error('Please fill in all required fields (Service Name, Phone, Email)');
-            if (!formData.price) throw new Error('Please enter a price');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location');
-
             const fd = new FormData();
             fd.append('userId', uid);
-            fd.append('serviceName', formData.serviceName);
+            fd.append('serviceName', formData.serviceName.trim());
             fd.append('category', formData.category);
-            fd.append('email', formData.email);
-            fd.append('phone', formData.phone);
-            fd.append('description', formData.description);
+            fd.append('email', formData.email.trim());
+            fd.append('phone', formData.phone.trim());
+            fd.append('description', formData.description.trim());
             fd.append('experience', formData.experience);
             fd.append('price', formData.price);
             fd.append('priceType', formData.priceType);
             fd.append('availableFrom', formData.availableFrom);
             fd.append('availableTo', formData.availableTo);
-            fd.append('area', formData.area);
-            fd.append('city', formData.city);
-            fd.append('state', formData.state);
-            fd.append('pincode', formData.pincode);
+            fd.append('area', formData.area.trim());
+            fd.append('city', formData.city.trim());
+            fd.append('state', formData.state.trim());
+            fd.append('pincode', formData.pincode.trim());
             fd.append('latitude', formData.latitude);
             fd.append('longitude', formData.longitude);
 
@@ -314,18 +367,16 @@ const PetForm = () => {
                 navigate("/my-business");
             }, 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form');
         } finally { setLoading(false); }
     };
 
     const totalImages = selectedImages.length + existingImages.length;
-    const maxImagesReached = totalImages >= 5;
 
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
@@ -338,12 +389,9 @@ const PetForm = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-                <div className="max-w-6xl mx-auto flex items-center gap-3">
-                    <button
-                        onClick={() => window.history.back()}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
-                    >
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
+                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
@@ -359,33 +407,32 @@ const PetForm = () => {
                 </div>
             </div>
 
-            {/* ── Wide container ── */}
-            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
-                {/* Alerts */}
+                {/* Global error banner */}
                 {error && (
-                    <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                         <div className="flex items-start gap-2">
                             <span className="text-red-600 mt-0.5">⚠️</span>
-                            <div className="flex-1">
-                                <p className="font-semibold text-red-800 mb-1">Error</p>
-                                <p className="text-red-700">{error}</p>
+                            <div>
+                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
+                                <p className={`${typography.form.error} text-red-700`}>{error}</p>
                             </div>
                         </div>
                     </div>
                 )}
+
+                {/* Success banner */}
                 {successMessage && (
-                    <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-                        <div className="flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">✓</span>
-                            <p>{successMessage}</p>
-                        </div>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+                        <span className="text-green-600 text-lg">✓</span>
+                        <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                     </div>
                 )}
 
-                {/* ── 1. Basic Information ── */}
-                <SectionCard title="Basic Information">
-                    <TwoCol>
+                {/* ─── 1. SERVICE NAME + CATEGORY ──────────────────────────── */}
+                <SectionCard>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Service / Business Name</FieldLabel>
                             <input
@@ -394,27 +441,36 @@ const PetForm = () => {
                                 value={formData.serviceName}
                                 onChange={handleInputChange}
                                 placeholder="e.g., Happy Paws Dog Walking"
-                                className={inputBase}
+                                className={fieldErrors.serviceName ? inputError : inputBase}
                             />
+                            {fieldErrors.serviceName && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.serviceName}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Category</FieldLabel>
-                            <select
-                                name="category"
+                            <IconSelect
+                                label=""
                                 value={formData.category}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {petCategories.map((cat: string) => <option key={cat} value={cat}>{cat}</option>)}
-                            </select>
+                                placeholder="Select category"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, category: val }))
+                                }
+                                disabled={loading}
+                            />
+                            <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                            </p>
                         </div>
-                    </TwoCol>
+                    </div>
                 </SectionCard>
 
-                {/* ── 2. Contact Information ── */}
-                <SectionCard title="Contact Information">
-                    <TwoCol>
+                {/* ─── 2. CONTACT & PRICING ─────────────────────────────────── */}
+                <SectionCard title="Contact & Pricing">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Phone</FieldLabel>
                             <input
@@ -423,8 +479,14 @@ const PetForm = () => {
                                 value={formData.phone}
                                 onChange={handleInputChange}
                                 placeholder="Enter phone number"
-                                className={inputBase}
+                                maxLength={10}
+                                className={fieldErrors.phone ? inputError : inputBase}
                             />
+                            {fieldErrors.phone && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.phone}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Email</FieldLabel>
@@ -434,15 +496,16 @@ const PetForm = () => {
                                 value={formData.email}
                                 onChange={handleInputChange}
                                 placeholder="Enter email address"
-                                className={inputBase}
+                                className={fieldErrors.email ? inputError : inputBase}
                             />
+                            {fieldErrors.email && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.email}
+                                </p>
+                            )}
                         </div>
-                    </TwoCol>
-                </SectionCard>
-
-                {/* ── 3. Service Details ── */}
-                <SectionCard title="Service Details">
-                    <TwoCol>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Price (₹)</FieldLabel>
                             <input
@@ -451,8 +514,14 @@ const PetForm = () => {
                                 value={formData.price}
                                 onChange={handleInputChange}
                                 placeholder="500"
-                                className={inputBase}
+                                min="0"
+                                className={fieldErrors.price ? inputError : inputBase}
                             />
+                            {fieldErrors.price && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.price}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Price Type</FieldLabel>
@@ -466,8 +535,8 @@ const PetForm = () => {
                                 {priceTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
                         </div>
-                    </TwoCol>
-                    <TwoCol>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
                             <input
@@ -480,9 +549,9 @@ const PetForm = () => {
                                 className={inputBase}
                             />
                         </div>
-                        <div />
-                    </TwoCol>
-                    <TwoCol>
+                        <div className="hidden md:block" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel>Available From</FieldLabel>
                             <input
@@ -505,28 +574,30 @@ const PetForm = () => {
                                 className={inputBase}
                             />
                         </div>
-                    </TwoCol>
+                    </div>
                 </SectionCard>
 
-                {/* ── 4. Description ── */}
+                {/* ─── 3. DESCRIPTION ───────────────────────────────────────── */}
                 <SectionCard title="Service Description">
-                    <TwoCol>
-                        <div>
-                            <FieldLabel>Description</FieldLabel>
-                            <textarea
-                                name="description"
-                                value={formData.description}
-                                onChange={handleInputChange}
-                                rows={4}
-                                placeholder="Describe your pet service, expertise, and what makes you special..."
-                                className={inputBase + ' resize-none'}
-                            />
-                        </div>
-                        <div />
-                    </TwoCol>
+                    <div>
+                        <FieldLabel required>Description</FieldLabel>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
+                            placeholder="Describe your pet service, expertise, and what makes you special..."
+                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
+                        />
+                        {fieldErrors.description && (
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.description}
+                            </p>
+                        )}
+                    </div>
                 </SectionCard>
 
-                {/* ── 5. Location ── */}
+                {/* ─── 4. LOCATION ──────────────────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -534,15 +605,12 @@ const PetForm = () => {
                             type="button"
                             onClick={getCurrentLocation}
                             disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
-                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ backgroundColor: '#00598a' }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                            style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                : <><MapPin className="w-4 h-4" /> Auto Detect</>
                             }
                         </button>
                     }
@@ -555,44 +623,89 @@ const PetForm = () => {
                     )}
 
                     {/* Area + City */}
-                    <TwoCol>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area} onChange={handleInputChange}
-                                placeholder="Area name" className={inputBase} />
+                            <input
+                                type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="Area name"
+                                className={fieldErrors.area ? inputError : inputBase}
+                            />
+                            {fieldErrors.area && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.area}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city} onChange={handleInputChange}
-                                placeholder="City" className={inputBase} />
+                            <input
+                                type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="City"
+                                className={fieldErrors.city ? inputError : inputBase}
+                            />
+                            {fieldErrors.city && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.city}
+                                </p>
+                            )}
                         </div>
-                    </TwoCol>
+                    </div>
 
-                    {/* State + PIN */}
-                    <TwoCol>
+                    {/* State + PIN Code */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state} onChange={handleInputChange}
-                                placeholder="State" className={inputBase} />
+                            <input
+                                type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="State"
+                                className={fieldErrors.state ? inputError : inputBase}
+                            />
+                            {fieldErrors.state && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.state}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange}
-                                placeholder="PIN code" className={inputBase} />
+                            <input
+                                type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="PIN code" maxLength={6}
+                                className={fieldErrors.pincode ? inputError : inputBase}
+                            />
+                            {fieldErrors.pincode && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.pincode}
+                                </p>
+                            )}
                         </div>
-                    </TwoCol>
-
-                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-                        <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
-                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
-                        </p>
                     </div>
 
+                    {/* Location error */}
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-sm text-red-700 flex items-center gap-1.5">
+                                <span>⚠️</span> {fieldErrors.location}
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Tip */}
+                    {!formData.latitude && !formData.longitude && (
+                        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+                            <p className={`${typography.body.small} text-amber-800`}>
+                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Confirmed */}
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
                                 <span className="font-semibold">✓ Location set: </span>
-                                <span className="font-mono text-xs">
+                                <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
@@ -600,121 +713,96 @@ const PetForm = () => {
                     )}
                 </SectionCard>
 
-                {/* ── 6. Photos ── */}
-                <SectionCard title={`Service Photos (${totalImages}/5)`}>
-                    <TwoCol>
-                        {/* Upload zone */}
-                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                disabled={maxImagesReached}
-                            />
-                            <div
-                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center`}
-                                style={{
-                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
-                                    minHeight: '180px',
-                                }}
-                            >
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f2f8' }}>
-                                        <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
-                                    </div>
-                                    <div>
-                                        <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                            {maxImagesReached
-                                                ? 'Maximum 5 images reached'
-                                                : `Add Photos (${5 - totalImages} slots left)`}
-                                        </p>
-                                        <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                            Upload photos of your pet service
-                                        </p>
-                                    </div>
+                {/* ─── 5. PHOTOS ────────────────────────────────────────────── */}
+                <SectionCard title="Service Photos (Optional)">
+                    <label className="cursor-pointer block">
+                        <input
+                            type="file" accept="image/*" multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            disabled={totalImages >= 5}
+                        />
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'hover:opacity-90 cursor-pointer'}`}
+                            style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
+                        >
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                </div>
+                                <div>
+                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
+                                        {totalImages >= 5 ? 'Maximum 5 images reached' : 'Tap to upload service photos'}
+                                    </p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · 5 MB each</p>
                                 </div>
                             </div>
-                        </label>
+                        </div>
+                    </label>
 
-                        {/* Previews */}
-                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
-                            <div className="grid grid-cols-3 gap-3">
-                                {existingImages.map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
-                                        <img src={url} alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                        <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
-                                            style={{ backgroundColor: '#00598a' }}>
-                                            Saved
-                                        </span>
-                                    </div>
-                                ))}
-                                {imagePreviews.map((preview, i) => (
-                                    <div key={`new-${i}`} className="relative aspect-square group">
-                                        <img src={preview} alt={`Preview ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2"
-                                            style={{ borderColor: '#00598a' }} />
-                                        <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                            New
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
-                                style={{ minHeight: '180px' }}>
-                                <p className={`${typography.body.small} text-gray-400`}>Uploaded images will appear here</p>
-                            </div>
-                        )}
-                    </TwoCol>
+                    {(existingImages.length > 0 || imagePreviews.length > 0) && (
+                        <div className="grid grid-cols-3 gap-3 mt-4">
+                            {existingImages.map((url, i) => (
+                                <div key={`ex-${i}`} className="relative aspect-square group">
+                                    <img src={url} alt={`Saved ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: BRAND }}>
+                                        Saved
+                                    </span>
+                                </div>
+                            ))}
+                            {imagePreviews.map((preview, i) => (
+                                <div key={`new-${i}`} className="relative aspect-square group">
+                                    <img src={preview} alt={`Preview ${i + 1}`}
+                                        className="w-full h-full object-cover rounded-xl border-2"
+                                        style={{ borderColor: BRAND }} />
+                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                        <X className="w-4 h-4" />
+                                    </button>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8 justify-end">
-                    <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-                            bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all text-base
-                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
-                    </button>
+                <div className="flex gap-4 pt-2 pb-8">
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg text-base
-                            ${loading || !!successMessage ? 'cursor-not-allowed opacity-70' : ''}`}
-                        style={{ backgroundColor: '#00598a' }}
-                        onMouseEnter={e => { if (!loading && !successMessage) (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'; }}
-                        onMouseLeave={e => { if (!loading && !successMessage) (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'; }}
+                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+                        style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
                                 <span className="animate-spin">⏳</span>
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
-                        ) : successMessage
-                            ? '✓ Done'
-                            : isEditMode ? 'Update Service' : 'Add Service'
-                        }
+                        ) : successMessage ? (
+                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                        ) : (
+                            isEditMode ? 'Update Service' : 'Add Service'
+                        )}
+                    </button>
+                    <button
+                        onClick={() => window.history.back()}
+                        type="button"
+                        disabled={loading}
+                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
                     </button>
                 </div>
 

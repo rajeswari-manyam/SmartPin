@@ -10,6 +10,10 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
+
+const CATEGORY_NAME = 'Shopping & Retail';
 
 const getShoppingRetailSubcategories = () => {
     const shoppingCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 7);
@@ -22,15 +26,6 @@ const inputBase =
     `focus:outline-none focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
     `placeholder-gray-400 transition-all duration-200 ` +
     `${typography.form.input} bg-white`;
-
-// Dropdown chevron
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
-};
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
@@ -93,7 +88,13 @@ const ShoppingForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState('');
     const { setAccountType } = useAccount();
 
+    // ── Build subcategory options with icons (same pattern as ArtForm) ────────
     const storeTypes = getShoppingRetailSubcategories();
+    const subcategoryOptions = storeTypes.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+
     const defaultType = getSubcategoryFromUrl() || storeTypes[0] || 'Supermarkets';
 
     const [formData, setFormData] = useState({
@@ -321,7 +322,7 @@ const ShoppingForm: React.FC = () => {
     }
 
     // ============================================================================
-    // RENDER — Wide layout, 2 fields per row (matches CourierForm)
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -388,15 +389,20 @@ const ShoppingForm: React.FC = () => {
                         </div>
                         <div>
                             <FieldLabel required>Store Type</FieldLabel>
-                            <select
-                                name="storeType"
+                            {/* ── IconSelect replaces plain <select> ── */}
+                            <IconSelect
+                                label=""
                                 value={formData.storeType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none'}
-                                style={selectStyle}
-                            >
-                                {storeTypes.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                                placeholder="Select store type"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, storeType: val }))
+                                }
+                                disabled={loading}
+                            />
+                            <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                            </p>
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -429,7 +435,7 @@ const ShoppingForm: React.FC = () => {
                     </TwoCol>
                 </SectionCard>
 
-                {/* ─── ROW 3: DESCRIPTION (full width since single field) ─── */}
+                {/* ─── ROW 3: DESCRIPTION ─── */}
                 <SectionCard title="Store Description">
                     <textarea
                         name="description"

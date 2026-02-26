@@ -5,6 +5,8 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 const chargeTypeOptions = [
     { value: 'per event', label: 'Per Event' },
@@ -12,6 +14,8 @@ const chargeTypeOptions = [
     { value: 'per hour', label: 'Per Hour' },
     { value: 'custom', label: 'Custom' }
 ];
+
+const CATEGORY_NAME = 'Wedding Services';
 
 const getWeddingSubcategories = () => {
     const weddingCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 22);
@@ -37,6 +41,8 @@ const resolveUserId = (): string => {
 };
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
+const BRAND = '#00598a';
+
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
     `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
@@ -112,7 +118,13 @@ const WeddingForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState('');
     const { setAccountType } = useAccount();
 
+    // ── Build icon-aware options for IconSelect (same pattern as ArtForm) ────
     const weddingCategories = getWeddingSubcategories();
+    const subcategoryOptions = weddingCategories.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+
     const defaultCategory = getSubcategoryFromUrl() || weddingCategories[0] || 'Wedding Planners';
 
     const [formData, setFormData] = useState({
@@ -336,14 +348,14 @@ const WeddingForm: React.FC = () => {
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: '#00598a' }} />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
     );
 
     // ============================================================================
-    // RENDER — Wide layout, 2 fields per row
+    // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
@@ -408,19 +420,23 @@ const WeddingForm: React.FC = () => {
                                 className={inputBase}
                             />
                         </div>
+
+                        {/* ── IconSelect replaces plain <select> ── */}
                         <div>
                             <FieldLabel required>Service Category</FieldLabel>
-                            <select
-                                name="subCategory"
+                            <IconSelect
+                                label=""
                                 value={formData.subCategory}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {weddingCategories.map((t: string) => (
-                                    <option key={t} value={t}>{t}</option>
-                                ))}
-                            </select>
+                                placeholder="Select service category"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subCategory: val }))
+                                }
+                                disabled={loading}
+                            />
+                            <p className={`${typography.body.small} text-gray-400 mt-1`}>
+                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+                            </p>
                         </div>
                     </TwoCol>
                 </SectionCard>
@@ -602,14 +618,14 @@ const WeddingForm: React.FC = () => {
                             <div
                                 className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                                 style={{
-                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
                                     backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
                                     minHeight: '180px',
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3">
                                     <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#d0e8f2' }}>
-                                        <Upload className="w-8 h-8" style={{ color: '#00598a' }} />
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                     </div>
                                     <div>
                                         <p className={`${typography.form.input} font-medium text-gray-700`}>
@@ -649,7 +665,7 @@ const WeddingForm: React.FC = () => {
                                             >
                                                 <X className="w-4 h-4" />
                                             </button>
-                                            <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: '#00598a' }}>
+                                            <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
                                                 Saved
                                             </span>
                                         </div>
@@ -662,7 +678,7 @@ const WeddingForm: React.FC = () => {
                                             src={imagePreviews[i]}
                                             alt={`New ${i + 1}`}
                                             className="w-full h-full object-cover rounded-xl border-2"
-                                            style={{ borderColor: '#00598a' }}
+                                            style={{ borderColor: BRAND }}
                                         />
                                         <button
                                             type="button"

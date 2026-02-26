@@ -5,6 +5,8 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 // ── Charge type options ──────────────────────────────────────────────────────
 const chargeTypeOptions = ['Per Hour', 'Per Day', 'Per Project', 'Fixed Rate', 'Custom'];
@@ -13,8 +15,8 @@ const CATEGORY_NAME = 'Creative & Art Services';
 
 // ── Pull creative art subcategories from JSON (categoryId 21) ───────────────
 const getCreativeArtSubcategories = () => {
-    const artCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 21);
-    return artCategory ? artCategory.items.map(item => item.name) : [
+    const artCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 21);
+    return artCategory ? artCategory.items.map((item: any) => item.name) : [
         'Craft Training', 'Caricature Artists', 'Painting Artists', 'Wall Murals', 'Handmade Gifts'
     ];
 };
@@ -112,7 +114,13 @@ const ArtForm: React.FC = () => {
     const [locationWarning, setLocationWarning] = useState('');
     const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
+    // ── artCategories and subcategoryOptions declared together ───────────────
     const artCategories = getCreativeArtSubcategories();
+    const subcategoryOptions = artCategories.map((name: string) => ({
+        name,
+        icon: SUBCATEGORY_ICONS[name],
+    }));
+
     const defaultCategory = getSubcategoryFromUrl() || artCategories[0] || 'Craft Training';
     const { setAccountType } = useAccount();
 
@@ -264,7 +272,6 @@ const ArtForm: React.FC = () => {
     const handleSubmit = async () => {
         setError(''); setSuccessMessage('');
 
-        // Validate
         const errors: FieldErrors = {};
         if (!formData.name.trim()) errors.name = 'Service name is required';
         if (!formData.phone.trim()) {
@@ -333,10 +340,11 @@ const ArtForm: React.FC = () => {
         }
     };
 
+    // ── Loading screen ────────────────────────────────────────────────────────
     if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4" />
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
                 <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
             </div>
         </div>
@@ -344,12 +352,15 @@ const ArtForm: React.FC = () => {
 
     const totalImages = selectedImages.length + existingImages.length;
 
+    // ============================================================================
+    // RENDER
+    // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-2xl mx-auto flex items-center gap-3">
+                <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -366,7 +377,7 @@ const ArtForm: React.FC = () => {
                 </div>
             </div>
 
-            <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
                 {/* Global error banner */}
                 {error && (
@@ -389,31 +400,40 @@ const ArtForm: React.FC = () => {
                     </div>
                 )}
 
-                {/* ─── 1. SERVICE NAME + CATEGORY (two columns) ────────────── */}
+                {/* ─── 1. SERVICE NAME + CATEGORY ──────────────────────────── */}
                 <SectionCard>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Service Name */}
                         <div>
                             <FieldLabel required>Artist / Service Name</FieldLabel>
                             <input
-                                type="text" name="name" value={formData.name}
+                                type="text"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleInputChange}
                                 placeholder="e.g. Studio Artworks, Creative Designs"
                                 className={fieldErrors.name ? inputError : inputBase}
                             />
                             {fieldErrors.name && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.name}</p>
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.name}
+                                </p>
                             )}
                         </div>
+
+                        {/* Category — IconSelect */}
                         <div>
                             <FieldLabel required>Category</FieldLabel>
-                            <select
-                                name="subCategory" value={formData.subCategory}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {artCategories.map(t => <option key={t} value={t}>{t}</option>)}
-                            </select>
+                            <IconSelect
+                                label=""
+                                value={formData.subCategory}
+                                placeholder="Select subcategory"
+                                options={subcategoryOptions}
+                                onChange={(val) =>
+                                    setFormData(prev => ({ ...prev, subCategory: val }))
+                                }
+                                disabled={loading}
+                            />
                             <p className={`${typography.body.xs} text-gray-400 mt-1`}>
                                 Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
                             </p>
@@ -421,41 +441,52 @@ const ArtForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 2. CONTACT + PRICING (two columns) ──────────────────── */}
+                {/* ─── 2. CONTACT + PRICING ────────────────────────────────── */}
                 <SectionCard title="Contact & Pricing">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Phone</FieldLabel>
                             <input
-                                type="tel" name="phone" value={formData.phone}
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
                                 onChange={handleInputChange}
                                 placeholder="Enter phone number"
                                 maxLength={10}
                                 className={fieldErrors.phone ? inputError : inputBase}
                             />
                             {fieldErrors.phone && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.phone}</p>
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.phone}
+                                </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
-                                type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange} placeholder="Amount" min="0"
+                                type="number"
+                                name="serviceCharge"
+                                value={formData.serviceCharge}
+                                onChange={handleInputChange}
+                                placeholder="Amount"
+                                min="0"
                                 className={fieldErrors.serviceCharge ? inputError : inputBase}
                             />
                             {fieldErrors.serviceCharge && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.serviceCharge}</p>
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.serviceCharge}
+                                </p>
                             )}
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Empty left column to align Charge Type under Service Charge */}
+                        {/* Empty left column — aligns Charge Type under Service Charge */}
                         <div className="hidden md:block" />
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <select
-                                name="chargeType" value={formData.chargeType}
+                                name="chargeType"
+                                value={formData.chargeType}
                                 onChange={handleInputChange}
                                 className={inputBase + ' appearance-none bg-white'}
                                 style={selectStyle}
@@ -466,35 +497,41 @@ const ArtForm: React.FC = () => {
                     </div>
                 </SectionCard>
 
-                {/* ─── 3. DESCRIPTION (full width) ─────────────────────────── */}
+                {/* ─── 3. DESCRIPTION ──────────────────────────────────────── */}
                 <SectionCard title="Service Details">
                     <div>
                         <FieldLabel required>Description</FieldLabel>
                         <textarea
-                            name="description" value={formData.description}
-                            onChange={handleInputChange} rows={4}
+                            name="description"
+                            value={formData.description}
+                            onChange={handleInputChange}
+                            rows={4}
                             placeholder="Describe your art services, specialties, and what makes your work unique..."
                             className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
                         {fieldErrors.description && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.description}</p>
+                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                <span>⚠️</span> {fieldErrors.description}
+                            </p>
                         )}
                     </div>
                 </SectionCard>
 
-                {/* ─── 4. LOCATION (two columns) ───────────────────────────── */}
+                {/* ─── 4. LOCATION ─────────────────────────────────────────── */}
                 <SectionCard
                     title="Location Details"
                     action={
                         <button
                             type="button"
-                            onClick={getCurrentLocation} disabled={locationLoading}
-                            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60`}
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
                             style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
                                 ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
-                                : <><MapPin className="w-4 h-4" /> Auto Detect</>}
+                                : <><MapPin className="w-4 h-4" /> Auto Detect</>
+                            }
                         </button>
                     }
                 >
@@ -509,17 +546,29 @@ const ArtForm: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Area</FieldLabel>
-                            <input type="text" name="area" value={formData.area}
+                            <input
+                                type="text" name="area" value={formData.area}
                                 onChange={handleInputChange} placeholder="Area name"
-                                className={fieldErrors.area ? inputError : inputBase} />
-                            {fieldErrors.area && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.area}</p>}
+                                className={fieldErrors.area ? inputError : inputBase}
+                            />
+                            {fieldErrors.area && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.area}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
-                            <input type="text" name="city" value={formData.city}
+                            <input
+                                type="text" name="city" value={formData.city}
                                 onChange={handleInputChange} placeholder="City"
-                                className={fieldErrors.city ? inputError : inputBase} />
-                            {fieldErrors.city && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.city}</p>}
+                                className={fieldErrors.city ? inputError : inputBase}
+                            />
+                            {fieldErrors.city && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.city}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -527,24 +576,38 @@ const ArtForm: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>State</FieldLabel>
-                            <input type="text" name="state" value={formData.state}
+                            <input
+                                type="text" name="state" value={formData.state}
                                 onChange={handleInputChange} placeholder="State"
-                                className={fieldErrors.state ? inputError : inputBase} />
-                            {fieldErrors.state && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.state}</p>}
+                                className={fieldErrors.state ? inputError : inputBase}
+                            />
+                            {fieldErrors.state && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.state}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
-                            <input type="text" name="pincode" value={formData.pincode}
+                            <input
+                                type="text" name="pincode" value={formData.pincode}
                                 onChange={handleInputChange} placeholder="PIN code" maxLength={6}
-                                className={fieldErrors.pincode ? inputError : inputBase} />
-                            {fieldErrors.pincode && <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1"><span>⚠️</span> {fieldErrors.pincode}</p>}
+                                className={fieldErrors.pincode ? inputError : inputBase}
+                            />
+                            {fieldErrors.pincode && (
+                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+                                    <span>⚠️</span> {fieldErrors.pincode}
+                                </p>
+                            )}
                         </div>
                     </div>
 
                     {/* Location error */}
                     {fieldErrors.location && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                            <p className="text-sm text-red-700 flex items-center gap-1.5"><span>⚠️</span> {fieldErrors.location}</p>
+                            <p className="text-sm text-red-700 flex items-center gap-1.5">
+                                <span>⚠️</span> {fieldErrors.location}
+                            </p>
                         </div>
                     )}
 
@@ -573,12 +636,18 @@ const ArtForm: React.FC = () => {
                 {/* ─── 5. PORTFOLIO PHOTOS ─────────────────────────────────── */}
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
-                        <input type="file" accept="image/*" multiple onChange={handleImageSelect}
-                            className="hidden" disabled={totalImages >= 5} />
-                        <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
-                            ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                            : 'hover:opacity-90 cursor-pointer'}`}
-                            style={totalImages < 5 ? { borderColor: '#00598a', backgroundColor: '#f0f7fb' } : {}}>
+                        <input
+                            type="file" accept="image/*" multiple
+                            onChange={handleImageSelect}
+                            className="hidden"
+                            disabled={totalImages >= 5}
+                        />
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
+                                : 'hover:opacity-90 cursor-pointer'}`}
+                            style={totalImages < 5 ? { borderColor: '#00598a', backgroundColor: '#f0f7fb' } : {}}
+                        >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
                                     <Upload className="w-8 h-8" style={{ color: BRAND }} />
@@ -587,7 +656,7 @@ const ArtForm: React.FC = () => {
                                     <p className={`${typography.form.input} font-medium text-gray-700`}>
                                         {totalImages >= 5 ? 'Maximum 5 images reached' : 'Tap to upload portfolio photos'}
                                     </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images</p>
+                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · 5 MB each</p>
                                 </div>
                             </div>
                         </div>
@@ -598,21 +667,34 @@ const ArtForm: React.FC = () => {
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveExistingImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`} style={{ backgroundColor: BRAND }}>Saved</span>
+                                    <span
+                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+                                        style={{ backgroundColor: BRAND }}
+                                    >
+                                        Saved
+                                    </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleRemoveNewImage(i)}
+                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                    >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>New</span>
+                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
+                                        New
+                                    </span>
                                 </div>
                             ))}
                         </div>
@@ -622,7 +704,9 @@ const ArtForm: React.FC = () => {
                 {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
-                        onClick={handleSubmit} disabled={loading || !!successMessage} type="button"
+                        onClick={handleSubmit}
+                        disabled={loading || !!successMessage}
+                        type="button"
                         className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
                         style={{ backgroundColor: BRAND }}
                     >
@@ -638,12 +722,15 @@ const ArtForm: React.FC = () => {
                         )}
                     </button>
                     <button
-                        onClick={() => window.history.back()} type="button" disabled={loading}
+                        onClick={() => window.history.back()}
+                        type="button"
+                        disabled={loading}
                         className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         Cancel
                     </button>
                 </div>
+
             </div>
         </div>
     );

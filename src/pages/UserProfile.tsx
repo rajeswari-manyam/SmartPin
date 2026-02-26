@@ -39,9 +39,11 @@ interface FormData {
 const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
 
 /* ================= STYLES ================= */
+const BRAND = "#00598a";
+
 const inputBase =
   `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-  `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
+  `focus:outline-none focus:border-[#00598a] focus:ring-1 focus:ring-[#00598a] ` +
   `placeholder-gray-400 transition-all duration-200 ` +
   `${typography.form.input} bg-white`;
 
@@ -57,7 +59,7 @@ const SectionCard: React.FC<{
   children: React.ReactNode;
   action?: React.ReactNode;
 }> = ({ title, children, action }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
     {title && (
       <div className="flex items-center justify-between mb-1">
         <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
@@ -66,10 +68,6 @@ const SectionCard: React.FC<{
     )}
     {children}
   </div>
-);
-
-const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="grid grid-cols-2 gap-6">{children}</div>
 );
 
 /* ================= HELPERS ================= */
@@ -288,12 +286,15 @@ const PostJob: React.FC = () => {
 
   const handleCancel = () => navigate(-1);
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
   return (
     <div className="min-h-screen bg-gray-50">
 
       {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
+      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
           <button onClick={handleCancel} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -306,32 +307,30 @@ const PostJob: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
 
         {/* Alerts */}
         {error && (
-          <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
             <div className="flex items-start gap-2">
               <span className="text-red-600 mt-0.5">⚠️</span>
               <div className="flex-1">
-                <p className="font-semibold text-red-800 mb-1">Error</p>
-                <p className="text-red-700">{error}</p>
+                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
+                <p className={`${typography.form.error} text-red-700`}>{error}</p>
               </div>
             </div>
           </div>
         )}
         {successMessage && (
-          <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
-            <div className="flex items-start gap-2">
-              <span className="text-green-600 mt-0.5">✓</span>
-              <p>{successMessage}</p>
-            </div>
+          <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+            <span className="text-green-600 text-lg">✓</span>
+            <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
           </div>
         )}
 
         {/* ─── SECTION 1: Job Details ─── */}
         <SectionCard>
-          <TwoCol>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel>Job Title</FieldLabel>
               <input
@@ -349,7 +348,7 @@ const PostJob: React.FC = () => {
                     key={type} type="button"
                     onClick={() => setFormData(prev => ({ ...prev, jobType: type }))}
                     className={`flex-1 py-3 rounded-xl border-2 font-semibold transition-all duration-150 ${typography.body.base} ${formData.jobType === type
-                      ? "border-[#00598a] bg-[#e6f2f8] text-[#00598a]"
+                      ? "border-[#00598a] bg-[#e8f4fb] text-[#00598a]"
                       : "border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700"
                       }`}
                   >
@@ -358,13 +357,15 @@ const PostJob: React.FC = () => {
                 ))}
               </div>
             </div>
-          </TwoCol>
+          </div>
 
-          <TwoCol>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel required>Category</FieldLabel>
               <IconSelect
-                label="Category *" value={formData.category} placeholder="Select Category"
+                label=""
+                value={formData.category}
+                placeholder="Select Category"
                 options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
                 onChange={(val) => setFormData(prev => ({ ...prev, category: val, subcategory: "" }))}
               />
@@ -372,19 +373,20 @@ const PostJob: React.FC = () => {
             <div>
               <FieldLabel>Subcategory</FieldLabel>
               <IconSelect
-                label="Subcategory" value={formData.subcategory}
+                label=""
+                value={formData.subcategory}
                 placeholder={formData.category ? "Select Subcategory" : "Select category first"}
                 disabled={!formData.category}
                 options={filteredSubcategories.map(s => ({ name: s.name, icon: SUBCATEGORY_ICONS[s.name] }))}
                 onChange={(val) => setFormData(prev => ({ ...prev, subcategory: val }))}
               />
             </div>
-          </TwoCol>
+          </div>
         </SectionCard>
 
         {/* ─── SECTION 2: Pricing & Schedule ─── */}
         <SectionCard title="Pricing & Schedule">
-          <TwoCol>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel required>Service Charges (₹)</FieldLabel>
               <input
@@ -393,8 +395,8 @@ const PostJob: React.FC = () => {
               />
             </div>
             <div />
-          </TwoCol>
-          <TwoCol>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel required>Start Date</FieldLabel>
               <input type="date" name="startDate" value={formData.startDate} onChange={handleInputChange} className={inputBase} />
@@ -403,16 +405,14 @@ const PostJob: React.FC = () => {
               <FieldLabel required>End Date</FieldLabel>
               <input type="date" name="endDate" value={formData.endDate} onChange={handleInputChange} className={inputBase} />
             </div>
-          </TwoCol>
+          </div>
           {formData.startDate && formData.endDate && (
-            <div className="bg-[#e6f2f8] border border-[#b3d5e8] rounded-xl p-3 flex items-center gap-3">
-              <span className={`${typography.body.small} text-[#00598a] font-semibold`}>
-                📅 {new Date(formData.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
-              <span className="text-[#00598a]">→</span>
-              <span className={`${typography.body.small} text-[#00598a] font-semibold`}>
-                {new Date(formData.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-              </span>
+            <div className="rounded-xl p-3" style={{ backgroundColor: '#e8f4fb', border: '1px solid #b3d5e8' }}>
+              <p className={`${typography.body.small} font-medium flex items-center gap-3`} style={{ color: BRAND }}>
+                <span>📅 {new Date(formData.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+                <span>→</span>
+                <span>{new Date(formData.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+              </p>
             </div>
           )}
         </SectionCard>
@@ -437,13 +437,12 @@ const PostJob: React.FC = () => {
           action={
             <button
               type="button" onClick={handleUseCurrentLocation} disabled={locationLoading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
-                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ backgroundColor: BRAND }}
             >
               {locationLoading
-                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                : <><MapPin className="w-4 h-4" /> Auto Detect</>
               }
             </button>
           }
@@ -454,7 +453,8 @@ const PostJob: React.FC = () => {
               <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
             </div>
           )}
-          <TwoCol>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel required>Area / Locality</FieldLabel>
               <input type="text" name="area" value={formData.area} onChange={handleInputChange} placeholder="e.g. Madhapur" className={inputBase} />
@@ -463,8 +463,9 @@ const PostJob: React.FC = () => {
               <FieldLabel required>City</FieldLabel>
               <input type="text" name="city" value={formData.city} onChange={handleInputChange} placeholder="e.g. Hyderabad" className={inputBase} />
             </div>
-          </TwoCol>
-          <TwoCol>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <FieldLabel required>State</FieldLabel>
               <input type="text" name="state" value={formData.state} onChange={handleInputChange} placeholder="e.g. Telangana" className={inputBase} />
@@ -473,22 +474,27 @@ const PostJob: React.FC = () => {
               <FieldLabel required>PIN Code</FieldLabel>
               <input type="text" name="pincode" value={formData.pincode} onChange={handleInputChange} placeholder="e.g. 500081" className={inputBase} />
             </div>
-          </TwoCol>
-          <div className="rounded-xl p-3" style={{ backgroundColor: "#fff8ee", border: "1px solid #f0c070" }}>
-            <p className={`${typography.body.small}`} style={{ color: "#7a4f00" }}>
-              📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your job location manually.
-            </p>
           </div>
+
+          {/* Tip */}
+          {!formData.latitude && !formData.longitude && (
+            <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
+              <p className={`${typography.body.small} text-amber-800`}>
+                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+              </p>
+            </div>
+          )}
+
           {isGeocodingLoading ? (
-            <div className="flex items-center gap-2 text-[#00598a] bg-[#e6f2f8] border border-[#b3d5e8] rounded-xl px-4 py-3">
+            <div className="flex items-center gap-2 rounded-xl px-4 py-3" style={{ backgroundColor: '#e8f4fb', border: '1px solid #b3d5e8' }}>
               <span className="animate-spin">⌛</span>
-              <p className={`${typography.body.small} font-medium`}>Detecting coordinates…</p>
+              <p className={`${typography.body.small} font-medium`} style={{ color: BRAND }}>Detecting coordinates…</p>
             </div>
           ) : formData.latitude && formData.longitude ? (
             <div className="bg-green-50 border border-green-200 rounded-xl p-3">
               <p className={`${typography.body.small} text-green-800`}>
                 <span className="font-semibold">✓ Location set: </span>
-                <span className="font-mono text-xs">
+                <span className="font-mono text-xs ml-1">
                   {formData.latitude.toFixed(6)}, {formData.longitude.toFixed(6)}
                 </span>
               </p>
@@ -498,83 +504,73 @@ const PostJob: React.FC = () => {
 
         {/* ─── SECTION 5: Photos ─── */}
         <SectionCard title={`Job Photos (${formData.images.length}/5)`}>
-          <TwoCol>
-            <label className="cursor-pointer block">
-              <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" disabled={maxImagesReached} />
-              <div
-                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? "cursor-not-allowed" : "cursor-pointer"}`}
-                style={{
-                  borderColor: maxImagesReached ? "#d1d5db" : "#00598a",
-                  backgroundColor: maxImagesReached ? "#f9fafb" : "#fffbf5",
-                  minHeight: "180px",
-                }}
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "#fff0d6" }}>
-                    <Upload className="w-8 h-8" style={{ color: "#00598a" }} />
-                  </div>
-                  <div>
-                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                      {maxImagesReached ? "Maximum 5 images reached" : `Add Photos (${5 - formData.images.length} slots left)`}
-                    </p>
-                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Upload photos related to the job</p>
-                  </div>
+          <label className="cursor-pointer block">
+            <input type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" disabled={maxImagesReached} />
+            <div
+              className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached ? "border-gray-200 bg-gray-50 cursor-not-allowed" : "hover:opacity-90 cursor-pointer"}`}
+              style={!maxImagesReached ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
+            >
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                  <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                </div>
+                <div>
+                  <p className={`${typography.form.input} font-medium text-gray-700`}>
+                    {maxImagesReached ? "Maximum 5 images reached" : `Tap to upload job photos`}
+                  </p>
+                  <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · 5 MB each</p>
                 </div>
               </div>
-            </label>
-            {imagePreviews.length > 0 ? (
-              <div className="grid grid-cols-3 gap-3">
-                {formData.images.map((file, i) => (
-                  <div key={i} className="relative aspect-square group">
-                    <img
-                      src={imagePreviews[i]} alt={`Preview ${i + 1}`}
-                      className="w-full h-full object-cover rounded-xl border-2"
-                      style={{ borderColor: "#00598a" }}
-                    />
-                    <button
-                      type="button" onClick={() => handleRemoveImage(i)}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
-                    <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                      {(file.size / 1024 / 1024).toFixed(1)}MB
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center" style={{ minHeight: "180px" }}>
-                <p className={`${typography.body.small} text-gray-400`}>Uploaded images will appear here</p>
-              </div>
-            )}
-          </TwoCol>
+            </div>
+          </label>
+
+          {imagePreviews.length > 0 && (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {formData.images.map((file, i) => (
+                <div key={i} className="relative aspect-square group">
+                  <img
+                    src={imagePreviews[i]} alt={`Preview ${i + 1}`}
+                    className="w-full h-full object-cover rounded-xl border-2"
+                    style={{ borderColor: BRAND }}
+                  />
+                  <button
+                    type="button" onClick={() => handleRemoveImage(i)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                  <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                    {(file.size / 1024 / 1024).toFixed(1)}MB
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </SectionCard>
 
         {/* ── Action Buttons ── */}
-        <div className="flex gap-4 pt-2 pb-8 justify-end">
+        <div className="flex gap-4 pt-2 pb-8">
           <button
-            onClick={handleCancel} type="button" disabled={isSubmitting}
-            className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-              bg-white border-2 border-[#00598a]
-              hover:bg-[#00598a] hover:text-white active:bg-[#004a73] active:text-white
-              transition-all ${typography.body.base} ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit} disabled={isSubmitting} type="button"
-            className={`px-10 py-3.5 rounded-xl font-semibold text-white
-              transition-all shadow-md hover:shadow-lg
-              bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-              ${typography.body.base} ${isSubmitting ? "cursor-not-allowed opacity-70" : ""}`}
+            onClick={handleSubmit}
+            disabled={isSubmitting || !!successMessage}
+            type="button"
+            className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${isSubmitting || successMessage ? "opacity-70 cursor-not-allowed" : "hover:opacity-90"}`}
+            style={{ backgroundColor: BRAND }}
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="animate-spin">⏳</span>Posting…
               </span>
+            ) : successMessage ? (
+              <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
             ) : "Post Job"}
+          </button>
+          <button
+            onClick={handleCancel} type="button" disabled={isSubmitting}
+            className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            Cancel
           </button>
         </div>
 

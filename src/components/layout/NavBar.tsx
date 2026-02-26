@@ -40,37 +40,45 @@ const Navbar: React.FC = () => {
   // ── Real unread notification count ──────────────────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // Fetch user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!isAuthenticated) return;
-      const userId = localStorage.getItem("userId");
-      if (!userId) return;
+  // ── Shared fetch profile helper ──────────────────────────────────────────
+  const fetchUserProfile = async () => {
+    if (!isAuthenticated) return;
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
+    try {
+      setIsLoadingProfile(true);
+      const response = await getUserById(userId);
+      if (response.success && response.data) {
+        const name = response.data.name || "User";
+        setUserName(name);
+        localStorage.setItem("userName", name);
 
-      try {
-        setIsLoadingProfile(true);
-        const response = await getUserById(userId);
-        if (response.success && response.data) {
-          const name = response.data.name || "User";
-          setUserName(name);
-          localStorage.setItem("userName", name);
-
-          if (response.data.profilePic) {
-            const picUrl = response.data.profilePic.startsWith("http")
-              ? response.data.profilePic
-              : `${API_BASE_URL}${response.data.profilePic}`;
-            setProfilePic(picUrl);
-          } else {
-            setProfilePic(null);
-          }
+        if (response.data.profilePic) {
+          const picUrl = response.data.profilePic.startsWith("http")
+            ? response.data.profilePic
+            : `${API_BASE_URL}${response.data.profilePic}`;
+          setProfilePic(picUrl);
+        } else {
+          setProfilePic(null);
         }
-      } catch (error) {
-        console.error("Error fetching profile:", error);
-      } finally {
-        setIsLoadingProfile(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setIsLoadingProfile(false);
+    }
+  };
+
+  // Fetch on mount / auth change
+  useEffect(() => {
     fetchUserProfile();
+  }, [isAuthenticated]);
+
+  // ── Re-fetch when MyProfile dispatches "profileUpdated" ─────────────────
+  useEffect(() => {
+    const handleProfileUpdated = () => fetchUserProfile();
+    window.addEventListener("profileUpdated", handleProfileUpdated);
+    return () => window.removeEventListener("profileUpdated", handleProfileUpdated);
   }, [isAuthenticated]);
 
   // ── Fetch real unread notification count ──────────────────────────────────
@@ -85,7 +93,6 @@ const Navbar: React.FC = () => {
         const userId   = localStorage.getItem("userId") || "";
         const workerId = workerProfileId || localStorage.getItem("workerId") || "";
 
-        // Determine current role and ID based on accountType
         const role = accountType === "worker" ? "Worker" : "User";
         const id   = accountType === "worker" ? workerId : userId;
 
@@ -99,13 +106,11 @@ const Navbar: React.FC = () => {
     };
 
     fetchUnreadCount();
-
-    // Poll every 60 seconds to keep the badge fresh
     const interval = setInterval(fetchUnreadCount, 60_000);
     return () => clearInterval(interval);
   }, [isAuthenticated, accountType, workerProfileId]);
 
-  // Sync profile on localStorage change
+  // Sync name on localStorage change
   useEffect(() => {
     const syncUserData = () => {
       const name = localStorage.getItem("userName") || "User";
@@ -141,7 +146,6 @@ const Navbar: React.FC = () => {
       setShowWelcomeModal(true);
       return;
     }
-    // Clear badge optimistically when navigating to notifications page
     setUnreadCount(0);
     navigate("/notifications");
     setIsMobileMenuOpen(false);
@@ -302,7 +306,7 @@ const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* Auth / Profile */}
+              {/* Auth / Profile — always shows image or initial letter circle */}
               {!isAuthenticated ? (
                 <Button
                   variant="gradient-blue"
@@ -316,23 +320,29 @@ const Navbar: React.FC = () => {
                 <button
                   onClick={handleProfileClick}
                   className="
-                    hidden lg:block w-10 h-10 rounded-full overflow-hidden
+                    hidden lg:flex items-center justify-center
+                    w-10 h-10 rounded-full overflow-hidden
                     border-2 border-transparent
                     transition-all duration-300
                     hover:border-primary
                     hover:scale-110
                     hover:shadow-xl
+                    flex-shrink-0
                   "
+                  title={userName}
                 >
                   {profilePic ? (
                     <img
                       src={profilePic}
                       alt={userName}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover rounded-full"
                       onError={() => setProfilePic(null)}
                     />
                   ) : (
-                    <div className="w-full h-full bg-primary flex items-center justify-center text-white font-bold">
+                    <div
+                      className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-base select-none"
+                      style={{ backgroundColor: "#00598a" }}
+                    >
                       {userName.charAt(0).toUpperCase()}
                     </div>
                   )}
@@ -365,6 +375,41 @@ const Navbar: React.FC = () => {
                 <MobileNavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
             )}
+
+            {/* Mobile profile row */}
+            {isAuthenticated && (
+              <button
+                onClick={handleProfileClick}
+                className="
+                  group w-full text-left px-4 py-3
+                  flex items-center gap-3
+                  text-gray-700 hover:bg-gray-100 hover:text-primary
+                  transition-all duration-200
+                "
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
+                  {profilePic ? (
+                    <img
+                      src={profilePic}
+                      alt={userName}
+                      className="w-full h-full object-cover"
+                      onError={() => setProfilePic(null)}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{ backgroundColor: "#00598a" }}
+                    >
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <span className="transition-all duration-200 group-hover:translate-x-1 font-medium">
+                  {userName}
+                </span>
+              </button>
+            )}
+
             {/* Mobile notification item with count */}
             <button
               onClick={handleNotificationClick}
