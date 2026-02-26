@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { getUserBeautyWorkers, BeautyWorker } from "../services/Beauty.Service.service";
-import Button from "../components/ui/Buttons";
+import {
+    getNearbyBeautyWorkers,
+    BeautyWorker,
+} from "../services/Beauty.Service.service";
 import typography from "../styles/typography";
 
 // ── Nearby dummy card components ─────────────────────────────────────────────
@@ -15,51 +17,140 @@ import NearbyTattooCard from "../components/cards/Beauty/NearTatoo";
 import NearbyMehendiCard from "../components/cards/Beauty/NearByMehende";
 import NearbySkinClinicCard from "../components/cards/Beauty/NearBySkinClik";
 
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a75";
+
+// ============================================================================
+// PHONE POPUP
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    name: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+                onClick={e => e.stopPropagation()}
+            >
+                <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,89,138,0.1)" }}
+                >
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" style={{ color: BRAND }}>
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                </div>
+
+                <div className="text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Contact</p>
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
+                </div>
+
+                <div
+                    className="w-full text-center py-3 px-4 rounded-xl"
+                    style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
+                >
+                    <p className="text-xl font-bold tracking-wide" style={{ color: BRAND }}>{phone}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 w-full">
+                    <a
+                        href={`tel:${phone}`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        Call Now
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                        style={{ color: BRAND, border: `2px solid ${BRAND}`, backgroundColor: "transparent" }}
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                            (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.color = BRAND;
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ============================================================================
 // CARD MAP
 // ============================================================================
-type CardKey = "beauty-parlour" | "fitness" | "makeup" | "salon" | "spa" | "yoga" | "tattoo" | "mehendi" | "skin-clinic";
+type CardKey =
+    | "beauty-parlour"
+    | "fitness"
+    | "makeup"
+    | "salon"
+    | "spa"
+    | "yoga"
+    | "tattoo"
+    | "mehendi"
+    | "skin-clinic";
 
 const CARD_MAP: Record<CardKey, React.ComponentType<any>> = {
     "beauty-parlour": NearbyBeautyCard,
-    "fitness": NearbyFitnessCard,
-    "makeup": NearbyMakeupCard,
-    "salon": NearbySalonCard,
-    "spa": NearbySpaServiceCard,
-    "yoga": NearbyYogaCard,
-    "tattoo": NearbyTattooCard,
-    "mehendi": NearbyMehendiCard,
+    fitness: NearbyFitnessCard,
+    makeup: NearbyMakeupCard,
+    salon: NearbySalonCard,
+    spa: NearbySpaServiceCard,
+    yoga: NearbyYogaCard,
+    tattoo: NearbyTattooCard,
+    mehendi: NearbyMehendiCard,
     "skin-clinic": NearbySkinClinicCard,
 };
 
 // ============================================================================
 // HELPERS
 // ============================================================================
-const getCardComponentForSubcategory = (sub: string | undefined): React.ComponentType<any> => {
-    if (!sub) return CARD_MAP["beauty-parlour"];
+const resolveCardKey = (sub?: string): CardKey => {
+    if (!sub) return "beauty-parlour";
     const n = sub.toLowerCase();
-    if ((n.includes("beauty") && n.includes("parlour")) || n.includes("beautician")) return CARD_MAP["beauty-parlour"];
-    if (n.includes("fitness") || n.includes("gym")) return CARD_MAP["fitness"];
-    if (n.includes("makeup") || n.includes("make-up")) return CARD_MAP["makeup"];
-    if (n.includes("salon") || n.includes("saloon") || n.includes("hair")) return CARD_MAP["salon"];
-    if (n.includes("spa") || n.includes("massage")) return CARD_MAP["spa"];
-    if (n.includes("yoga")) return CARD_MAP["yoga"];
-    if (n.includes("tattoo")) return CARD_MAP["tattoo"];
-    if (n.includes("mehendi") || n.includes("mehndi")) return CARD_MAP["mehendi"];
-    if ((n.includes("skin") && n.includes("clinic")) || n.includes("dermatologist") || n.includes("skincare")) return CARD_MAP["skin-clinic"];
-    return CARD_MAP["beauty-parlour"];
-};
-
-const shouldShowNearbyCards = (sub: string | undefined): boolean => {
-    if (!sub) return false;
-    const n = sub.toLowerCase();
-    return ["beauty", "parlour", "fitness", "gym", "makeup", "salon", "spa", "massage",
-        "yoga", "tattoo", "mehendi", "mehndi", "skin", "clinic", "dermatologist", "hair"].some(k => n.includes(k));
+    if ((n.includes("beauty") && n.includes("parlour")) || n.includes("beautician")) return "beauty-parlour";
+    if (n.includes("fitness") || n.includes("gym")) return "fitness";
+    if (n.includes("makeup") || n.includes("make-up")) return "makeup";
+    if (n.includes("salon") || n.includes("saloon") || n.includes("hair")) return "salon";
+    if (n.includes("spa") || n.includes("massage")) return "spa";
+    if (n.includes("yoga")) return "yoga";
+    if (n.includes("tattoo")) return "tattoo";
+    if (n.includes("mehendi") || n.includes("mehndi")) return "mehendi";
+    if ((n.includes("skin") && n.includes("clinic")) || n.includes("dermatologist") || n.includes("skincare")) return "skin-clinic";
+    return "beauty-parlour";
 };
 
 const getDisplayTitle = (sub: string | undefined): string => {
     if (!sub) return "All Beauty & Wellness Services";
-    return sub.split("-").map(w => w === "&" ? "&" : w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+    return sub
+        .split("-")
+        .map(w => (w === "&" ? "&" : w.charAt(0).toUpperCase() + w.slice(1)))
+        .join(" ");
 };
 
 const getCategoryIcon = (sub: string | undefined): string => {
@@ -76,20 +167,20 @@ const getCategoryIcon = (sub: string | undefined): string => {
     return "💆";
 };
 
-const normalizeType = (t: string): string => t.toLowerCase().trim().replace(/\s+/g, " ");
-
-// ── Pure utilities outside component ────────────────────────────────────────
-const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-};
-
 const getImageUrls = (images?: string[]): string[] =>
     (images || []).filter((u): u is string => Boolean(u));
+
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -104,8 +195,9 @@ const BeautyServicesList: React.FC = () => {
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-   const [showCallPopup, setShowCallPopup] = useState(false);
-const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
+    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
+
     // ── Get user location on mount ───────────────────────────────────────────
     useEffect(() => {
         setFetchingLocation(true);
@@ -120,7 +212,7 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
                 setUserLocation({ latitude: coords.latitude, longitude: coords.longitude });
                 setFetchingLocation(false);
             },
-            err => {
+            (err) => {
                 console.error("Location error:", err);
                 setLocationError("Unable to retrieve your location.");
                 setFetchingLocation(false);
@@ -129,50 +221,80 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
         );
     }, []);
 
-    // ── Fetch all beauty workers → filter by subcategory + distance ──────────
+    // ── Fetch nearby beauty workers ──────────────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-        const fetchServices = async () => {
+
+        const fetchNearbyServices = async () => {
             setLoading(true);
             setError("");
             try {
-                // getUserBeautyWorkers with no userId returns all workers,
-                // falling back to a broad fetch. Adjust endpoint if needed.
-                const response = await getUserBeautyWorkers("");
-                const allWorkers: BeautyWorker[] = response.success ? (response.data || []) : [];
+                console.log("📍 Fetching beauty workers at:", userLocation.latitude, userLocation.longitude);
 
-                // Step 1: filter by subcategory
-                const byCategory = subcategory
-                    ? allWorkers.filter((w: BeautyWorker) =>
-                        w.category && normalizeType(w.category).includes(normalizeType(getDisplayTitle(subcategory)))
-                    )
+                const response = await getNearbyBeautyWorkers(
+                    userLocation.latitude,
+                    userLocation.longitude,
+                    10
+                );
+
+                console.log("📦 Beauty API response:", response);
+
+                if (!response.success) {
+                    console.warn("⚠️ API returned success: false");
+                    setNearbyServices([]);
+                    return;
+                }
+
+                const allWorkers: BeautyWorker[] = Array.isArray(response.data) ? response.data : [];
+                console.log("✅ Total workers from API:", allWorkers.length);
+
+                // ── KEY FIX: Workers with empty/null category are shown on ALL subcategory pages.
+                // Only filter out workers whose category is non-empty AND doesn't match.
+                const filtered = subcategory
+                    ? allWorkers.filter((w: BeautyWorker) => {
+                        const cat = (w.category || "").trim();
+                        // Empty category → always show
+                        if (cat === "") return true;
+                        // Match subcategory slug against worker category (case-insensitive)
+                        const subWords = subcategory.toLowerCase().replace(/-/g, " ");
+                        const catLower = cat.toLowerCase();
+                        return (
+                            catLower.includes(subWords) ||
+                            subWords.includes(catLower) ||
+                            subcategory.toLowerCase().split("-").some(word => word.length > 2 && catLower.includes(word))
+                        );
+                    })
                     : allWorkers;
 
-                // Step 2: sort by distance within 50 km
-                const withCoords = byCategory
-                    .filter((w: BeautyWorker) => w.latitude && w.longitude)
-                    .map((w: BeautyWorker) => ({
+                console.log("🔍 Filtered workers:", filtered.length, "for subcategory:", subcategory);
+
+                // Sort by distance (closest first), push workers without coords to end
+                const withCoords = filtered
+                    .filter(w => w.latitude && w.longitude)
+                    .map(w => ({
                         worker: w,
-                        dist: calculateDistance(userLocation.latitude, userLocation.longitude, w.latitude!, w.longitude!),
+                        dist: calculateDistance(
+                            userLocation.latitude,
+                            userLocation.longitude,
+                            w.latitude!,
+                            w.longitude!
+                        ),
                     }))
-                    .filter(({ dist }) => dist <= 50)
                     .sort((a, b) => a.dist - b.dist)
                     .map(({ worker }) => worker);
 
-                const withoutCoords = byCategory.filter(
-                    (w: BeautyWorker) => !w.latitude || !w.longitude
-                );
-
+                const withoutCoords = filtered.filter(w => !w.latitude || !w.longitude);
                 setNearbyServices([...withCoords, ...withoutCoords]);
             } catch (err) {
-                console.error("Error fetching beauty services:", err);
-                setError("Failed to load services");
+                console.error("❌ Error fetching nearby beauty services:", err);
+                setError("Failed to load nearby services. Please try again.");
                 setNearbyServices([]);
             } finally {
                 setLoading(false);
             }
         };
-        fetchServices();
+
+        fetchNearbyServices();
     }, [userLocation, subcategory]);
 
     // ── Handlers ─────────────────────────────────────────────────────────────
@@ -183,9 +305,10 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
     };
 
     const handleAddPost = () => {
-        navigate(subcategory
-            ? `/add-beauty-service-form?subcategory=${subcategory}`
-            : "/add-beauty-service-form"
+        navigate(
+            subcategory
+                ? `/add-beauty-service-form?subcategory=${subcategory}`
+                : "/add-beauty-service-form"
         );
     };
 
@@ -198,61 +321,89 @@ const [selectedPhone, setSelectedPhone] = useState<string | null>(null);
         }
     };
 
-  const openCallPopup = (phone: string) => {
-  setSelectedPhone(phone);
-  setShowCallPopup(true);
-};
+    const handleCallClick = (e: React.MouseEvent, worker: BeautyWorker) => {
+        e.stopPropagation();
+        if (worker.phone) {
+            setPhonePopup({ phone: worker.phone, name: worker.name || worker.category || "Beauty Service" });
+        } else {
+            alert("Phone number not available for this service.");
+        }
+    };
 
     // ── Render single live API card ──────────────────────────────────────────
     const renderBeautyCard = (worker: BeautyWorker) => {
         const id = worker._id || "";
         const location = [worker.area, worker.city].filter(Boolean).join(", ") || "Location not set";
-        const imageUrls = getImageUrls(worker.images); // images already full URLs from backend
+        const imageUrls = getImageUrls(worker.images);
         const services = Array.isArray(worker.services) ? worker.services : [];
+        const isHovered = hoveredCard === id;
 
         let distanceLabel: string | null = null;
         if (userLocation && worker.latitude && worker.longitude) {
-            const dist = calculateDistance(userLocation.latitude, userLocation.longitude, worker.latitude, worker.longitude);
+            const dist = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                worker.latitude,
+                worker.longitude
+            );
             distanceLabel = dist < 1 ? `${(dist * 1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
         }
 
         return (
             <div
                 key={id}
-              className="
-bg-white rounded-xl shadow-sm
-hover:shadow-xl hover:-translate-y-1
-transition-all duration-200
-overflow-hidden flex flex-col cursor-pointer
-border border-gray-100 hover:border-[#00598a]
-"
+                className="bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
+                style={{
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: isHovered ? BRAND : "#f3f4f6",
+                    boxShadow: isHovered ? "0 8px 24px rgba(0,89,138,0.15)" : "0 1px 3px rgba(0,0,0,0.06)",
+                    transform: isHovered ? "translateY(-2px)" : "none",
+                }}
+                onMouseEnter={() => setHoveredCard(id)}
+                onMouseLeave={() => setHoveredCard(null)}
                 onClick={() => handleView(worker)}
             >
                 {/* Image */}
-                <div className="relative h-48 bg-gradient-to-br from-rose-50 to-pink-100 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
-                        <img src={imageUrls[0]} alt={worker.name}
-                            className="w-full h-full object-cover"
-                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                        <img
+                            src={imageUrls[0]}
+                            alt={worker.name}
+                            className="w-full h-full object-cover transition-transform duration-300"
+                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/10">
+                        <div
+                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
+                            style={{ backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6" }}
+                        >
                             <span className="text-5xl">{getCategoryIcon(subcategory)}</span>
                         </div>
                     )}
+
+                    {/* Nearby badge */}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-rose-600 text-white text-xs font-bold rounded-md shadow-md">
-                            Live Data
+                        <span
+                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: BRAND }}
+                        >
+                            Nearby
                         </span>
                     </div>
-                    {worker.category && (
+
+                    {/* Category badge — only show if non-empty */}
+                    {worker.category && worker.category.trim() !== "" && (
                         <div className="absolute top-3 right-3 z-10">
-                            <span className="inline-flex items-center px-2.5 py-1 bg-black/60 text-white text-xs font-medium rounded-md backdrop-blur-sm">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-black/60 text-white backdrop-blur-sm">
                                 {worker.category}
                             </span>
                         </div>
                     )}
+
                     {imageUrls.length > 1 && (
-                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm">
+                        <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
                             1 / {imageUrls.length}
                         </div>
                     )}
@@ -260,17 +411,20 @@ border border-gray-100 hover:border-[#00598a]
 
                 {/* Body */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 leading-tight">
+                    <h2
+                        className="text-lg font-semibold line-clamp-1 leading-tight transition-colors duration-200"
+                        style={{ color: isHovered ? BRAND : "#111827" }}
+                    >
                         {worker.name || worker.category || "Unnamed Service"}
                     </h2>
 
                     <div className="flex items-start gap-1.5">
-                        <span className="text-gray-400 text-sm mt-0.5 shrink-0">📍</span>
+                        <span className="text-sm mt-0.5 flex-shrink-0" style={{ color: isHovered ? BRAND : "#9ca3af" }}>📍</span>
                         <p className="text-sm text-gray-600 line-clamp-1">{location}</p>
                     </div>
 
                     {distanceLabel && (
-                        <p className="text-sm font-semibold text-rose-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: BRAND }}>
                             <span>🛣️</span> {distanceLabel} away
                         </p>
                     )}
@@ -279,42 +433,55 @@ border border-gray-100 hover:border-[#00598a]
                         <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">{worker.bio}</p>
                     )}
 
-                    {/* Rating + experience */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {worker.rating && (
-                            <span className="flex items-center gap-1 text-sm font-semibold text-gray-800">
-                                <span className="text-yellow-500">⭐</span> {worker.rating}
-                            </span>
-                        )}
-                        {worker.experience && (
-                            <span className="text-xs text-gray-500">• {worker.experience} yrs exp</span>
-                        )}
+                    {/* Rating + experience + price */}
+                    <div className="flex items-center justify-between pt-0.5">
+                        <div className="flex items-center gap-2">
+                            {worker.rating !== undefined && worker.rating > 0 && (
+                                <span className="text-sm font-semibold text-gray-700 flex items-center gap-1">
+                                    ⭐ {worker.rating}
+                                </span>
+                            )}
+                            {worker.experience && (
+                                <span className="text-xs text-gray-500">• {worker.experience} yrs exp</span>
+                            )}
+                        </div>
                         {worker.serviceCharge && (
-                            <span className="ml-auto text-sm font-bold text-rose-700">₹{worker.serviceCharge}+</span>
+                            <span className="text-sm font-bold" style={{ color: BRAND }}>₹{worker.serviceCharge}+</span>
                         )}
                     </div>
 
                     {/* Availability badge */}
                     <div>
-                        <span className={`inline-flex items-center text-xs px-2.5 py-1 rounded-full font-medium border ${worker.availability
-                            ? "bg-green-50 text-green-700 border-green-200"
-                            : "bg-gray-50 text-gray-600 border-gray-200"}`}>
+                        <span
+                            className="inline-flex items-center text-xs px-2.5 py-1 rounded-full font-medium border transition-colors duration-200"
+                            style={worker.availability
+                                ? { backgroundColor: "rgba(0,89,138,0.07)", color: BRAND, borderColor: "rgba(0,89,138,0.25)" }
+                                : { backgroundColor: "#f9fafb", color: "#6b7280", borderColor: "#e5e7eb" }
+                            }
+                        >
                             {worker.availability ? "✓ Available" : "⏸ Unavailable"}
                         </span>
                     </div>
 
                     {/* Services tags */}
                     {services.length > 0 && (
-                        <div className="pt-2 border-t border-gray-100">
-                            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Services</p>
+                        <div className="pt-2 border-t border-gray-100 mt-1">
+                            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Services</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {services.slice(0, 3).map((s, idx) => (
-                                    <span key={idx} className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded border border-rose-200">
+                                    <span
+                                        key={idx}
+                                        className="inline-flex items-center text-xs px-2 py-1 rounded border transition-colors duration-200"
+                                        style={isHovered
+                                            ? { backgroundColor: "rgba(0,89,138,0.07)", color: BRAND, borderColor: "rgba(0,89,138,0.25)" }
+                                            : { backgroundColor: "#f3f4f6", color: "#374151", borderColor: "#e5e7eb" }
+                                        }
+                                    >
                                         {s}
                                     </span>
                                 ))}
                                 {services.length > 3 && (
-                                    <span className="text-xs text-rose-500 font-medium px-1 py-0.5">
+                                    <span className="text-xs font-medium px-1 py-1" style={{ color: BRAND }}>
                                         +{services.length - 3} more
                                     </span>
                                 )}
@@ -326,21 +493,30 @@ border border-gray-100 hover:border-[#00598a]
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-rose-600 text-rose-600 rounded-lg font-medium text-sm hover:bg-#00598a-50 transition-colors active:bg-rose-100"
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{ border: `2px solid ${BRAND}`, color: BRAND, backgroundColor: "transparent" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                                (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLElement).style.color = BRAND;
+                            }}
                         >
                             <span>📍</span> Directions
                         </button>
                         <button
-onClick={e => {
-  e.stopPropagation();
-  if (worker.phone) {
-    openCallPopup(worker.phone);
-  }
-}}
+                            onClick={e => handleCallClick(e, worker)}
                             disabled={!worker.phone}
-                            className={`flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-colors ${worker.phone
-                                ? "bg-rose-500 text-white hover:bg-rose-600 active:bg-rose-700"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={worker.phone
+                                ? { backgroundColor: BRAND, color: "#fff" }
+                                : { backgroundColor: "#d1d5db", color: "#9ca3af", cursor: "not-allowed" }
+                            }
+                            onMouseEnter={e => { if (worker.phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK; }}
+                            onMouseLeave={e => { if (worker.phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND; }}
+                            title={worker.phone ? `Call ${worker.phone}` : "No phone number available"}
                         >
                             <span>📞</span> Call
                         </button>
@@ -350,44 +526,38 @@ onClick={e => {
         );
     };
 
-    // ── Render dummy nearby cards ────────────────────────────────────────────
-    const renderCardsSection = () => {
-        const CardComponent = getCardComponentForSubcategory(subcategory);
-        return (
-            <div className="space-y-4">
-                <h2 className={`${typography.heading.h4} text-gray-800 flex items-center gap-2`}>
-                    <span className="shrink-0">{getCategoryIcon(subcategory)}</span>
-                    <span className="truncate">Nearby {getDisplayTitle(subcategory)}</span>
-                </h2>
-                <CardComponent onViewDetails={handleView} nearbyData={undefined} userLocation={userLocation} />
-            </div>
-        );
+    // ── Dummy cards ───────────────────────────────────────────────────────────
+    const renderDummyCards = () => {
+        const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
+        return <CardComponent onViewDetails={handleView} nearbyData={undefined} userLocation={userLocation} />;
     };
 
-    // ── Render live API services section ─────────────────────────────────────
-    const renderYourServices = () => {
+    // ── Nearby services section ───────────────────────────────────────────────
+    const renderNearbyServices = () => {
         if (loading) {
             return (
-                <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-600 mx-auto mb-3" />
-                    <p className="text-gray-500 text-sm">Loading services near you...</p>
+                <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BRAND }} />
                 </div>
             );
         }
         if (nearbyServices.length === 0) {
             return (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-                    <div className="text-4xl mb-3">💆</div>
+                    <div className="text-5xl mb-3">{getCategoryIcon(subcategory)}</div>
                     <p className="text-gray-500 font-medium">No services found in your area.</p>
-                    <p className="text-gray-400 text-sm mt-1">Be the first to add one!</p>
+                    <p className="text-xs text-gray-400 mt-1">Try adding a new service or check back later!</p>
                 </div>
             );
         }
         return (
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
-                    <h2 className="text-xl font-bold text-gray-800">Services Near You</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-rose-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
+                    <span
+                        className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: BRAND }}
+                    >
                         {nearbyServices.length}
                     </span>
                 </div>
@@ -402,32 +572,48 @@ onClick={e => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div className="min-h-screen bg-gradient-to-b from-rose-50/30 to-white">
-  <div className={showCallPopup ? "blur-sm pointer-events-none select-none" : ""}></div>
-            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
+        <div
+            className="min-h-screen"
+            style={{ background: "linear-gradient(to bottom, rgba(0,89,138,0.04), white)" }}
+        >
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    name={phonePopup.name}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-                    <div className="flex items-center gap-3">
-                        <span className="text-3xl sm:text-4xl">{getCategoryIcon(subcategory)}</span>
-                        <div>
-                            <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
-                                {getDisplayTitle(subcategory)}
-                            </h1>
-                            <p className="text-sm text-gray-500 mt-0.5">Beauty & wellness services near you</p>
-                        </div>
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">{getDisplayTitle(subcategory)}</h1>
+                        <p className="text-sm text-gray-500 mt-1">Beauty & wellness services near you</p>
                     </div>
-                    <Button variant="primary" size="md" onClick={handleAddPost}
-                        className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white">
+                    <button
+                        onClick={handleAddPost}
+                        className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-all duration-200 shadow-sm hover:shadow-md"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
                         + Add Post
-                    </Button>
+                    </button>
                 </div>
 
                 {/* Location status */}
                 {fetchingLocation && (
-                    <div className="bg-rose-50 border border-rose-200 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-rose-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-rose-700">Getting your location...</span>
+                    <div
+                        className="rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: "rgba(0,89,138,0.08)", border: "1px solid rgba(0,89,138,0.2)" }}
+                    >
+                        <div
+                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: BRAND, borderTopColor: "transparent" }}
+                        />
+                        <span className="text-sm" style={{ color: BRAND }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -440,63 +626,13 @@ onClick={e => {
                         <p className="text-red-700 font-medium text-sm">{error}</p>
                     </div>
                 )}
-             {showCallPopup && selectedPhone && (
-  <div className="fixed inset-0 z-[9999] flex items-center justify-center">
-    
-    {/* Overlay */}
-    <div
-      className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-      onClick={() => setShowCallPopup(false)}
-    />
 
-    {/* Popup */}
-    <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm shadow-2xl">
-      <h3 className="text-lg font-semibold text-gray-800 mb-2">
-        Call Beauty Service
-      </h3>
+                {/* 1. DUMMY CARDS FIRST */}
+                <div className="space-y-4">{renderDummyCards()}</div>
 
-      <p className="text-sm text-gray-600 mb-4">
-        Phone Number
-        <span className="block mt-1 text-xl font-bold text-[#00598a]">
-          {selectedPhone}
-        </span>
-      </p>
+                {/* 2. API DATA SECOND */}
+                {userLocation && !fetchingLocation && renderNearbyServices()}
 
-      <div className="flex gap-3">
-        <button
-          onClick={() => {
-            window.location.href = `tel:${selectedPhone}`;
-            setShowCallPopup(false);
-          }}
-          className="flex-1 bg-[#00598a] text-white py-2.5 rounded-lg font-medium hover:bg-[#00598a]"
-        >
-          📞 Call Now
-        </button>
-
-        <button
-          onClick={() => setShowCallPopup(false)}
-          className="flex-1 border border-gray-300 py-2.5 rounded-lg text-gray-700 hover:bg-[#00598a]/10"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-                {/* Dummy nearby cards */}
-                {shouldShowNearbyCards(subcategory) && renderCardsSection()}
-
-                {/* Fallback */}
-                {!shouldShowNearbyCards(subcategory) && !userLocation && !fetchingLocation && (
-                    <div className="text-center py-20">
-                        <div className="text-6xl mb-4">💆</div>
-                        <h3 className="text-xl font-bold text-gray-800 mb-2">No Services Found</h3>
-                        <p className="text-gray-600">Select a category or add a new service!</p>
-                    </div>
-                )}
-
-                {/* Live API cards */}
-                {userLocation && !fetchingLocation && renderYourServices()}
             </div>
         </div>
     );

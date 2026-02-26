@@ -5,11 +5,20 @@ import App from './App';
 
 
 import reportWebVitals from './reportWebVitals';
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/firebase-messaging-sw.js")
+      .then(() => console.log("✅ FCM Service Worker registered"))
+      .catch(err => console.error("❌ SW failed", err));
+  });
+}
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
 root.render(
+
   <React.StrictMode>
     <App />
   </React.StrictMode>

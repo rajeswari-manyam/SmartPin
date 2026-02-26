@@ -62,6 +62,60 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
+// ── Call Popup Component ──────────────────────────────────────────────────────
+const CallPopup: React.FC<{ name: string; phone: string; onClose: () => void }> = ({ name, phone, onClose }) => (
+    <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+    >
+        <div
+            className="bg-white rounded-2xl shadow-2xl p-6 mx-4 w-full max-w-sm flex flex-col items-center gap-4"
+            onClick={e => e.stopPropagation()}
+        >
+            {/* Icon */}
+            <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "#00598a1a" }}>
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="#00598a" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+            </div>
+
+            {/* Name */}
+            <div className="text-center">
+                <p className="text-sm text-gray-500 mb-1">Contact</p>
+                <h3 className="text-lg font-bold text-gray-900">{name}</h3>
+            </div>
+
+            {/* Phone number display */}
+            <div
+                className="w-full rounded-xl px-4 py-3 text-center"
+                style={{ backgroundColor: "#00598a0f", border: "1.5px solid #00598a33" }}
+            >
+                <p className="text-2xl font-bold tracking-widest" style={{ color: "#00598a" }}>
+                    {phone}
+                </p>
+            </div>
+
+            {/* Actions */}
+            <div className="grid grid-cols-2 gap-3 w-full">
+                <a
+                    href={`tel:${phone}`}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: "#00598a" }}
+                >
+                    📞 Call Now
+                </a>
+                <button
+                    onClick={onClose}
+                    className="flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold border-2 transition-colors hover:bg-gray-50"
+                    style={{ borderColor: "#00598a", color: "#00598a" }}
+                >
+                    ✕ Close
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
 const WeddingServicesList: React.FC = () => {
     const { subcategory } = useParams<{ subcategory?: string }>();
     const navigate = useNavigate();
@@ -73,6 +127,9 @@ const WeddingServicesList: React.FC = () => {
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
     const [distance, setDistance] = useState<number>(10);
+
+    // ── Call popup state ─────────────────────────────────────────────────────
+    const [callPopup, setCallPopup] = useState<{ name: string; phone: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -124,7 +181,17 @@ const WeddingServicesList: React.FC = () => {
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([s.area, s.city, s.state].filter(Boolean).join(", "))}`, "_blank");
     };
 
-    // ── Inline wedding service card — mirrors RealEstateList ─────────────────
+    const handleCall = (e: React.MouseEvent, s: WeddingWorker) => {
+        e.stopPropagation();
+        const phone = s.phone || s.mobile || s.contactNumber || "";
+        if (phone) {
+            setCallPopup({ name: s.serviceName || "Service", phone });
+        } else {
+            alert("No phone number available for this service.");
+        }
+    };
+
+    // ── Inline wedding service card ──────────────────────────────────────────
     const renderWeddingCard = (s: WeddingWorker) => {
         const id = s._id || "";
         const location = [s.area, s.city].filter(Boolean).join(", ") || "Location not set";
@@ -137,12 +204,24 @@ const WeddingServicesList: React.FC = () => {
         }
 
         return (
-            <div key={id}
-                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100"
-                onClick={() => handleView(s)}>
-
+            <div
+                key={id}
+                className="bg-white rounded-xl shadow-sm overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
+                style={{ transition: "box-shadow 0.2s, border-color 0.2s, transform 0.2s" }}
+                onMouseEnter={e => {
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 30px rgba(0,89,138,0.18)";
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "#00598a55";
+                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+                }}
+                onMouseLeave={e => {
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "";
+                    (e.currentTarget as HTMLDivElement).style.borderColor = "";
+                    (e.currentTarget as HTMLDivElement).style.transform = "";
+                }}
+                onClick={() => handleView(s)}
+            >
                 {/* Image */}
-                <div className="relative h-48 bg-gradient-to-br from-pink-600/5 to-pink-600/10 overflow-hidden">
+                <div className="relative h-48 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img src={imageUrls[0]} alt={s.serviceName || "Service"} className="w-full h-full object-cover"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
@@ -152,13 +231,15 @@ const WeddingServicesList: React.FC = () => {
                         </div>
                     )}
                     <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-pink-600 text-white text-xs font-bold rounded-md shadow-md">
+                        <span className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
+                            style={{ backgroundColor: "#00598a" }}>
                             Live Data
                         </span>
                     </div>
                     {s.subCategory && (
                         <div className="absolute top-3 right-3 z-10">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md bg-pink-500 text-white">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md text-white"
+                                style={{ backgroundColor: "#00598acc" }}>
                                 {s.subCategory}
                             </span>
                         </div>
@@ -180,7 +261,7 @@ const WeddingServicesList: React.FC = () => {
                     </p>
 
                     {distance_ && (
-                        <p className="text-sm font-semibold text-pink-600 flex items-center gap-1">
+                        <p className="text-sm font-semibold flex items-center gap-1" style={{ color: "#00598a" }}>
                             <span>📍</span> {distance_} away
                         </p>
                     )}
@@ -194,22 +275,38 @@ const WeddingServicesList: React.FC = () => {
                         {s.serviceCharge && (
                             <div className="text-right">
                                 <p className="text-xs text-gray-500 uppercase">{s.chargeType || 'Starting at'}</p>
-                                <p className="text-base font-bold text-pink-600">₹{Number(s.serviceCharge).toLocaleString()}</p>
+                                <p className="text-base font-bold" style={{ color: "#00598a" }}>₹{Number(s.serviceCharge).toLocaleString()}</p>
                             </div>
                         )}
                     </div>
 
-                    {/* Directions + View */}
-                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                    {/* Call + Directions + View */}
+                    <div className="grid grid-cols-3 gap-2 pt-3 mt-1">
+                        {/* Call */}
+                        <button
+                            onClick={e => handleCall(e, s)}
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-sm text-white transition-opacity hover:opacity-85"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
+                            📞 Call
+                        </button>
+
+                        {/* Directions */}
                         <button
                             onClick={e => { e.stopPropagation(); openDirections(s); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 border-pink-600 text-pink-600 rounded-lg font-medium text-sm hover:bg-[#00598a]/100 transition-colors">
-                            <span>📍</span> Directions
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-sm transition-colors hover:bg-gray-50"
+                            style={{ border: "2px solid #00598a", color: "#00598a" }}
+                        >
+                            📍 Dir
                         </button>
+
+                        {/* View */}
                         <button
                             onClick={e => { e.stopPropagation(); handleView(s); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm bg-pink-600 text-white hover:bg-[#00598a]/100 transition-colors">
-                            <span>👁️</span> View
+                            className="flex items-center justify-center gap-1 px-2 py-2.5 rounded-lg font-medium text-sm text-white transition-opacity hover:opacity-85"
+                            style={{ backgroundColor: "#00598a" }}
+                        >
+                            👁️ View
                         </button>
                     </div>
                 </div>
@@ -217,18 +314,18 @@ const WeddingServicesList: React.FC = () => {
         );
     };
 
-    // ── Dummy cards — always rendered first ──────────────────────────────────
+    // ── Dummy cards ──────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── Nearby API section — rendered second ─────────────────────────────────
+    // ── Nearby API section ────────────────────────────────────────────────────
     const renderNearbyServices = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600" />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: "#00598a" }} />
                 </div>
             );
         }
@@ -247,7 +344,8 @@ const WeddingServicesList: React.FC = () => {
             <div className="space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-xl font-bold text-gray-800">Nearby Services</h2>
-                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-pink-600 text-white text-sm font-bold rounded-full px-2.5">
+                    <span className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
+                        style={{ backgroundColor: "#00598a" }}>
                         {nearbyData.length}
                     </span>
                 </div>
@@ -259,10 +357,20 @@ const WeddingServicesList: React.FC = () => {
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-pink-50/30 to-white">
+
+            {/* ── Call Popup ── */}
+            {callPopup && (
+                <CallPopup
+                    name={callPopup.name}
+                    phone={callPopup.phone}
+                    onClose={() => setCallPopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* Header */}
@@ -281,7 +389,8 @@ const WeddingServicesList: React.FC = () => {
                         <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600 whitespace-nowrap">Within:</label>
                             <select value={distance} onChange={e => setDistance(Number(e.target.value))}
-                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2"
+                                style={{ "--tw-ring-color": "#00598a" } as React.CSSProperties}>
                                 <option value={5}>5 km</option>
                                 <option value={10}>10 km</option>
                                 <option value={20}>20 km</option>
@@ -289,18 +398,22 @@ const WeddingServicesList: React.FC = () => {
                                 <option value={100}>100 km</option>
                             </select>
                         </div>
-                        <Button variant="primary" size="md" onClick={handleAddPost}
-                            className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a]/100 text-white">
-                            + Add Post
-                        </Button>
+                        <div style={{ backgroundColor: "#00598a" }} className="rounded-lg w-full sm:w-auto">
+                            <Button variant="primary" size="md" onClick={handleAddPost}
+                                className="w-full sm:w-auto justify-center !bg-transparent text-white">
+                                + Add Post
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
                 {/* Status banners */}
                 {fetchingLocation && (
-                    <div className="bg-pink-600/10 border border-pink-600/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-pink-600 border-t-transparent rounded-full" />
-                        <span className="text-sm text-pink-700">Getting your location...</span>
+                    <div className="rounded-lg p-3 flex items-center gap-2"
+                        style={{ backgroundColor: "#00598a15", border: "1px solid #00598a33" }}>
+                        <div className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
+                            style={{ borderColor: "#00598a", borderTopColor: "transparent" }} />
+                        <span className="text-sm" style={{ color: "#00598a" }}>Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -314,12 +427,12 @@ const WeddingServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST */}
+                {/* 1. DUMMY CARDS FIRST */}
                 <div className="space-y-4">
                     {renderDummyCards()}
                 </div>
 
-                {/* ✅ 2. API DATA SECOND */}
+                {/* 2. API DATA SECOND */}
                 {userLocation && !fetchingLocation && renderNearbyServices()}
             </div>
         </div>

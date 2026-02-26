@@ -110,65 +110,39 @@ import FoodServiceList from "./pages/FoodServiceList";
 import ConfirmedWorkersPage from "./pages/ConforimedWorkerPage";
 import JobApplicantsPage from "./pages/JobApplicationPage";
 
-// ── Firebase imports — paths match your src/firebase/ folder ─────
-import { generateFCMToken }   from "./firebase/fcm";
-import { onForegroundMessage } from "./firebase/firebaseConfig";     // ✅
-import { API_BASE_URL }        from "./services/api.service";
+import { onMessage } from "firebase/messaging";
+import { messaging } from "./firebase";
+// ✅
+import { API_BASE_URL } from "./services/api.service";
 
 // ── Foreground toast component ───────────────────────────────────
 import NotificationToast from "./components/NotificationToast";
 
+
 // ── Save FCM token to backend ─────────────────────────────────────
 const saveFcmTokenToBackend = async (
-    userId:   string,
-    role:     "User" | "Worker",
+    userId: string,
+    role: "User" | "Worker",
     fcmToken: string
 ): Promise<void> => {
     try {
         const body = new URLSearchParams();
-        body.append("userId",   userId);
-        body.append("role",     role);
+        body.append("userId", userId);
+        body.append("role", role);
         body.append("fcmToken", fcmToken);
 
         const res = await fetch(`${API_BASE_URL}/saveFcmToken`, {
-            method:  "POST",
+            method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body,
         });
         if (res.ok) console.log("✅ FCM token saved to backend");
-        else        console.warn("⚠️ Failed to save FCM token:", res.status);
+        else console.warn("⚠️ Failed to save FCM token:", res.status);
     } catch (err) {
         console.warn("⚠️ saveFcmToken error:", err);
     }
 };
 
-/* ── FCM Initializer — runs once after login ─────────────────────
-   Requests notification permission, gets FCM token, sends to backend */
-const FCMInitializer: React.FC = () => {
-    const { user, isAuthenticated } = useAuth();
-
-    useEffect(() => {
-        if (!isAuthenticated || !user?._id) return;
-        if (sessionStorage.getItem("fcmInitialized")) return;
-
-        const init = async () => {
-            try {
-                const token = await generateFCMToken();
-                if (token) {
-                    sessionStorage.setItem("fcmInitialized", "true");
-                    await saveFcmTokenToBackend(user._id, "User", token);
-                    console.log("🔔 FCM initialized for user:", user._id);
-                }
-            } catch (err) {
-                console.warn("⚠️ FCM init failed:", err);
-            }
-        };
-
-        init();
-    }, [isAuthenticated, user?._id]);
-
-    return null;
-};
 
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -212,145 +186,158 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 /* ---------------- AppRoutes ---------------- */
 const AppRoutes: React.FC = () => {
-    const location   = useLocation();
+    const location = useLocation();
     const background = location.state?.background;
+    useEffect(() => {
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log("🔔 Foreground message:", payload);
+
+            const { title, body } = payload.notification || {};
+
+            if (title) {
+                new Notification(title, {
+                    body,
+                    icon: "/logo192.png",
+                });
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     return (
         <>
-            {/* ✅ Request FCM permission + save token after login */}
-            <FCMInitializer />
-
-            {/* ✅ Show in-app toast when push arrives while app is open */}
-            <NotificationToast />
+            {/* Show in-app toast when push arrives while app is open */}
+            {/* <NotificationToast /> */}
 
             <Layout>
                 <Routes location={background || location}>
-                    <Route path="/"               element={<HomePage />} />
-                    <Route path="/home"            element={<HomePage />} />
-                    <Route path="/role-selection"  element={<RoleSelection />} />
-                    <Route path="/loginPage"       element={<LoginPage />} />
-                    <Route path="/worker-profile"  element={<WorkerProfileScreen />} />
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/home" element={<HomePage />} />
+                    <Route path="/role-selection" element={<RoleSelection />} />
+                    <Route path="/loginPage" element={<LoginPage />} />
+                    <Route path="/worker-profile" element={<WorkerProfileScreen />} />
                     <Route path="/job-details/:jobId" element={<JobDetails />} />
-                    <Route path="/user-profile"    element={<UserProfile />} />
-                    <Route path="/post-job"        element={<UserProfile />} />
-                    <Route path="/category/:id"    element={<CategoryPage />} />
+                    <Route path="/user-profile" element={<UserProfile />} />
+                    <Route path="/post-job" element={<UserProfile />} />
+                    <Route path="/category/:id" element={<CategoryPage />} />
 
-                    <Route path="/worker-profile/:id"  element={<WorkerProfile />} />
-                    <Route path="/worker-details/:id"  element={<WorkerDetails />} />
-                    <Route path="/add-skills"          element={<AddSkillsScreen />} />
+                    <Route path="/worker-profile/:id" element={<WorkerProfile />} />
+                    <Route path="/worker-details/:id" element={<WorkerDetails />} />
+                    <Route path="/add-skills" element={<AddSkillsScreen />} />
                     <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
 
                     {/* Booking & Interaction */}
-                    <Route path="/booknow/:jobId"     element={<BookNow />} />
-                    <Route path="/call/:id"           element={<CallingScreen />} />
-                    <Route path="/send-enquiry/:id"   element={<ServiceEnquiryForm />} />
-                    <Route path="/feedback/:id"       element={<FeedbackForm />} />
-                    <Route path="/thank-you/:id"      element={<ThankYouScreen />} />
+                    <Route path="/booknow/:jobId" element={<BookNow />} />
+                    <Route path="/call/:id" element={<CallingScreen />} />
+                    <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
+                    <Route path="/feedback/:id" element={<FeedbackForm />} />
+                    <Route path="/thank-you/:id" element={<ThankYouScreen />} />
 
                     {/* Jobs */}
-                    <Route path="/all-jobs"            element={<AllJobs />} />
-                    <Route path="/update-job/:jobId"   element={<UpdateJob />} />
+                    <Route path="/all-jobs" element={<AllJobs />} />
+                    <Route path="/update-job/:jobId" element={<UpdateJob />} />
                     <Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
                     <Route path="/confirmed-workers/:jobId" element={<ConfirmedWorkersPage />} />
 
                     {/* User Settings */}
-                    <Route path="/my-profile"     element={<MyProfile />} />
+                    <Route path="/my-profile" element={<MyProfile />} />
                     <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
-                    <Route path="/about-us"       element={<AboutUs />} />
-                    <Route path="/raise-ticket"   element={<RaiseTicketUI />} />
-                    <Route path="/view-tickets"   element={<ViewTicketsUI />} />
-                    <Route path="/my-skills"      element={<MySkills />} />
+                    <Route path="/about-us" element={<AboutUs />} />
+                    <Route path="/raise-ticket" element={<RaiseTicketUI />} />
+                    <Route path="/view-tickets" element={<ViewTicketsUI />} />
+                    <Route path="/my-skills" element={<MySkills />} />
 
                     {/* Service Forms */}
-                    <Route path="/add-automotive-form"         element={<AutomotiveForm />} />
-                    <Route path="/add-hotel-service-form"      element={<HotelForm />} />
-                    <Route path="/add-hospital-service-form"   element={<HospitalForm />} />
-                    <Route path="/add-beauty-service-form"     element={<BeautyServiceForm />} />
-                    <Route path="/add-sports-service-form"     element={<SportsServiceForm />} />
-                    <Route path="/add-shopping-form"           element={<ShoppingForm />} />
-                    <Route path="/add-digital-service-form"    element={<DigitalServiceForm />} />
-                    <Route path="/add-education-form"          element={<EducationForm />} />
-                    <Route path="/add-pet-service-form"        element={<PetServiceForm />} />
-                    <Route path="/add-event-service-form"      element={<EventForm />} />
+                    <Route path="/add-automotive-form" element={<AutomotiveForm />} />
+                    <Route path="/add-hotel-service-form" element={<HotelForm />} />
+                    <Route path="/add-hospital-service-form" element={<HospitalForm />} />
+                    <Route path="/add-beauty-service-form" element={<BeautyServiceForm />} />
+                    <Route path="/add-sports-service-form" element={<SportsServiceForm />} />
+                    <Route path="/add-shopping-form" element={<ShoppingForm />} />
+                    <Route path="/add-digital-service-form" element={<DigitalServiceForm />} />
+                    <Route path="/add-education-form" element={<EducationForm />} />
+                    <Route path="/add-pet-service-form" element={<PetServiceForm />} />
+                    <Route path="/add-event-service-form" element={<EventForm />} />
                     <Route path="/add-industrial-service-form" element={<IndustrialServiceForm />} />
-                    <Route path="/add-business-service-form"   element={<BusinessServiceForm />} />
-                    <Route path="/add-courier-service-form"    element={<CourierServiceForm />} />
+                    <Route path="/add-business-service-form" element={<BusinessServiceForm />} />
+                    <Route path="/add-courier-service-form" element={<CourierServiceForm />} />
                     <Route path="/add-daily-wage-service-form" element={<DailyWageForm />} />
                     <Route path="/add-agriculture-service-form" element={<AgricultureForm />} />
                     <Route path="/add-corporative-service-form" element={<CorporativeForm />} />
-                    <Route path="/add-wedding-service-form"    element={<WeddingForm />} />
-                    <Route path="/add-art-service-form"        element={<ArtForm />} />
-                    <Route path="/add-plumber-service-form"    element={<PlumberForm />} />
-                    <Route path="/add-real-estate-form"        element={<RealEstateForm />} />
-                    <Route path="/add-home-service-form"       element={<HomePersonalForm />} />
-                    <Route path="/add-food-service-form"       element={<FoodServiceForm />} />
-                    <Route path="/add-food-service-form/:id"   element={<FoodServiceForm />} />
-                    <Route path="/add-food-form"               element={<FoodForm />} />
+                    <Route path="/add-wedding-service-form" element={<WeddingForm />} />
+                    <Route path="/add-art-service-form" element={<ArtForm />} />
+                    <Route path="/add-plumber-service-form" element={<PlumberForm />} />
+                    <Route path="/add-real-estate-form" element={<RealEstateForm />} />
+                    <Route path="/add-home-service-form" element={<HomePersonalForm />} />
+                    <Route path="/add-food-service-form" element={<FoodServiceForm />} />
+                    <Route path="/add-food-service-form/:id" element={<FoodServiceForm />} />
+                    <Route path="/add-food-form" element={<FoodForm />} />
 
                     {/* Service Lists */}
-                    <Route path="/food-services/:subcategory"  element={<FoodService />} />
-                    <Route path="/food-services/all"           element={<FoodService />} />
+                    <Route path="/food-services/:subcategory" element={<FoodService />} />
+                    <Route path="/food-services/all" element={<FoodService />} />
                     <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
                     <Route path="/hospital-services/:subcategory" element={<HospitalServiceList />} />
-                    <Route path="/hospital-services"           element={<HospitalServicesList />} />
+                    <Route path="/hospital-services" element={<HospitalServicesList />} />
                     <Route path="/beauty-services/:subcategory" element={<BeautyServicesList />} />
-                    <Route path="/beauty-services"             element={<BeautyServicesList />} />
-                    <Route path="/beauty/:subcategory"         element={<BeautyServiceList />} />
-                    <Route path="/beauty"                      element={<BeautyServiceList />} />
-                    <Route path="/real-estate/:subcategory"    element={<RealEstateList />} />
-                    <Route path="/real-estate"                 element={<RealEstateList />} />
-                    <Route path="/shopping/:subcategory"       element={<ShoppingList />} />
-                    <Route path="/shopping"                    element={<ShoppingList />} />
-                    <Route path="/automotive/:subcategory"     element={<AutomotiveList />} />
-                    <Route path="/automotive"                  element={<AutomotiveList />} />
-                    <Route path="/education/:subcategory"      element={<EducationList />} />
-                    <Route path="/education"                   element={<EducationList />} />
-                    <Route path="/business/:subcategory"       element={<BusinessList />} />
-                    <Route path="/business"                    element={<BusinessList />} />
-                    <Route path="/pet-services/:subcategory"   element={<PetServiceList />} />
-                    <Route path="/pet-services"                element={<PetServiceList />} />
-                    <Route path="/pet/:subcategory"            element={<PetServiceList />} />
-                    <Route path="/pet"                         element={<PetServiceList />} />
+                    <Route path="/beauty-services" element={<BeautyServicesList />} />
+                    <Route path="/beauty/:subcategory" element={<BeautyServiceList />} />
+                    <Route path="/beauty" element={<BeautyServiceList />} />
+                    <Route path="/real-estate/:subcategory" element={<RealEstateList />} />
+                    <Route path="/real-estate" element={<RealEstateList />} />
+                    <Route path="/shopping/:subcategory" element={<ShoppingList />} />
+                    <Route path="/shopping" element={<ShoppingList />} />
+                    <Route path="/automotive/:subcategory" element={<AutomotiveList />} />
+                    <Route path="/automotive" element={<AutomotiveList />} />
+                    <Route path="/education/:subcategory" element={<EducationList />} />
+                    <Route path="/education" element={<EducationList />} />
+                    <Route path="/business/:subcategory" element={<BusinessList />} />
+                    <Route path="/business" element={<BusinessList />} />
+                    <Route path="/pet-services/:subcategory" element={<PetServiceList />} />
+                    <Route path="/pet-services" element={<PetServiceList />} />
+                    <Route path="/pet/:subcategory" element={<PetServiceList />} />
+                    <Route path="/pet" element={<PetServiceList />} />
                     <Route path="/tech-digital-services/:subcategory" element={<TechDigitalServiceList />} />
-                    <Route path="/tech-digital-services"       element={<TechDigitalServiceList />} />
+                    <Route path="/tech-digital-services" element={<TechDigitalServiceList />} />
                     <Route path="/digital-services/:subcategory" element={<DigitalServiceList />} />
-                    <Route path="/digital-services"            element={<DigitalServiceList />} />
+                    <Route path="/digital-services" element={<DigitalServiceList />} />
                     <Route path="/event-services/:subcategory" element={<EventList />} />
-                    <Route path="/event-services"              element={<EventList />} />
-                    <Route path="/event/:subcategory"          element={<EventServiceList />} />
-                    <Route path="/event"                       element={<EventServiceList />} />
-                    <Route path="/courier/:subcategory"        element={<CourierList />} />
-                    <Route path="/courier"                     element={<CourierList />} />
+                    <Route path="/event-services" element={<EventList />} />
+                    <Route path="/event/:subcategory" element={<EventServiceList />} />
+                    <Route path="/event" element={<EventServiceList />} />
+                    <Route path="/courier/:subcategory" element={<CourierList />} />
+                    <Route path="/courier" element={<CourierList />} />
                     <Route path="/industrial-services/:subcategory" element={<IndustrialServiceList />} />
-                    <Route path="/industrial-services"         element={<IndustrialServiceList />} />
-                    <Route path="/industrial/:subcategory"     element={<IndustrialServiceList />} />
-                    <Route path="/industrial"                  element={<IndustrialServiceList />} />
-                    <Route path="/sports/:subcategory"         element={<SportsServiceList />} />
-                    <Route path="/sports"                      element={<SportsServiceList />} />
+                    <Route path="/industrial-services" element={<IndustrialServiceList />} />
+                    <Route path="/industrial/:subcategory" element={<IndustrialServiceList />} />
+                    <Route path="/industrial" element={<IndustrialServiceList />} />
+                    <Route path="/sports/:subcategory" element={<SportsServiceList />} />
+                    <Route path="/sports" element={<SportsServiceList />} />
                     <Route path="/sports-services/:subcategory" element={<SportsServiceList />} />
-                    <Route path="/sports-services"             element={<SportsServiceList />} />
-                    <Route path="/agriculture/:subcategory"    element={<AgricultureList />} />
-                    <Route path="/agriculture"                 element={<AgricultureList />} />
-                    <Route path="/art-services/:subcategory"   element={<ArtServiceList />} />
-                    <Route path="/art-services"                element={<ArtServiceList />} />
-                    <Route path="/art/:subcategory"            element={<ArtServiceList />} />
-                    <Route path="/art"                         element={<ArtServiceList />} />
-                    <Route path="/daily-wages/:subcategory"    element={<DailyWagesList />} />
-                    <Route path="/daily-wages"                 element={<DailyWagesList />} />
+                    <Route path="/sports-services" element={<SportsServiceList />} />
+                    <Route path="/agriculture/:subcategory" element={<AgricultureList />} />
+                    <Route path="/agriculture" element={<AgricultureList />} />
+                    <Route path="/art-services/:subcategory" element={<ArtServiceList />} />
+                    <Route path="/art-services" element={<ArtServiceList />} />
+                    <Route path="/art/:subcategory" element={<ArtServiceList />} />
+                    <Route path="/art" element={<ArtServiceList />} />
+                    <Route path="/daily-wages/:subcategory" element={<DailyWagesList />} />
+                    <Route path="/daily-wages" element={<DailyWagesList />} />
                     <Route path="/wedding-services/:subcategory" element={<WeddingServiceList />} />
-                    <Route path="/wedding-services"            element={<WeddingServiceList />} />
-                    <Route path="/wedding/:subcategory"        element={<WeddingServiceList />} />
-                    <Route path="/wedding"                     element={<WeddingServiceList />} />
-                    <Route path="/corporate/:subcategory"      element={<CorporativeServiceList />} />
-                    <Route path="/corporate"                   element={<CorporativeServiceList />} />
-                    <Route path="/corporative/:subcategory"    element={<CorporativeServiceList />} />
-                    <Route path="/corporative"                 element={<CorporativeServiceList />} />
-                    <Route path="/plumber/:subcategory"        element={<PlumberServiceList />} />
-                    <Route path="/plumber"                     element={<PlumberServiceList />} />
-                    <Route path="/home-personal/:subcategory"  element={<HomePersonalServiceList />} />
-                    <Route path="/home-personal"               element={<HomePersonalServiceList />} />
-                    <Route path="/food/:subcategory"           element={<FoodServiceList />} />
-                    <Route path="/food"                        element={<FoodServiceList />} />
+                    <Route path="/wedding-services" element={<WeddingServiceList />} />
+                    <Route path="/wedding/:subcategory" element={<WeddingServiceList />} />
+                    <Route path="/wedding" element={<WeddingServiceList />} />
+                    <Route path="/corporate/:subcategory" element={<CorporativeServiceList />} />
+                    <Route path="/corporate" element={<CorporativeServiceList />} />
+                    <Route path="/corporative/:subcategory" element={<CorporativeServiceList />} />
+                    <Route path="/corporative" element={<CorporativeServiceList />} />
+                    <Route path="/plumber/:subcategory" element={<PlumberServiceList />} />
+                    <Route path="/plumber" element={<PlumberServiceList />} />
+                    <Route path="/home-personal/:subcategory" element={<HomePersonalServiceList />} />
+                    <Route path="/home-personal" element={<HomePersonalServiceList />} />
+                    <Route path="/food/:subcategory" element={<FoodServiceList />} />
+                    <Route path="/food" element={<FoodServiceList />} />
 
                     {/* Worker routes */}
                     <Route

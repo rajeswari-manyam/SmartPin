@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
 import {
   getUserById,
@@ -9,8 +8,32 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "../context/AccountContext";
 
-const MyProfile: React.FC = () => {
+const BRAND = "#00598a";
 
+/* ── helpers ──────────────────────────────────────────────────────────────── */
+const inputBase =
+  "w-full px-4 py-3 border rounded-xl transition-all text-base text-gray-800 " +
+  "placeholder-gray-400 bg-white focus:outline-none " +
+  "focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a]";
+
+const inputDisabled =
+  "w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 " +
+  "text-gray-500 cursor-not-allowed text-base";
+
+const FieldLabel: React.FC<{ icon: string; children: React.ReactNode; required?: boolean }> = ({
+  icon,
+  children,
+  required,
+}) => (
+  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1.5">
+    <span>{icon}</span>
+    {children}
+    {required && <span className="text-red-500 ml-0.5">*</span>}
+  </label>
+);
+
+/* ── component ────────────────────────────────────────────────────────────── */
+const MyProfile: React.FC = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -22,228 +45,159 @@ const MyProfile: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /* ================= GET USER ID ================= */
+  /* ── getUserId ────────────────────────────────────────────────────────── */
   const getUserId = () => {
     const storedUserId = localStorage.getItem("userId");
     const storedUserData = localStorage.getItem("userData");
-
     if (storedUserId) return storedUserId;
-
     if (storedUserData) {
       try {
-        const userData = JSON.parse(storedUserData);
-        return userData.id || userData._id || userData.userId;
-      } catch (e) {
-        console.error("Failed to parse userData:", e);
-      }
+        const parsed = JSON.parse(storedUserData);
+        return parsed.id || parsed._id || parsed.userId;
+      } catch { }
     }
-
     return null;
   };
 
+  /* ── phone validation ─────────────────────────────────────────────────── */
+  const isPhoneValid = (p: string) => /^[6-9]\d{9}$/.test(p);
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+    setPhone(val);
+    if (val.length > 0) {
+      setPhoneError(isPhoneValid(val) ? null : "Must be 10 digits starting with 6–9");
+    } else {
+      setPhoneError(null);
+    }
+  };
+
+  /* ── fetch profile ────────────────────────────────────────────────────── */
   useEffect(() => {
     const fetchProfile = async () => {
       const userId = getUserId();
-
-      if (!userId) {
-        console.error("No userId found in localStorage");
-        setError("Please login again");
-        setIsLoading(false);
-        return;
-      }
-
+      if (!userId) { setError("Please login again"); setIsLoading(false); return; }
       try {
         setIsLoading(true);
         setError(null);
-
-        console.log("Fetching profile for userId:", userId);
-
         const savedPhone = localStorage.getItem("userPhone");
         const res = await getUserById(userId);
-
-        console.log("User data received:", res);
-
         if (res.success && res.data) {
           setName(res.data.name || "");
-
           const userPhone = res.data.phone || savedPhone || "";
           setPhone(userPhone);
-
-          if (res.data.phone && res.data.phone !== savedPhone) {
+          if (res.data.phone && res.data.phone !== savedPhone)
             localStorage.setItem("userPhone", res.data.phone);
-          }
-
           setEmail(res.data.email || "");
           setLatitude(res.data.latitude ? Number(res.data.latitude) : null);
           setLongitude(res.data.longitude ? Number(res.data.longitude) : null);
-
           if (res.data?.profilePic) {
-            const picUrl = res.data.profilePic.startsWith('http')
-              ? res.data.profilePic
-              : `${API_BASE_URL}${res.data.profilePic}`;
-            setProfilePic(picUrl);
-            console.log("Profile pic URL:", picUrl);
+            setProfilePic(
+              res.data.profilePic.startsWith("http")
+                ? res.data.profilePic
+                : `${API_BASE_URL}${res.data.profilePic}`
+            );
           }
-
-          console.log("✅ Profile loaded successfully");
         } else {
-          if (savedPhone) {
-            console.log("API failed but using localStorage phone:", savedPhone);
-            setPhone(savedPhone);
-          }
+          if (savedPhone) setPhone(savedPhone);
           setError("Failed to load profile data");
         }
       } catch (error: any) {
-        console.error("Profile fetch error:", error);
-
         const savedPhone = localStorage.getItem("userPhone");
-        if (savedPhone) {
-          console.log("Error occurred but using localStorage phone:", savedPhone);
-          setPhone(savedPhone);
-        }
-
+        if (savedPhone) setPhone(savedPhone);
         setError(error.message || "Failed to load profile");
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchProfile();
   }, []);
 
-  /* ================= GEO LOCATION ================= */
+  /* ── geolocation ──────────────────────────────────────────────────────── */
   useEffect(() => {
     if (latitude !== null && longitude !== null) return;
-
-    if (!navigator.geolocation) {
-      console.warn("Geolocation not supported");
-      return;
-    }
-
+    if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        console.log("Location obtained:", pos.coords);
-        setLatitude(pos.coords.latitude);
-        setLongitude(pos.coords.longitude);
-      },
-      (err) => {
-        console.error("Location error:", err);
-      }
+      (pos) => { setLatitude(pos.coords.latitude); setLongitude(pos.coords.longitude); },
+      (err) => console.error("Location error:", err)
     );
   }, [latitude, longitude]);
 
-  /* ================= IMAGE HANDLING ================= */
-  const handleImageClick = () => {
-    if (isEditing) {
-      fileInputRef.current?.click();
-    }
-  };
+  /* ── image handling ───────────────────────────────────────────────────── */
+  const handleImageClick = () => { if (isEditing) fileInputRef.current?.click(); };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert("Please select a valid image file");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image size should be less than 5MB");
-      return;
-    }
-
+    if (!file.type.startsWith("image/")) { alert("Please select a valid image file"); return; }
+    if (file.size > 5 * 1024 * 1024) { alert("Image size should be less than 5 MB"); return; }
     setProfilePicFile(file);
     setProfilePic(URL.createObjectURL(file));
   };
 
-  /* ================= SAVE PROFILE ================= */
+  /* ── save ─────────────────────────────────────────────────────────────── */
   const handleSave = async () => {
     const userId = getUserId();
-
-    if (!userId) {
-      alert("User not found. Please login again.");
-      return;
-    }
-
-    if (!name.trim()) {
-      alert("Name is required");
+    if (!userId) { alert("User not found. Please login again."); return; }
+    if (!name.trim()) { setError("Name is required"); return; }
+    if (phone && !isPhoneValid(phone)) {
+      setPhoneError("Please enter a valid 10-digit mobile number starting with 6–9");
       return;
     }
 
     try {
       setIsSaving(true);
       setError(null);
+      setSuccessMessage(null);
 
-      const payload: any = {
-        name: name.trim(),
-      };
-
+      const payload: any = { name: name.trim() };
+      if (phone.trim()) payload.phone = phone.trim();
       if (latitude !== null && longitude !== null) {
         payload.latitude = latitude;
         payload.longitude = longitude;
       }
-
-      if (profilePicFile) {
-        payload.profilePic = profilePicFile;
-      }
-
-      console.log("💾 Saving profile with payload:", {
-        ...payload,
-        profilePic: profilePicFile ? `File: ${profilePicFile.name}` : "No file"
-      });
+      if (profilePicFile) payload.profilePic = profilePicFile;
 
       const res = await updateUserById(userId, payload);
 
-      console.log("📥 Update response:", res);
-
       if (res.success) {
-        alert("Profile updated successfully ✓");
+        setSuccessMessage("Profile updated successfully ✓");
         setIsEditing(false);
         setProfilePicFile(null);
-        navigate("/", { replace: true });
-
-        // Update localStorage with new name
         localStorage.setItem("userName", name.trim());
-
-        // Update profile picture from response
+        if (phone.trim()) localStorage.setItem("userPhone", phone.trim());
         if (res.data?.profilePic) {
-          const picUrl = res.data.profilePic.startsWith('http')
-            ? res.data.profilePic
-            : `${API_BASE_URL}${res.data.profilePic}`;
-          setProfilePic(picUrl);
-          console.log("✅ Updated profile pic URL:", picUrl);
+          setProfilePic(
+            res.data.profilePic.startsWith("http")
+              ? res.data.profilePic
+              : `${API_BASE_URL}${res.data.profilePic}`
+          );
         }
-
-        // ✅ IMPORTANT: Trigger event for sidebar to update
-        console.log("🔄 Dispatching profile update event...");
         window.dispatchEvent(new Event("storage"));
         window.dispatchEvent(new Event("profileUpdated"));
-        console.log("✅ Profile update event dispatched");
-
+        setTimeout(() => navigate("/", { replace: true }), 1500);
       } else {
         throw new Error(res.message || "Update failed");
       }
     } catch (error: any) {
-      console.error("❌ Save error:", error);
-      const errorMsg = error.message || "Failed to update profile";
-      setError(errorMsg);
-      alert("Error: " + errorMsg);
+      setError(error.message || "Failed to update profile");
     } finally {
       setIsSaving(false);
     }
   };
 
-  /* ================= CANCEL ================= */
+  /* ── cancel ───────────────────────────────────────────────────────────── */
   const handleCancel = async () => {
     setIsEditing(false);
     setProfilePicFile(null);
     setError(null);
-
+    setPhoneError(null);
     const userId = getUserId();
     if (userId) {
       try {
@@ -254,31 +208,30 @@ const MyProfile: React.FC = () => {
           setEmail(res.data.email || "");
           setLatitude(res.data.latitude ? Number(res.data.latitude) : null);
           setLongitude(res.data.longitude ? Number(res.data.longitude) : null);
-
           if (res.data?.profilePic) {
-            const picUrl = res.data.profilePic.startsWith('http')
-              ? res.data.profilePic
-              : `${API_BASE_URL}${res.data.profilePic}`;
-            setProfilePic(picUrl);
+            setProfilePic(
+              res.data.profilePic.startsWith("http")
+                ? res.data.profilePic
+                : `${API_BASE_URL}${res.data.profilePic}`
+            );
           }
         }
-      } catch (err) {
-        console.error("Failed to reload profile:", err);
-      }
+      } catch (err) { console.error("Failed to reload profile:", err); }
     }
   };
 
-  /* ================= LOADING ================= */
+  /* ── loading ──────────────────────────────────────────────────────────── */
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="animate-spin h-12 w-12 border-4 border-blue-600 border-t-transparent rounded-full mb-4" />
+        <div className="animate-spin h-12 w-12 border-4 border-t-transparent rounded-full mb-4"
+          style={{ borderColor: BRAND, borderTopColor: "transparent" }} />
         <p className="text-gray-600">Loading profile...</p>
       </div>
     );
   }
 
-  /* ================= ERROR STATE ================= */
+  /* ── no user ──────────────────────────────────────────────────────────── */
   if (error && !getUserId()) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -286,193 +239,237 @@ const MyProfile: React.FC = () => {
           <div className="text-red-500 text-5xl mb-4">⚠️</div>
           <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
           <p className="text-gray-600 mb-6">{error}</p>
-          <Button
-            variant="gradient-blue"
-            onClick={() => window.location.href = '/login'}
+          <button
+            onClick={() => (window.location.href = "/login")}
+            className="px-6 py-3 rounded-xl font-semibold text-white text-sm transition-all"
+            style={{ backgroundColor: BRAND }}
           >
             Go to Login
-          </Button>
+          </button>
         </div>
       </div>
     );
   }
 
-  /* ================= UI ================= */
+  /* ── render ───────────────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl p-8 shadow-sm">
+      <div className="max-w-2xl mx-auto">
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className={`${typography.heading.h2}`}>My Profile</h1>
+        {/* ── Header ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-8 py-5 mb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Manage your personal information</p>
+          </div>
           {!isEditing && (
             <button
-              onClick={() => setIsEditing(true)}
-              className="text-blue-600 font-medium hover:text-blue-700 transition-colors px-4 py-2 rounded-lg hover:bg-blue-50"
+              onClick={() => { setIsEditing(true); setSuccessMessage(null); setError(null); }}
+              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-95"
+              style={{ backgroundColor: BRAND }}
             >
               ✏️ Edit Profile
             </button>
           )}
         </div>
 
-        {/* ERROR MESSAGE */}
+        {/* ── Alerts ── */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg">
-            <div className="flex items-center">
-              <span className="text-red-500 mr-2">⚠️</span>
-              <p className="text-red-700 text-sm font-medium">{error}</p>
-            </div>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+            <span className="text-red-500 mt-0.5">⚠️</span>
+            <p className="text-red-700 text-sm font-medium">{error}</p>
+          </div>
+        )}
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            <p className="text-green-700 text-sm font-medium">{successMessage}</p>
           </div>
         )}
 
-        {/* PROFILE IMAGE */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative group">
-            <div
-              onClick={handleImageClick}
-              className={`w-32 h-32 rounded-full overflow-hidden bg-gradient-to-r from-[#00598a] to-[#00598a] flex items-center justify-center shadow-lg ${isEditing ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
-                }`}
-            >
-              {profilePic ? (
-                <img
-                  src={profilePic}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white text-4xl font-bold">
-                  {name ? name.charAt(0).toUpperCase() : 'U'}
-                </span>
-              )}
-            </div>
+        {/* ── Profile Card ── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
 
-            {isEditing && (
-              <>
+          {/* Profile Image */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative group">
+              <div
+                onClick={handleImageClick}
+                className={`w-28 h-28 rounded-full overflow-hidden flex items-center justify-center shadow-md ${isEditing ? "cursor-pointer" : ""}`}
+                style={{ background: `linear-gradient(135deg, ${BRAND}, #0077b6)` }}
+              >
+                {profilePic ? (
+                  <img src={profilePic} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-white text-4xl font-bold">
+                    {name ? name.charAt(0).toUpperCase() : "U"}
+                  </span>
+                )}
+              </div>
+
+              {isEditing && (
                 <button
                   onClick={handleImageClick}
-                  className="absolute bottom-0 right-0 bg-blue-600 text-white p-3 rounded-full hover:bg-blue-700 transition-all shadow-lg hover:scale-110"
+                  className="absolute bottom-0 right-0 p-2.5 rounded-full text-white shadow-lg transition-all hover:scale-110"
+                  style={{ backgroundColor: BRAND }}
                   title="Change profile picture"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                   </svg>
                 </button>
-                {isEditing && !profilePic && (
-                  <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <span className="text-white text-sm">Click to upload</span>
-                  </div>
-                )}
-              </>
+              )}
+
+              <input ref={fileInputRef} type="file" accept="image/*" hidden onChange={handleImageChange} />
+            </div>
+
+            {isEditing && profilePicFile && (
+              <div className="mt-3 px-4 py-1.5 bg-green-50 border border-green-200 rounded-full">
+                <p className="text-xs text-green-700 font-medium">✓ New image selected: {profilePicFile.name}</p>
+              </div>
             )}
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={handleImageChange}
-            />
-          </div>
-
-          {isEditing && profilePicFile && (
-            <div className="mt-3 px-4 py-2 bg-green-50 border border-green-200 rounded-full">
-              <p className="text-sm text-green-700 font-medium">
-                ✓ New image selected
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* FORM */}
-        <div className="space-y-6">
-          {/* Name Field */}
-          <div>
-            <label className={`${typography.form.label} flex items-center gap-2`}>
-              <span>👤</span> Name
-            </label>
-            <input
-              value={name}
-              disabled={!isEditing}
-              onChange={(e) => setName(e.target.value)}
-              className={`w-full mt-2 px-4 py-3 border rounded-xl transition-all ${!isEditing
-                ? 'bg-gray-50 text-gray-600 cursor-not-allowed'
-                : 'bg-white border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200'
-                }`}
-              placeholder="Enter your name"
-            />
-          </div>
-
-          {/* Phone Number Field */}
-          <div>
-            <label className={`${typography.form.label} flex items-center gap-2`}>
-              <span>📱</span> Phone Number
-            </label>
-            <input
-              value={phone || "Not provided"}
-              disabled
-              className="w-full mt-2 px-4 py-3 border rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
-            />
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-              <span>🔒</span> Phone number is locked and cannot be changed
-            </p>
-          </div>
-
-          {/* Email Field (if available) */}
-          {email && (
-            <div>
-              <label className={`${typography.form.label} flex items-center gap-2`}>
-                <span>📧</span> Email
-              </label>
-              <input
-                value={email}
-                disabled
-                className="w-full mt-2 px-4 py-3 border rounded-xl bg-gray-100 text-gray-700 cursor-not-allowed"
-              />
-            </div>
-          )}
-
-          {/* Location Info */}
-          {(latitude !== null && longitude !== null) && (
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-              <p className="text-sm font-medium text-blue-900 mb-2 flex items-center gap-2">
-                <span>📍</span> Current Location
-              </p>
-              <div className="text-xs text-blue-700 space-y-1">
-                <p>Latitude: {latitude.toFixed(6)}</p>
-                <p>Longitude: {longitude.toFixed(6)}</p>
+            {!isEditing && (
+              <div className="mt-3 text-center">
+                <p className="text-lg font-bold text-gray-900">{name || "—"}</p>
+                {email && <p className="text-sm text-gray-500 mt-0.5">{email}</p>}
               </div>
+            )}
+          </div>
+
+          {/* Form Fields */}
+          <div className="space-y-5">
+
+            {/* Name */}
+            <div>
+              <FieldLabel icon="👤" required>Full Name</FieldLabel>
+              {isEditing ? (
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Enter your name"
+                  className={inputBase + " border-gray-300"}
+                />
+              ) : (
+                <div className={inputDisabled}>{name || "Not provided"}</div>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <FieldLabel icon="📱" required>Phone Number</FieldLabel>
+              {isEditing ? (
+                <>
+                  <div className="relative">
+                    {/* +91 prefix */}
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                      <span className="text-gray-600 font-medium text-sm">+91</span>
+                      <span className="ml-2 h-5 w-px bg-gray-300" />
+                    </div>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={handlePhoneChange}
+                      placeholder="9876543210"
+                      maxLength={10}
+                      inputMode="numeric"
+                      className={
+                        inputBase +
+                        " pl-16 pr-10 " +
+                        (phoneError ? "border-red-400 focus:ring-red-300 focus:border-red-400" : "border-gray-300")
+                      }
+                    />
+                    {/* Live validation icon */}
+                    {phone.length > 0 && (
+                      <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
+                        {isPhoneValid(phone)
+                          ? <span className="text-green-500 text-lg font-bold">✓</span>
+                          : <span className="text-red-400 text-lg font-bold">✗</span>
+                        }
+                      </div>
+                    )}
+                  </div>
+                  {/* Hint */}
+                  {phone.length === 0 && (
+                    <p className="mt-1.5 text-xs text-gray-400">Enter your 10-digit mobile number</p>
+                  )}
+                  {phoneError && (
+                    <p className="mt-1.5 text-xs text-red-500 flex items-center gap-1">⚠️ {phoneError}</p>
+                  )}
+                  {phone.length > 0 && isPhoneValid(phone) && (
+                    <p className="mt-1.5 text-xs text-green-600">✓ Valid mobile number</p>
+                  )}
+                </>
+              ) : (
+                <div className={inputDisabled}>
+                  {phone ? `+91 ${phone}` : "Not provided"}
+                </div>
+              )}
+            </div>
+
+            {/* Email (read-only always) */}
+            {email && (
+              <div>
+                <FieldLabel icon="📧">Email</FieldLabel>
+                <div className={inputDisabled}>{email}</div>
+                <p className="text-xs text-gray-400 mt-1.5 flex items-center gap-1">
+                  🔒 Email cannot be changed
+                </p>
+              </div>
+            )}
+
+            {/* Location */}
+            {latitude !== null && longitude !== null && (
+              <div className="p-4 rounded-xl border" style={{ backgroundColor: "#e8f4fb", borderColor: "#b3d4e8" }}>
+                <p className="text-sm font-semibold mb-2 flex items-center gap-1.5" style={{ color: BRAND }}>
+                  📍 Current Location
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-white rounded-lg px-3 py-2 text-xs text-gray-600 font-mono">
+                    Lat: {latitude.toFixed(6)}
+                  </div>
+                  <div className="bg-white rounded-lg px-3 py-2 text-xs text-gray-600 font-mono">
+                    Lng: {longitude.toFixed(6)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          {isEditing && (
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={handleCancel}
+                disabled={isSaving}
+                type="button"
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-base border-2 border-[#00598a] text-[#00598a]
+                  hover:bg-[#00598a] hover:text-white active:bg-[#004a73]
+                  transition-all ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving || (phone.length > 0 && !isPhoneValid(phone))}
+                type="button"
+                className={`flex-1 py-3.5 rounded-xl font-semibold text-base text-white shadow-md
+                  hover:shadow-lg bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                  transition-all ${isSaving || (phone.length > 0 && !isPhoneValid(phone)) ? "opacity-60 cursor-not-allowed" : ""}`}
+              >
+                {isSaving ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full inline-block" />
+                    Saving...
+                  </span>
+                ) : (
+                  "💾 Save Changes"
+                )}
+              </button>
             </div>
           )}
         </div>
-
-        {/* ACTION BUTTONS */}
-        {isEditing && (
-          <div className="flex gap-4 mt-8">
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={handleCancel}
-              disabled={isSaving}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="gradient-blue"
-              fullWidth
-              onClick={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Saving...
-                </span>
-              ) : (
-                "💾 Save Changes"
-              )}
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );

@@ -18,7 +18,7 @@ import IndustrialIcon from "../../assets/icons/Industrial.png";
 import PetIcon from "../../assets/icons/Pet.png";
 import PlumberIcon from "../../assets/icons/Plumber.png";
 import RealEstateIcon from "../../assets/icons/RealEstate.png";
-import RestaurantsIcon from "../../assets/icons/Restarents.png";
+import RestaurantsIcon from "../../assets/icons/Restaurants.png";
 import ShoppingIcon from "../../assets/icons/Shopping.png";
 import SportsIcon from "../../assets/icons/Sports.png";
 import TechIcon from "../../assets/icons/Tech.png";

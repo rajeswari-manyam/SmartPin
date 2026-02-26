@@ -237,17 +237,13 @@ export const updateBeautyWorker = async (
  */
 export const deleteById = async (id: string): Promise<any> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/deleteById?id=${id}`, {
+    const response = await fetch(`${API_BASE_URL}/deleteById/${id}`, {  // ← FIXED
       method: "DELETE",
       redirect: "follow",
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error deleting beauty worker with ID ${id}:`, message);

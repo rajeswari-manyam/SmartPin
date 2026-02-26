@@ -1,3 +1,463 @@
+// import React, { useState, useRef, useEffect } from "react";
+// import { useNavigate } from "react-router-dom";
+// import VoiceService from "../../services/voiceService";
+// import { useAuth } from "../../context/AuthContext";
+// import OTPInputForm from "./OtpVerification/OTPInputForm";
+// import SuccessScreen from "./OtpVerification/SuccessScreen";
+// import UserModal from "../../modal/UserModal";
+// import { extractDigits } from "../../utils/OTPUtils";
+// import { verifyOtp, resendOtp, getUserById } from "../../services/api.service";
+// import { signInWithPopup, signOut } from "firebase/auth";
+// import { getFcmToken } from "../../lib/fcm";
+// import { auth, googleProvider } from "../../firebase";
+// interface VoiceRecognitionResult {
+//     transcript: string;
+//     confidence: number;
+//     isFinal: boolean;
+// }
+// interface User {
+//     id?: string;
+//     _id?: string;
+//     email?: string;
+//     phone?: string;
+//     name?: string;
+//     token?: string;
+//     fcmToken?: string;
+// }
+// interface OTPVerificationProps {
+//     email: string;
+//     fcmToken?: string;
+//     onVerify?: (otp: string) => void;
+//     onResend?: () => void;
+//     onBack: () => void;
+//     onContinue?: () => void;
+//     onClose?: () => void;
+// }
+
+// interface OTPVerifyResponse {
+//     success: boolean;
+//     message?: string;
+//     userId?: string;
+//     user?: {
+//         id?: string;
+//         _id?: string;
+//         email?: string;
+//         phone?: string;
+//         name?: string;
+//         token?: string;
+//         fcmToken?: string;
+//     };
+//     token?: string;
+//     data?: any;
+// }
+
+// const OTPVerification: React.FC<OTPVerificationProps> = ({
+//     email,
+//     onResend,
+//     onBack,
+//     onContinue,
+//     onClose,
+// }) => {
+//     const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+//     const [timer, setTimer] = useState(60);
+//     const [isListening, setIsListening] = useState(false);
+//     const [voiceError, setVoiceError] = useState<string | null>(null);
+//     const [isVerifying, setIsVerifying] = useState(false);
+//     const [showSuccess, setShowSuccess] = useState(false);
+//     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
+//     const [userId, setUserId] = useState<string>("");
+
+//     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+//     const voiceService = VoiceService.getInstance();
+//     const navigate = useNavigate();
+//     const { login } = useAuth();
+//     const[user, setUser] = useState<User | null>(null);
+
+// const fcmToken = await getFcmToken();
+
+//     // ------------------- AUTO-VERIFY OTP -------------------
+//     useEffect(() => {
+//         const otpString = otp.join("");
+//         if (otpString.length === 6 && !isVerifying) {
+//             handleVerifyOTP(otpString);
+//         }
+//     }, [otp]);
+
+
+//     // ✅ WEBSITE OTP AUTO-FILL (SINGLE, CORRECT IMPLEMENTATION)
+//     useEffect(() => {
+//         const abortController = new AbortController();
+
+//         if (!("OTPCredential" in window)) {
+//             console.log("❌ Web OTP API not supported");
+//             return;
+//         }
+
+//         navigator.credentials.get({
+//             otp: { transport: ["sms"] },
+//             signal: abortController.signal,
+//         } as any)
+//             .then((credential: any) => {
+//                 if (credential?.code) {
+//                     console.log("📩 OTP auto-filled:", credential.code);
+
+//                     const otpDigits = credential.code
+//                         .replace(/\D/g, "")
+//                         .slice(0, 6)
+//                         .split("");
+
+//                     setOtp(otpDigits);
+//                 }
+//             })
+//             .catch((err) => {
+//                 if (err.name !== "AbortError") {
+//                     console.log("OTP auto-fill error:", err.message);
+//                 }
+//             });
+
+//         return () => abortController.abort();
+//     }, []);
+
+//     useEffect(() => {
+//         if (timer > 0 && !showSuccess && !showFirstTimeModal) {
+//             const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
+//             return () => clearInterval(interval);
+//         }
+//     }, [timer, showSuccess, showFirstTimeModal]);
+
+//     const isValidMongoId = (id: string): boolean => {
+//         const mongoIdRegex = /^[a-f\d]{24}$/i;
+//         return mongoIdRegex.test(id);
+//     };
+
+//     const hasLoggedInBefore = (emailAddr: string): boolean => {
+//         const loggedInEmails = localStorage.getItem("loggedInEmails");
+//         if (!loggedInEmails) return false;
+
+//         try {
+//             const emails = JSON.parse(loggedInEmails);
+//             return emails.includes(emailAddr);
+//         } catch {
+//             return false;
+//         }
+//     };
+
+//     const markEmailAsLoggedIn = (emailAddr: string) => {
+//         const loggedInEmails = localStorage.getItem("loggedInEmails");
+//         let emails: string[] = [];
+
+//         try {
+//             emails = loggedInEmails ? JSON.parse(loggedInEmails) : [];
+//         } catch {
+//             emails = [];
+//         }
+
+//         if (!emails.includes(emailAddr)) {
+//             emails.push(emailAddr);
+//             localStorage.setItem("loggedInEmails", JSON.stringify(emails));
+//         }
+//     };
+
+//     const extractUserId = (response: OTPVerifyResponse): string => {
+//         const possibleUserIds = [
+//             { source: "response.userId", value: response.userId },
+//             { source: "response.user?.id", value: response.user?.id },
+//             { source: "response.user?._id", value: response.user?._id },
+//             { source: "response.data?.userId", value: response.data?.userId },
+//             { source: "response.data?.user?.id", value: response.data?.user?.id },
+//             { source: "response.data?.user?._id", value: response.data?.user?._id },
+//             { source: "response.data?.id", value: response.data?.id },
+//             { source: "response.data?._id", value: response.data?._id },
+//         ];
+
+//         for (const { value } of possibleUserIds) {
+//             if (value && typeof value === 'string') {
+//                 if (value === email) continue;
+//                 if (isValidMongoId(value)) return value;
+//                 if (value.length > 10) return value;
+//             }
+//         }
+
+//         return "";
+//     };
+
+//     const handleVerifyOTP = async (otpString: string) => {
+//         if (!otpString || otpString.length !== 6 || isVerifying) return;
+
+//         try {
+//             setIsVerifying(true);
+
+//             // ✅ FCM is optional — never let it block OTP verification
+//             let fcmToken = "";
+//             try {
+//                 fcmToken = (await generateFCMToken()) || "";
+//             } catch (fcmErr) {
+//                 console.warn("FCM token generation failed (non-fatal):", fcmErr);
+//             }
+
+//             const response: OTPVerifyResponse = await verifyOtp({
+//                 email: email,
+//                 otp: otpString,
+//                 fcmToken,
+//             });
+//             if (response.success) {
+//                 console.log("✅ OTP verified!");
+
+//                 const extractedUserId = extractUserId(response);
+
+//                 if (!extractedUserId || extractedUserId === email) {
+//                     alert("Authentication error. Please try again.");
+//                     setIsVerifying(false);
+//                     return;
+//                 }
+
+//                 setUserId(extractedUserId);
+//                 localStorage.setItem("userId", extractedUserId);
+//                 localStorage.setItem("userEmail", email);
+//                 if (fcmToken) {
+//                     localStorage.setItem("fcmToken", fcmToken);
+//                 }
+//                 const token = response.token || response.user?.token || response.data?.token;
+//                 if (token) localStorage.setItem("token", token);
+
+//                 await checkUserProfileAndProceed(extractedUserId);
+
+//             } else {
+//                 console.error("❌ OTP verification failed");
+//                 alert(response.message || "Invalid OTP. Please try again.");
+//                 setIsVerifying(false);
+//                 // Clear OTP fields on failure
+//                 setOtp(["", "", "", "", "", ""]);
+//                 inputRefs.current[0]?.focus();
+//             }
+//         } catch (error: any) {
+//             console.error("❌ OTP verification error:", error);
+//             alert("Something went wrong. Please try again.");
+//             setIsVerifying(false);
+//             setOtp(["", "", "", "", "", ""]);
+//             inputRefs.current[0]?.focus();
+//         }
+//     };
+
+//     const checkUserProfileAndProceed = async (userId: string) => {
+//         try {
+//             const isFirstTimeForThisEmail = !hasLoggedInBefore(email);
+
+//             if (isFirstTimeForThisEmail) {
+//                 setShowFirstTimeModal(true);
+//             } else {
+//                 const userResponse = await getUserById(userId);
+
+//                 if (userResponse.success && userResponse.data) {
+//                     const userData = userResponse.data;
+//                     localStorage.setItem("userName", userData.name || "User");
+//                     localStorage.setItem("isFirstTimeUser", "false");
+//                     localStorage.setItem("userData", JSON.stringify(userData));
+
+//                     const user = {
+//                         _id: userId,
+//                         id: userId,
+//                         phone: email,
+//                         name: userData.name,
+//                         isVerified: true,
+//                         latitude: userData.latitude,
+//                         longitude: userData.longitude,
+//                         createdAt: userData.createdAt,
+//                         updatedAt: userData.updatedAt,
+//                     };
+
+//                     login(user);
+//                 } else {
+//                     const user = {
+//                         _id: userId,
+//                         id: userId,
+//                         phone: email,
+//                         name: "User",
+//                         isVerified: true,
+//                     };
+//                     localStorage.setItem("isFirstTimeUser", "false");
+//                     login(user);
+//                 }
+
+//                 setShowSuccess(true);
+//             }
+//         } catch (error) {
+//             console.error("❌ Error checking user profile:", error);
+//             setShowFirstTimeModal(true);
+//         }
+//     };
+
+//     const handleFirstTimeComplete = async (userName: string) => {
+//         markEmailAsLoggedIn(email);
+
+//         try {
+//             const userResponse = await getUserById(userId);
+
+//             if (userResponse.success && userResponse.data) {
+//                 const userData = userResponse.data;
+//                 localStorage.setItem("userName", userName);
+//                 localStorage.setItem("isFirstTimeUser", "false");
+//                 localStorage.setItem("userData", JSON.stringify(userData));
+
+//                 const user = {
+//                     _id: userId,
+//                     id: userId,
+//                     phone: email,
+//                     name: userName,
+//                     isVerified: true,
+//                     latitude: userData.latitude,
+//                     longitude: userData.longitude,
+//                     createdAt: userData.createdAt,
+//                     updatedAt: userData.updatedAt,
+//                 };
+
+//                 login(user);
+//             } else {
+//                 const user = {
+//                     _id: userId,
+//                     id: userId,
+//                     phone: email,
+//                     name: userName,
+//                     isVerified: true,
+//                 };
+//                 localStorage.setItem("userName", userName);
+//                 localStorage.setItem("isFirstTimeUser", "false");
+//                 login(user);
+//             }
+//         } catch (error) {
+//             const user = {
+//                 _id: userId,
+//                 id: userId,
+//                 phone: email,
+//                 name: userName,
+//                 isVerified: true,
+//             };
+//             localStorage.setItem("userName", userName);
+//             localStorage.setItem("isFirstTimeUser", "false");
+//             login(user);
+//         }
+
+//         setShowFirstTimeModal(false);
+//         setShowSuccess(true);
+//     };
+
+//     const handleResend = async () => {
+//         try {
+//             setTimer(60);
+//             setOtp(["", "", "", "", "", ""]);
+//             inputRefs.current[0]?.focus();
+
+//             const response = await resendOtp(email);
+
+//             if (response.success) {
+//                 alert("OTP sent successfully!");
+//             } else {
+//                 alert(response.message || "Failed to resend OTP");
+//             }
+
+//             if (onResend) onResend();
+//         } catch (error) {
+//             alert("Failed to resend OTP. Please try again.");
+//         }
+//     };
+
+//     const handleVoiceInput = () => {
+//         if (!voiceService.isSpeechRecognitionSupported()) {
+//             setVoiceError("Voice recognition not supported. Use Chrome or Edge.");
+//             setTimeout(() => setVoiceError(null), 5000);
+//             return;
+//         }
+
+//         if (isListening) {
+//             voiceService.stopListening();
+//             setIsListening(false);
+//             return;
+//         }
+
+//         setIsListening(true);
+//         setVoiceError(null);
+
+//         voiceService.startListening(
+//             (result: VoiceRecognitionResult) => {
+//                 const digits = extractDigits(result.transcript);
+
+//                 if (digits.length > 0) {
+//                     const otpArray = digits.slice(0, 6).split("");
+//                     const filledOtp = [...otpArray, ...Array(6 - otpArray.length).fill("")];
+//                     setOtp(filledOtp);
+
+//                     const nextIndex = Math.min(otpArray.length, 5);
+//                     inputRefs.current[nextIndex]?.focus();
+
+//                     if (digits.length >= 6 && result.isFinal) {
+//                         voiceService.stopListening();
+//                         setIsListening(false);
+//                     }
+//                 }
+//             },
+//             (error: string) => {
+//                 setVoiceError(error);
+//                 setIsListening(false);
+//                 setTimeout(() => setVoiceError(null), 5000);
+//             }
+//         );
+//     };
+
+//     const handleSuccessContinue = () => {
+//         if (onClose) onClose();
+//         if (onContinue) onContinue();
+//         navigate("/role-selection", { replace: true });
+//     };
+
+//     if (showSuccess) {
+//         return <SuccessScreen onContinue={handleSuccessContinue} />;
+//     }
+
+//     if (showFirstTimeModal) {
+//         return (
+//             <>
+//                 <OTPInputForm
+//                     email={email}
+//                     otp={otp}
+//                     setOtp={setOtp}
+//                     timer={timer}
+//                     isListening={isListening}
+//                     voiceError={voiceError}
+//                     isVerifying={isVerifying}
+//                     inputRefs={inputRefs}
+//                     onBack={onBack}
+//                     onVerify={handleVerifyOTP}
+//                     onResend={handleResend}
+//                     onVoiceInput={handleVoiceInput}
+//                 />
+//                 <UserModal
+//                     phoneNumber={email}
+//                     userId={userId}
+//                     onComplete={handleFirstTimeComplete}
+//                 />
+//             </>
+//         );
+//     }
+
+//     return (
+//         <OTPInputForm
+//             email={email}
+//             otp={otp}
+//             setOtp={setOtp}
+//             timer={timer}
+//             isListening={isListening}
+//             voiceError={voiceError}
+//             isVerifying={isVerifying}
+//             inputRefs={inputRefs}
+//             onBack={onBack}
+//             onVerify={handleVerifyOTP}
+//             onResend={handleResend}
+//             onVoiceInput={handleVoiceInput}
+//         />
+//     );
+// };
+
+// export default OTPVerification;
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import VoiceService from "../../services/voiceService";
@@ -7,17 +467,26 @@ import SuccessScreen from "./OtpVerification/SuccessScreen";
 import UserModal from "../../modal/UserModal";
 import { extractDigits } from "../../utils/OTPUtils";
 import { verifyOtp, resendOtp, getUserById } from "../../services/api.service";
-import { generateFCMToken } from "../../firebase/fcm";
+import { getFcmToken } from "../../lib/fcm";
+
 interface VoiceRecognitionResult {
     transcript: string;
     confidence: number;
     isFinal: boolean;
 }
 
+interface User {
+    id?: string;
+    _id?: string;
+    email?: string;
+    phone?: string;
+    name?: string;
+    token?: string;
+    fcmToken?: string;
+}
+
 interface OTPVerificationProps {
     email: string;
-    fcmToken?: string;
-    onVerify?: (otp: string) => void;
     onResend?: () => void;
     onBack: () => void;
     onContinue?: () => void;
@@ -28,15 +497,7 @@ interface OTPVerifyResponse {
     success: boolean;
     message?: string;
     userId?: string;
-    user?: {
-        id?: string;
-        _id?: string;
-        email?: string;
-        phone?: string;
-        name?: string;
-        token?: string;
-        fcmToken?: string;
-    };
+    user?: User;
     token?: string;
     data?: any;
 }
@@ -57,13 +518,32 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
     const [userId, setUserId] = useState<string>("");
 
+    const [fcmToken, setFcmToken] = useState<string>("");
+
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const voiceService = VoiceService.getInstance();
     const navigate = useNavigate();
     const { login } = useAuth();
 
+    // ------------------- GET FCM TOKEN (ONCE) -------------------
+    useEffect(() => {
+        const fetchFcm = async () => {
+            try {
+                const token = await getFcmToken();
+                if (token) {
+                    setFcmToken(token);
+                    localStorage.setItem("fcmToken", token);
+                    console.log("🔥 FCM Token:", token);
+                }
+            } catch (err) {
+                console.warn("⚠️ FCM failed (non-blocking)", err);
+            }
+        };
 
-    // ------------------- AUTO-VERIFY OTP -------------------
+        fetchFcm();
+    }, []);
+
+    // ------------------- AUTO VERIFY OTP -------------------
     useEffect(() => {
         const otpString = otp.join("");
         if (otpString.length === 6 && !isVerifying) {
@@ -71,329 +551,154 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         }
     }, [otp]);
 
-
-    // ✅ WEBSITE OTP AUTO-FILL (SINGLE, CORRECT IMPLEMENTATION)
+    // ------------------- WEB OTP AUTO FILL -------------------
     useEffect(() => {
-        const abortController = new AbortController();
+        if (!("OTPCredential" in window)) return;
 
-        if (!("OTPCredential" in window)) {
-            console.log("❌ Web OTP API not supported");
-            return;
-        }
+        const controller = new AbortController();
 
-        navigator.credentials.get({
-            otp: { transport: ["sms"] },
-            signal: abortController.signal,
-        } as any)
-            .then((credential: any) => {
-                if (credential?.code) {
-                    console.log("📩 OTP auto-filled:", credential.code);
-
-                    const otpDigits = credential.code
-                        .replace(/\D/g, "")
-                        .slice(0, 6)
-                        .split("");
-
-                    setOtp(otpDigits);
+        navigator.credentials
+            .get({
+                otp: { transport: ["sms"] },
+                signal: controller.signal,
+            } as any)
+            .then((cred: any) => {
+                if (cred?.code) {
+                    const digits = cred.code.replace(/\D/g, "").slice(0, 6);
+                    setOtp(digits.split(""));
                 }
             })
-            .catch((err) => {
-                if (err.name !== "AbortError") {
-                    console.log("OTP auto-fill error:", err.message);
-                }
-            });
+            .catch(() => { });
 
-        return () => abortController.abort();
+        return () => controller.abort();
     }, []);
 
+    // ------------------- TIMER -------------------
     useEffect(() => {
         if (timer > 0 && !showSuccess && !showFirstTimeModal) {
-            const interval = setInterval(() => setTimer(prev => prev - 1), 1000);
-            return () => clearInterval(interval);
+            const i = setInterval(() => setTimer(t => t - 1), 1000);
+            return () => clearInterval(i);
         }
     }, [timer, showSuccess, showFirstTimeModal]);
 
-    const isValidMongoId = (id: string): boolean => {
-        const mongoIdRegex = /^[a-f\d]{24}$/i;
-        return mongoIdRegex.test(id);
-    };
+    const isValidMongoId = (id: string) =>
+        /^[a-f\d]{24}$/i.test(id);
 
-    const hasLoggedInBefore = (emailAddr: string): boolean => {
-        const loggedInEmails = localStorage.getItem("loggedInEmails");
-        if (!loggedInEmails) return false;
-
-        try {
-            const emails = JSON.parse(loggedInEmails);
-            return emails.includes(emailAddr);
-        } catch {
-            return false;
-        }
-    };
-
-    const markEmailAsLoggedIn = (emailAddr: string) => {
-        const loggedInEmails = localStorage.getItem("loggedInEmails");
-        let emails: string[] = [];
-
-        try {
-            emails = loggedInEmails ? JSON.parse(loggedInEmails) : [];
-        } catch {
-            emails = [];
-        }
-
-        if (!emails.includes(emailAddr)) {
-            emails.push(emailAddr);
-            localStorage.setItem("loggedInEmails", JSON.stringify(emails));
-        }
-    };
-
-    const extractUserId = (response: OTPVerifyResponse): string => {
-        const possibleUserIds = [
-            { source: "response.userId", value: response.userId },
-            { source: "response.user?.id", value: response.user?.id },
-            { source: "response.user?._id", value: response.user?._id },
-            { source: "response.data?.userId", value: response.data?.userId },
-            { source: "response.data?.user?.id", value: response.data?.user?.id },
-            { source: "response.data?.user?._id", value: response.data?.user?._id },
-            { source: "response.data?.id", value: response.data?.id },
-            { source: "response.data?._id", value: response.data?._id },
+    const extractUserId = (res: OTPVerifyResponse): string => {
+        const ids = [
+            res.userId,
+            res.user?.id,
+            res.user?._id,
+            res.data?.userId,
+            res.data?.user?.id,
+            res.data?.user?._id,
+            res.data?.id,
+            res.data?._id,
         ];
-
-        for (const { value } of possibleUserIds) {
-            if (value && typeof value === 'string') {
-                if (value === email) continue;
-                if (isValidMongoId(value)) return value;
-                if (value.length > 10) return value;
-            }
-        }
-
-        return "";
+        return ids.find(id => id && isValidMongoId(id)) || "";
     };
 
+    // ------------------- VERIFY OTP -------------------
     const handleVerifyOTP = async (otpString: string) => {
-        if (!otpString || otpString.length !== 6 || isVerifying) return;
+        if (isVerifying) return;
 
         try {
             setIsVerifying(true);
 
-            // ✅ FCM is optional — never let it block OTP verification
-            let fcmToken = "";
-            try {
-                fcmToken = (await generateFCMToken()) || "";
-            } catch (fcmErr) {
-                console.warn("FCM token generation failed (non-fatal):", fcmErr);
-            }
-
-            const response: OTPVerifyResponse = await verifyOtp({
-                email: email,
+            const response = await verifyOtp({
+                email,
                 otp: otpString,
-                fcmToken,
+                fcmToken: fcmToken || localStorage.getItem("fcmToken") || "",
             });
-            if (response.success) {
-                console.log("✅ OTP verified!");
 
-                const extractedUserId = extractUserId(response);
-
-                if (!extractedUserId || extractedUserId === email) {
-                    alert("Authentication error. Please try again.");
-                    setIsVerifying(false);
-                    return;
-                }
-
-                setUserId(extractedUserId);
-                localStorage.setItem("userId", extractedUserId);
-                localStorage.setItem("userEmail", email);
-                if (fcmToken) {
-                    localStorage.setItem("fcmToken", fcmToken);
-                }
-                const token = response.token || response.user?.token || response.data?.token;
-                if (token) localStorage.setItem("token", token);
-
-                await checkUserProfileAndProceed(extractedUserId);
-
-            } else {
-                console.error("❌ OTP verification failed");
-                alert(response.message || "Invalid OTP. Please try again.");
-                setIsVerifying(false);
-                // Clear OTP fields on failure
-                setOtp(["", "", "", "", "", ""]);
-                inputRefs.current[0]?.focus();
+            if (!response.success) {
+                throw new Error(response.message);
             }
-        } catch (error: any) {
-            console.error("❌ OTP verification error:", error);
-            alert("Something went wrong. Please try again.");
-            setIsVerifying(false);
+
+            const extractedId = extractUserId(response);
+            if (!extractedId) throw new Error("Invalid user");
+
+            setUserId(extractedId);
+            localStorage.setItem("userId", extractedId);
+            localStorage.setItem("userEmail", email);
+
+            const token =
+                response.token ||
+                response.user?.token ||
+                response.data?.token;
+
+            if (token) localStorage.setItem("token", token);
+
+            await checkUserProfileAndProceed(extractedId);
+
+        } catch (err) {
+            alert("Invalid OTP. Try again.");
             setOtp(["", "", "", "", "", ""]);
             inputRefs.current[0]?.focus();
+        } finally {
+            setIsVerifying(false);
         }
     };
 
-    const checkUserProfileAndProceed = async (userId: string) => {
+    // ------------------- PROFILE CHECK -------------------
+    const checkUserProfileAndProceed = async (uid: string) => {
         try {
-            const isFirstTimeForThisEmail = !hasLoggedInBefore(email);
+            const res = await getUserById(uid);
+            const userData = res?.data;
 
-            if (isFirstTimeForThisEmail) {
-                setShowFirstTimeModal(true);
-            } else {
-                const userResponse = await getUserById(userId);
+            const user = {
+                _id: uid,
+                id: uid,
+                phone: email,
+                name: userData?.name || "User",
+                isVerified: true,
+                latitude: userData?.latitude,
+                longitude: userData?.longitude,
+            };
 
-                if (userResponse.success && userResponse.data) {
-                    const userData = userResponse.data;
-                    localStorage.setItem("userName", userData.name || "User");
-                    localStorage.setItem("isFirstTimeUser", "false");
-                    localStorage.setItem("userData", JSON.stringify(userData));
-
-                    const user = {
-                        _id: userId,
-                        id: userId,
-                        phone: email,
-                        name: userData.name,
-                        isVerified: true,
-                        latitude: userData.latitude,
-                        longitude: userData.longitude,
-                        createdAt: userData.createdAt,
-                        updatedAt: userData.updatedAt,
-                    };
-
-                    login(user);
-                } else {
-                    const user = {
-                        _id: userId,
-                        id: userId,
-                        phone: email,
-                        name: "User",
-                        isVerified: true,
-                    };
-                    localStorage.setItem("isFirstTimeUser", "false");
-                    login(user);
-                }
-
-                setShowSuccess(true);
-            }
-        } catch (error) {
-            console.error("❌ Error checking user profile:", error);
+            login(user);
+            setShowSuccess(true);
+        } catch {
             setShowFirstTimeModal(true);
         }
     };
 
-    const handleFirstTimeComplete = async (userName: string) => {
-        markEmailAsLoggedIn(email);
-
-        try {
-            const userResponse = await getUserById(userId);
-
-            if (userResponse.success && userResponse.data) {
-                const userData = userResponse.data;
-                localStorage.setItem("userName", userName);
-                localStorage.setItem("isFirstTimeUser", "false");
-                localStorage.setItem("userData", JSON.stringify(userData));
-
-                const user = {
-                    _id: userId,
-                    id: userId,
-                    phone: email,
-                    name: userName,
-                    isVerified: true,
-                    latitude: userData.latitude,
-                    longitude: userData.longitude,
-                    createdAt: userData.createdAt,
-                    updatedAt: userData.updatedAt,
-                };
-
-                login(user);
-            } else {
-                const user = {
-                    _id: userId,
-                    id: userId,
-                    phone: email,
-                    name: userName,
-                    isVerified: true,
-                };
-                localStorage.setItem("userName", userName);
-                localStorage.setItem("isFirstTimeUser", "false");
-                login(user);
-            }
-        } catch (error) {
-            const user = {
-                _id: userId,
-                id: userId,
-                phone: email,
-                name: userName,
-                isVerified: true,
-            };
-            localStorage.setItem("userName", userName);
-            localStorage.setItem("isFirstTimeUser", "false");
-            login(user);
-        }
-
-        setShowFirstTimeModal(false);
-        setShowSuccess(true);
-    };
-
+    // ------------------- RESEND OTP -------------------
     const handleResend = async () => {
-        try {
-            setTimer(60);
-            setOtp(["", "", "", "", "", ""]);
-            inputRefs.current[0]?.focus();
-
-            const response = await resendOtp(email);
-
-            if (response.success) {
-                alert("OTP sent successfully!");
-            } else {
-                alert(response.message || "Failed to resend OTP");
-            }
-
-            if (onResend) onResend();
-        } catch (error) {
-            alert("Failed to resend OTP. Please try again.");
-        }
+        setTimer(60);
+        setOtp(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+        await resendOtp(email);
+        onResend?.();
     };
 
+    // ------------------- VOICE INPUT -------------------
     const handleVoiceInput = () => {
         if (!voiceService.isSpeechRecognitionSupported()) {
-            setVoiceError("Voice recognition not supported. Use Chrome or Edge.");
-            setTimeout(() => setVoiceError(null), 5000);
-            return;
-        }
-
-        if (isListening) {
-            voiceService.stopListening();
-            setIsListening(false);
+            setVoiceError("Voice not supported");
             return;
         }
 
         setIsListening(true);
-        setVoiceError(null);
-
         voiceService.startListening(
-            (result: VoiceRecognitionResult) => {
-                const digits = extractDigits(result.transcript);
-
-                if (digits.length > 0) {
-                    const otpArray = digits.slice(0, 6).split("");
-                    const filledOtp = [...otpArray, ...Array(6 - otpArray.length).fill("")];
-                    setOtp(filledOtp);
-
-                    const nextIndex = Math.min(otpArray.length, 5);
-                    inputRefs.current[nextIndex]?.focus();
-
-                    if (digits.length >= 6 && result.isFinal) {
-                        voiceService.stopListening();
-                        setIsListening(false);
-                    }
+            result => {
+                const digits = extractDigits(result.transcript).slice(0, 6);
+                setOtp(digits.split(""));
+                if (digits.length === 6 && result.isFinal) {
+                    voiceService.stopListening();
+                    setIsListening(false);
                 }
             },
-            (error: string) => {
-                setVoiceError(error);
+            err => {
+                setVoiceError(err);
                 setIsListening(false);
-                setTimeout(() => setVoiceError(null), 5000);
             }
         );
     };
 
     const handleSuccessContinue = () => {
-        if (onClose) onClose();
-        if (onContinue) onContinue();
+        onClose?.();
+        onContinue?.();
         navigate("/role-selection", { replace: true });
     };
 
@@ -421,7 +726,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 <UserModal
                     phoneNumber={email}
                     userId={userId}
-                    onComplete={handleFirstTimeComplete}
+                    onComplete={() => setShowSuccess(true)}
                 />
             </>
         );

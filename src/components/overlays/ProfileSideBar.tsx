@@ -32,8 +32,8 @@ interface ProfileSidebarProps {
 // ── Brand colors ──────────────────────────────────────────────────────────────
 const ICON_COLOR = "#00598a";
 const ICON_COLOR_HOVER = "#ffffff";
-const ICON_SIZE_DEFAULT = 22;   // ↑ was 20
-const ICON_SIZE_HOVER = 24;     // ↑ was 22
+const ICON_SIZE_DEFAULT = 22;
+const ICON_SIZE_HOVER = 24;
 const ICON_STROKE = 1.8;
 
 // ── Unified Lucide icon wrapper ───────────────────────────────────────────────
@@ -74,6 +74,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     navigate("/");
   };
 
+  // ── Navigate to My Profile ─────────────────────────────────────────────────
+  const handleViewProfile = () => {
+    onNavigate("/my-profile");
+    navigate("/my-profile");
+  };
+
   return (
     <>
       {/* ================= SIDEBAR ================= */}
@@ -82,19 +88,20 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
         {/* ================= HEADER ================= */}
         <div className="flex items-center justify-between p-6 border-b bg-white">
           <div>
-            {/* ↑ Increased: text-xl → text-2xl */}
             <h2 className={`${typography.heading.h5} text-gray-900 text-2xl font-bold`}>{userName}</h2>
-            {/* ↑ Increased: xs → sm */}
             <button
-              onClick={() => onNavigate("/profile")}
+              onClick={handleViewProfile}
               className={`${typography.body.small} text-[#00598a] hover:underline text-sm`}
             >
               Click to view profile
             </button>
           </div>
 
-          {/* Avatar — slightly larger */}
-          <div className="w-14 h-14 rounded-full overflow-hidden shadow-lg border-2 border-white flex-shrink-0">
+          {/* Avatar */}
+          <div
+            onClick={handleViewProfile}
+            className="w-14 h-14 rounded-full overflow-hidden shadow-lg border-2 border-white flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-[#00598a] transition-all"
+          >
             {profilePic ? (
               <img src={profilePic} alt={userName} className="w-full h-full object-cover" />
             ) : (
@@ -107,7 +114,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         {/* ================= PROFILE ================= */}
         <div className="p-4 space-y-1">
-          {/* ↑ Section label: text-xs → text-sm */}
           <p className={`${typography.misc.caption} font-semibold mb-2 px-3 uppercase tracking-wide text-sm`}>
             Profile
           </p>
@@ -115,7 +121,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
           <MenuItem
             icon={h => <SidebarIcon icon={UserCircle} hovered={h} />}
             label="My Profile"
-            onClick={() => onNavigate("/my-profile")}
+            onClick={handleViewProfile}
           />
           <MenuItem
             icon={h => <SidebarIcon icon={Globe} hovered={h} />}
@@ -130,7 +136,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
         {/* ================= SUPPORT ================= */}
         <div className="p-4 space-y-1">
-          {/* ↑ Section label: text-xs → text-sm */}
           <p className={`${typography.misc.caption} font-semibold mb-2 px-3 uppercase tracking-wide text-sm`}>
             Support & Settings
           </p>
@@ -183,22 +188,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                   <LogOut className="w-10 h-10 text-white" />
                 </div>
-                {/* ↑ Modal title: h4 → h3 equivalent, explicit text-2xl */}
                 <h3 className={`${typography.heading.h4} text-white text-2xl font-bold`}>Logout?</h3>
               </div>
 
               {/* Modal body */}
               <div className="p-6">
-                {/* ↑ Modal body text: small → base, text-base */}
                 <p className={`${typography.body.base} text-gray-600 text-center mb-6 text-base`}>
                   Are you sure you want to logout?
                 </p>
                 <div className="space-y-3">
-                  {/* Yes, Logout — solid brand */}
-                  {/* ↑ Button text: text-base → text-lg */}
                   <button
                     onClick={handleLogout}
-                    className={`w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 text-lg`}
+                    className="w-full py-3 rounded-xl font-semibold text-white transition-all duration-200 text-lg"
                     style={{ backgroundColor: "#00598a" }}
                     onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "#004a73"}
                     onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "#00598a"}
@@ -206,10 +207,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     Yes, Logout
                   </button>
 
-                  {/* Cancel — outline brand */}
                   <button
                     onClick={() => setShowLogoutPopup(false)}
-                    className={`w-full py-3 rounded-xl font-semibold transition-all duration-200 text-lg`}
+                    className="w-full py-3 rounded-xl font-semibold transition-all duration-200 text-lg"
                     style={{
                       border: "2px solid #00598a",
                       color: "#00598a",
@@ -279,22 +279,15 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon, label, onClick, danger = fals
         color: hovered ? "#ffffff" : danger ? "#ef4444" : "#374151",
       }}
     >
-      {/* Icon */}
       <span className="flex items-center justify-center flex-shrink-0">
         {icon(hovered)}
       </span>
-
-      {/* Label — ↑ text-xs → text-base */}
       <span
-        className={`flex-1 text-left transition-all duration-300 text-base`}
-        style={{
-          fontWeight: hovered ? 600 : 500,
-        }}
+        className="flex-1 text-left transition-all duration-300 text-base"
+        style={{ fontWeight: hovered ? 600 : 500 }}
       >
         {label}
       </span>
-
-      {/* Arrow — ↑ text-base → text-lg */}
       <span
         className="text-lg transition-all duration-300"
         style={{

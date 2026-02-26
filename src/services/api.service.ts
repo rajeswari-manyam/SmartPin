@@ -75,7 +75,7 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
         const formData = new URLSearchParams();
         formData.append("email", params.email);
         formData.append("otp", params.otp);
-        formData.append("fcmToken", params.fcmToken); // 👈 NEW
+        formData.append("fcmToken", params.fcmToken);
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -1103,10 +1103,6 @@ export interface GetConfirmedWorkersResponse {
     data: ConfirmedWorkers[];
 }
 
-// ==================== GET CONFIRMED WORKERS ====================
-// ✅ FIXED: API stores applicants in `enquiredWorkers` (array of ID strings),
-//           not `confirmedWorkers` (which is an empty array until customer confirms).
-//           We now read both and use whichever has data.
 export const getConfirmedWorkers = async (
     jobId: string
 ): Promise<GetConfirmedWorkersResponse> => {
@@ -1120,14 +1116,10 @@ export const getConfirmedWorkers = async (
 
         const json = await response.json();
 
-        // ── Try confirmedWorkers (full objects) first ──────────────────────────
         const confirmedWorkers: ConfirmedWorkers[] = (
             json?.data?.confirmedWorkers || []
         ).filter((w: any) => typeof w === "object" && w !== null);
 
-        // ── Fall back to enquiredWorkers (array of ID strings) ────────────────
-        // Map each ID string into a minimal ConfirmedWorkers shape so the
-        // enrichment logic in JobApplicantsPage can call getWorkerWithSkills(id)
         const enquiredWorkerIds: string[] = (
             json?.data?.enquiredWorkers || []
         ).filter((w: any) => typeof w === "string");
@@ -1137,7 +1129,7 @@ export const getConfirmedWorkers = async (
                 ? confirmedWorkers
                 : enquiredWorkerIds.map((id) => ({
                     _id: id,
-                    userId: id,          // resolved later via getWorkerWithSkills
+                    userId: id,
                     name: "",
                     category: [],
                     subCategories: [],
@@ -1169,8 +1161,6 @@ export const getConfirmedWorkers = async (
     }
 };
 
-// ==================== CHECK IF WORKER ALREADY APPLIED TO JOB ====================
-// ✅ FIXED: checks both confirmedWorkers (objects) and enquiredWorkers (ID strings)
 export const checkJobApplication = async (
     jobId: string,
     workerId: string
@@ -1185,13 +1175,11 @@ export const checkJobApplication = async (
 
         const json = await response.json();
 
-        // Check confirmed workers (full objects)
         const confirmed: any[] = json?.data?.confirmedWorkers || [];
         const confirmedMatch = confirmed.some(
             (w) => typeof w === "object" && (w._id === workerId || w.userId === workerId)
         );
 
-        // Check enquired workers (ID strings)
         const enquired: any[] = json?.data?.enquiredWorkers || [];
         const enquiredMatch = enquired.some(
             (id) => typeof id === "string" && id === workerId
@@ -1204,8 +1192,6 @@ export const checkJobApplication = async (
     }
 };
 
-// ==================== GET CONFIRMED WORKERS COUNT FOR A JOB ====================
-// ✅ FIXED: counts both confirmedWorkers and enquiredWorkers
 export const getConfirmedWorkersCount = async (
     jobId: string
 ): Promise<number> => {
@@ -1222,7 +1208,6 @@ export const getConfirmedWorkersCount = async (
         const confirmed: any[] = json?.data?.confirmedWorkers || [];
         const enquired: any[] = json?.data?.enquiredWorkers || [];
 
-        // Use whichever array has data
         return confirmed.length > 0 ? confirmed.length : enquired.length;
     } catch (error) {
         console.error("❌ getConfirmedWorkersCount error:", error);
@@ -1230,9 +1215,7 @@ export const getConfirmedWorkersCount = async (
     }
 };
 
-
 // ==================== NOTIFICATIONS ====================
-// Add these to your existing api.service.ts
 
 export interface Notification {
     _id: string;
@@ -1289,7 +1272,6 @@ export const markNotificationAsRead = async (
     }
 };
 
-// ==================== DELETE NOTIFICATION ====================
 export const deleteNotification = async (
     notificationId: string
 ): Promise<{ success: boolean; message: string }> => {
@@ -1305,64 +1287,105 @@ export const deleteNotification = async (
         throw error;
     }
 };
-// =======================
-// NOTIFICATION TYPES
-// =======================
-// NotificationItem is a full alias for Notification — keeps types compatible.
+
 export type NotificationItem = Notification;
 
 export interface NotificationsResponse {
-  success: boolean;
-  count: number;
-  data: Notification[];
+    success: boolean;
+    count: number;
+    data: Notification[];
 }
 
 export interface NotificationCountResponse {
-  success: boolean;
-  count: number;
+    success: boolean;
+    count: number;
 }
 
-// =======================
-// READ NOTIFICATIONS
-// Returns { success, count, data: Notification[] }
-// =======================
 export const getReadNotifications = async (
-  role: "User" | "Worker",
-  id: string
+    role: "User" | "Worker",
+    id: string
 ): Promise<NotificationsResponse> => {
-  const { data } = await axios.get<NotificationsResponse>(
-    `${API_BASE_URL}/read/${role}/${id}`
-  );
-  return data;
+    const { data } = await axios.get<NotificationsResponse>(
+        `${API_BASE_URL}/read/${role}/${id}`
+    );
+    return data;
 };
 
-// =======================
-// UNREAD NOTIFICATIONS
-// NOTE: Your /unread endpoint returns { success, unreadCount } — just a count,
-// not a list. We call getAllNotifications and filter client-side instead.
-// =======================
 export const getUnreadNotifications = async (
-  role: "User" | "Worker",
-  id: string
+    role: "User" | "Worker",
+    id: string
 ): Promise<NotificationsResponse> => {
-  const res = await getAllNotifications(role, id);
-  const unread = res.data.filter((n) => !n.isRead);
-  return { success: res.success, count: unread.length, data: unread };
+    const res = await getAllNotifications(role, id);
+    const unread = res.data.filter((n) => !n.isRead);
+    return { success: res.success, count: unread.length, data: unread };
 };
 
-// =======================
-// NOTIFICATION COUNT
-// /count returns { success, unreadCount } — normalise to `count`.
-// =======================
 export const getNotificationCount = async (
-  role: "User" | "Worker",
-  id: string
+    role: "User" | "Worker",
+    id: string
 ): Promise<NotificationCountResponse> => {
-  const { data } = await axios.get<{ success: boolean; unreadCount?: number; count?: number }>(
-    `${API_BASE_URL}/count/${role}/${id}`
-  );
-  return {
-    success: data.success,
-    count: data.unreadCount ?? data.count ?? 0,
-  };
+    const { data } = await axios.get<{ success: boolean; unreadCount?: number; count?: number }>(
+        `${API_BASE_URL}/count/${role}/${id}`
+    );
+    return {
+        success: data.success,
+        count: data.unreadCount ?? data.count ?? 0,
+    };
+};
+
+// ==================== FCM TOKEN ====================
+// Save FCM token to backend for both User and Worker roles.
+// Called by FCMInitializer in App.tsx after login.
+export const saveFcmToken = async (
+    userId: string,
+    role: "User" | "Worker",
+    fcmToken: string
+): Promise<void> => {
+    try {
+        const body = new URLSearchParams();
+        body.append("userId", userId);
+        body.append("role", role);
+        body.append("fcmToken", fcmToken);
+
+        const res = await fetch(`${API_BASE_URL}/saveFcmToken`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+        });
+
+        if (res.ok) console.log(`✅ FCM token saved for ${role}: ${userId}`);
+        else console.warn("⚠️ Failed to save FCM token:", res.status);
+    } catch (err) {
+        console.warn("⚠️ saveFcmToken error:", err);
+    }
+};
+
+// ==================== NOTIFY MATCHING WORKERS ====================
+// Call this right after createJob() succeeds.
+// Backend finds workers whose category matches the job and sends FCM push.
+export interface NotifyMatchingWorkersResponse {
+    success: boolean;
+    message: string;
+    notifiedCount?: number;
+}
+
+export const notifyMatchingWorkers = async (
+    jobId: string
+): Promise<NotifyMatchingWorkersResponse> => {
+    try {
+        const body = new URLSearchParams();
+        body.append("jobId", jobId);
+
+        const response = await fetch(`${API_BASE_URL}/notifyMatchingWorkers`, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body,
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        return await response.json();
+    } catch (error) {
+        console.error("❌ notifyMatchingWorkers error:", error);
+        throw error;
+    }
 };

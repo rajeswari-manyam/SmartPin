@@ -2,45 +2,59 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createJob, updateJob, getJobById, CreateJobPayload } from "../services/api.service";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin, ChevronDown } from 'lucide-react';
+import { X, Upload, MapPin } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
+import typography from "../styles/typography";
 
 const jobTypeOptions = ['FULL_TIME', 'PART_TIME'];
 const BRAND = '#00598a';
 
 const getPlumberSubcategories = () => {
-    const plumberCategory = subcategoriesData.subcategories.find(cat => cat.categoryId === 3);
-    return plumberCategory ? plumberCategory.items.map(item => item.name) : [];
+    const plumberCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 3);
+    return plumberCategory ? plumberCategory.items.map((item: any) => item.name) : [];
 };
 
-// ── Shared styles — text-base (16px) for inputs, text-lg for titles ───────────
-const inputCls =
-    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
-    'placeholder-gray-400 bg-white focus:outline-none focus:border-[#00598a] ' +
-    'focus:ring-1 focus:ring-[#00598a] transition-all';
+// ── Shared styles ─────────────────────────────────────────────────────────────
+const inputBase =
+    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
+    `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
+    `placeholder-gray-400 transition-all duration-200 ` +
+    `text-lg text-gray-800 bg-white`;          // ← text-base → text-lg
+
+const selectStyle = {
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat' as const,
+    backgroundPosition: 'right 0.75rem center',
+    backgroundSize: '1.5em 1.5em',
+    paddingRight: '2.5rem',
+};
 
 // ── Sub-components ────────────────────────────────────────────────────────────
-const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
-    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 ${className}`}>
+const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label className="block text-base font-semibold text-gray-800 mb-2">   {/* text-sm → text-base */}
+        {children}{required && <span className="text-red-500 ml-1">*</span>}
+    </label>
+);
+
+const SectionCard: React.FC<{
+    title?: string;
+    children: React.ReactNode;
+    action?: React.ReactNode;
+}> = ({ title, children, action }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
+        {title && (
+            <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-gray-900">{title}</h3>   {/* text-base → text-lg */}
+                {action}
+            </div>
+        )}
         {children}
     </div>
 );
 
-const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
-    <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900">{title}</h3>
-        {action}
-    </div>
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
 );
-
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className="block text-base font-semibold text-gray-700 mb-2">
-        {children}{required && <span className="text-red-500 ml-0.5">*</span>}
-    </label>
-);
-
-const FieldError: React.FC<{ message?: string }> = ({ message }) =>
-    message ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {message}</p> : null;
 
 // ── Geocoding ─────────────────────────────────────────────────────────────────
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
@@ -61,7 +75,6 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
     }
 };
 
-// ── Field errors interface ────────────────────────────────────────────────────
 interface FieldErrors {
     title?: string;
     description?: string;
@@ -69,7 +82,9 @@ interface FieldErrors {
     location?: string;
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
+// ============================================================================
+// COMPONENT
+// ============================================================================
 const PlumberForm = () => {
     const navigate = useNavigate();
     const { setAccountType } = useAccount();
@@ -119,6 +134,8 @@ const PlumberForm = () => {
     const [locationLoading, setLocationLoading] = useState(false);
     const isGPSDetected = useRef(false);
 
+    const maxImagesReached = selectedImages.length >= 5;
+
     // ── fetch edit data ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
@@ -126,11 +143,7 @@ const PlumberForm = () => {
             setLoadingData(true);
             try {
                 const response = await getJobById(editId);
-                if (!response || !response.job) {
-                    setError('Service not found');
-                    setLoadingData(false);
-                    return;
-                }
+                if (!response || !response.job) { setError('Service not found'); setLoadingData(false); return; }
                 const job = response.job;
                 setFormData(prev => ({
                     ...prev,
@@ -162,7 +175,7 @@ const PlumberForm = () => {
         fetchData();
     }, [editId]);
 
-    // ── auto-geocode from address ─────────────────────────────────────────────
+    // ── auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
         const detectCoordinates = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
@@ -239,10 +252,10 @@ const PlumberForm = () => {
                 isGPSDetected.current = true;
                 const lat = pos.coords.latitude.toString();
                 const lng = pos.coords.longitude.toString();
-                const accuracy = pos.coords.accuracy;
-                if (accuracy > 500) {
+                if (pos.coords.accuracy > 500) {
                     setLocationWarning(
-                        `⚠️ Low accuracy detected (~${Math.round(accuracy)}m). Please verify address fields below.`
+                        `⚠️ Low accuracy detected (~${Math.round(pos.coords.accuracy)}m). Your device may not have GPS. ` +
+                        `The address fields below may be approximate — please verify and correct if needed.`
                     );
                 }
                 setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
@@ -334,67 +347,73 @@ const PlumberForm = () => {
         }
     };
 
+    const handleCancel = () => window.history.back();
+
     // ── loading screen ────────────────────────────────────────────────────────
     if (loadingData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
-                    <p className="text-base text-gray-500">Loading...</p>
+                    <p className="text-lg text-gray-600">Loading...</p>   {/* text-base → text-lg */}
                 </div>
             </div>
         );
     }
 
-    // ── render ────────────────────────────────────────────────────────────────
+    // ============================================================================
+    // RENDER
+    // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-20 bg-white border-b border-gray-100 px-4 py-4 shadow-sm">
-                <div className="max-w-lg mx-auto flex items-center gap-3">
+            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
-                        onClick={() => window.history.back()}
-                        className="p-2 rounded-full hover:bg-gray-100 transition"
+                        onClick={handleCancel}
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
-                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900 leading-tight">
+                    <div className="flex-1">
+                        <h1 className="text-2xl font-bold text-gray-900">   {/* text-xl → text-2xl */}
                             {isEditMode ? 'Update Plumber Service' : 'Add Plumber Service'}
                         </h1>
-                        <p className="text-sm text-gray-400 mt-0.5">
+                        <p className="text-base text-gray-500 mt-0.5">   {/* text-sm → text-base */}
                             {isEditMode ? 'Update your service listing' : 'Create new service listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            {/* ── Content ── */}
-            <div className="max-w-lg mx-auto px-4 py-5 space-y-4 pb-10">
+            {/* ── Wide container ── */}
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
                 {/* Alerts */}
                 {error && (
-                    <div className="flex items-start gap-2.5 p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <span className="text-red-500 mt-0.5 flex-shrink-0 text-lg">⚠️</span>
-                        <div>
-                            <p className="text-base font-semibold text-red-800 mb-0.5">Please fix the following</p>
-                            <p className="text-sm text-red-600">{error}</p>
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <div className="flex items-start gap-2">
+                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <div className="flex-1">
+                                <p className="font-semibold text-red-800 mb-1 text-base">Error</p>   {/* added text-base */}
+                                <p className="text-red-700 text-base">{error}</p>   {/* text-sm → text-base */}
+                            </div>
                         </div>
                     </div>
                 )}
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-500 text-xl">✓</span>
-                        <p className="text-base text-green-700 font-medium">{successMessage}</p>
+                        <span className="text-green-600 mt-0.5">✓</span>
+                        <p className="text-base text-green-700">{successMessage}</p>   {/* text-sm → text-base */}
                     </div>
                 )}
 
-                {/* ── 1. Service Title & Description ── */}
-                <Card>
-                    <div className="space-y-4">
+                {/* ─── ROW 1: TITLE + SUBCATEGORY ─── */}
+                <SectionCard>
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Service Title</FieldLabel>
                             <input
@@ -402,10 +421,46 @@ const PlumberForm = () => {
                                 name="title"
                                 value={formData.title}
                                 onChange={handleInputChange}
-                                placeholder="e.g., Professional Plumbing Services"
-                                className={inputCls}
+                                placeholder="e.g. Professional Plumbing Services"
+                                className={inputBase}
                             />
-                            <FieldError message={fieldErrors.title} />
+                            {fieldErrors.title && (
+                                <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.title}</p>
+                            )}
+                        </div>
+                        <div>
+                            <FieldLabel required>Subcategory</FieldLabel>
+                            <select
+                                name="subcategory"
+                                value={formData.subcategory}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {plumberSubcategories.map((sub: string) => (
+                                    <option key={sub} value={sub}>{sub}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </TwoCol>
+                </SectionCard>
+
+                {/* ─── ROW 2: PHONE + DESCRIPTION ─── */}
+                <SectionCard title="Contact & Description">
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Phone Number</FieldLabel>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleInputChange}
+                                placeholder="Enter phone number"
+                                className={inputBase}
+                            />
+                            {fieldErrors.phone && (
+                                <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.phone}</p>
+                            )}
                         </div>
                         <div>
                             <FieldLabel required>Description</FieldLabel>
@@ -413,68 +468,33 @@ const PlumberForm = () => {
                                 name="description"
                                 value={formData.description}
                                 onChange={handleInputChange}
-                                rows={4}
+                                rows={3}
                                 placeholder="Describe your services, experience, and specializations..."
-                                className={inputCls + ' resize-none'}
+                                className={inputBase + ' resize-none'}
                             />
-                            <FieldError message={fieldErrors.description} />
+                            {fieldErrors.description && (
+                                <p className="mt-1.5 text-base text-red-500 flex items-center gap-1">⚠️ {fieldErrors.description}</p>
+                            )}
                         </div>
-                    </div>
-                </Card>
+                    </TwoCol>
+                </SectionCard>
 
-                {/* ── 2. Contact Information ── */}
-                <Card>
-                    <CardTitle title="Contact Information" />
-                    <FieldLabel required>Phone</FieldLabel>
-                    <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="Enter phone number"
-                        className={inputCls}
-                    />
-                    <FieldError message={fieldErrors.phone} />
-                </Card>
-
-                {/* ── 3. Service Category ── */}
-                <Card>
-                    <CardTitle title="Service Category" />
-                    <FieldLabel required>Subcategory</FieldLabel>
-                    <div className="relative">
-                        <select
-                            name="subcategory"
-                            value={formData.subcategory}
-                            onChange={handleInputChange}
-                            className={inputCls + ' appearance-none pr-10'}
-                        >
-                            {plumberSubcategories.map(sub => (
-                                <option key={sub} value={sub}>{sub}</option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                    </div>
-                </Card>
-
-                {/* ── 4. Job Details ── */}
-                <Card>
-                    <CardTitle title="Job Details" />
-                    <div className="grid grid-cols-2 gap-3">
+                {/* ─── ROW 3: JOB TYPE + SERVICE CHARGES ─── */}
+                <SectionCard title="Job Details">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Job Type</FieldLabel>
-                            <div className="relative">
-                                <select
-                                    name="jobType"
-                                    value={formData.jobType}
-                                    onChange={handleInputChange}
-                                    className={inputCls + ' appearance-none pr-10'}
-                                >
-                                    {jobTypeOptions.map(type => (
-                                        <option key={type} value={type}>{type.replace('_', ' ')}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                            </div>
+                            <select
+                                name="jobType"
+                                value={formData.jobType}
+                                onChange={handleInputChange}
+                                className={inputBase + ' appearance-none bg-white'}
+                                style={selectStyle}
+                            >
+                                {jobTypeOptions.map(type => (
+                                    <option key={type} value={type}>{type.replace('_', ' ')}</option>
+                                ))}
+                            </select>
                         </div>
                         <div>
                             <FieldLabel required>Service Charges (₹)</FieldLabel>
@@ -483,13 +503,13 @@ const PlumberForm = () => {
                                 name="servicecharges"
                                 value={formData.servicecharges}
                                 onChange={handleInputChange}
-                                placeholder="e.g., 2000"
-                                className={inputCls}
+                                placeholder="e.g. 2000"
+                                className={inputBase}
                             />
                         </div>
-                    </div>
+                    </TwoCol>
 
-                    <div className="grid grid-cols-2 gap-3 mt-4">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Start Date</FieldLabel>
                             <input
@@ -497,7 +517,7 @@ const PlumberForm = () => {
                                 name="startDate"
                                 value={formData.startDate}
                                 onChange={handleInputChange}
-                                className={inputCls}
+                                className={inputBase}
                             />
                         </div>
                         <div>
@@ -507,182 +527,200 @@ const PlumberForm = () => {
                                 name="endDate"
                                 value={formData.endDate}
                                 onChange={handleInputChange}
-                                className={inputCls}
+                                className={inputBase}
                             />
                         </div>
-                    </div>
-                </Card>
+                    </TwoCol>
+                </SectionCard>
 
-                {/* ── 5. Portfolio Photos ── */}
-                <Card>
-                    <CardTitle title="Portfolio Photos (Optional)" />
-
-                    <label className={`block ${selectedImages.length >= 5 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={selectedImages.length >= 5}
-                        />
-                        <div
-                            className="border-2 border-dashed rounded-xl p-8 text-center transition-all hover:opacity-90"
-                            style={{ borderColor: selectedImages.length >= 5 ? '#d1d5db' : '#c7d9e6' }}
+                {/* ─── ROW 4: LOCATION ─── */}
+                <SectionCard
+                    title="Service Location"
+                    action={
+                        <button
+                            type="button"
+                            onClick={getCurrentLocation}
+                            disabled={locationLoading}
+                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-base font-medium text-white
+                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                         >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className="text-base font-semibold text-gray-700">
-                                        {selectedImages.length >= 5 ? 'Maximum limit reached' : 'Tap to upload portfolio photos'}
-                                    </p>
-                                    <p className="text-sm text-gray-400 mt-1">
-                                        JPG, PNG up to 5 MB · Max 5 images
-                                    </p>
-                                </div>
-                                {selectedImages.length > 0 && (
-                                    <span className="text-sm font-medium px-3 py-1 rounded-full" style={{ backgroundColor: '#e8f4fb', color: BRAND }}>
-                                        {selectedImages.length}/5 uploaded
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </label>
-
-                    {imagePreviews.length > 0 && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img
-                                        src={preview}
-                                        alt={`Preview ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: BRAND }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-1.5 py-0.5 rounded-full font-medium">
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </Card>
-
-                {/* ── 6. Location Details ── */}
-                <Card>
-                    <CardTitle
-                        title="Location Details"
-                        action={
-                            <button
-                                type="button"
-                                onClick={getCurrentLocation}
-                                disabled={locationLoading}
-                                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                                style={{ backgroundColor: BRAND }}
-                            >
-                                {locationLoading ? (
-                                    <><span className="animate-spin text-sm">⌛</span> Detecting...</>
-                                ) : (
-                                    <><MapPin className="w-4 h-4" /> Auto Detect</>
-                                )}
-                            </button>
-                        }
-                    />
-
+                            {locationLoading ? (
+                                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                            ) : (
+                                <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
+                            )}
+                        </button>
+                    }
+                >
                     {locationWarning && (
-                        <div className="mb-3 bg-yellow-50 border border-yellow-300 rounded-xl p-3.5 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 flex-shrink-0">⚠️</span>
-                            <p className="text-sm text-yellow-800">{locationWarning}</p>
+                        <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
+                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <p className="text-base text-yellow-800">{locationWarning}</p>   {/* text-sm → text-base */}
                         </div>
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
-                        {[
-                            { name: 'area', label: 'Area', placeholder: 'Area name' },
-                            { name: 'city', label: 'City', placeholder: 'City' },
-                            { name: 'state', label: 'State', placeholder: 'State' },
-                            { name: 'pincode', label: 'PIN Code', placeholder: 'PIN code' },
-                        ].map(field => (
-                            <div key={field.name}>
-                                <FieldLabel required>{field.label}</FieldLabel>
-                                <input
-                                    type="text"
-                                    name={field.name}
-                                    value={(formData as any)[field.name]}
-                                    onChange={handleInputChange}
-                                    placeholder={field.placeholder}
-                                    className={inputCls}
-                                />
-                            </div>
-                        ))}
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>Area</FieldLabel>
+                            <input type="text" name="area" value={formData.area}
+                                onChange={handleInputChange} placeholder="e.g. Indiranagar" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>City</FieldLabel>
+                            <input type="text" name="city" value={formData.city}
+                                onChange={handleInputChange} placeholder="e.g. Bangalore" className={inputBase} />
+                        </div>
+                    </TwoCol>
+
+                    <TwoCol>
+                        <div>
+                            <FieldLabel required>State</FieldLabel>
+                            <input type="text" name="state" value={formData.state}
+                                onChange={handleInputChange} placeholder="e.g. Karnataka" className={inputBase} />
+                        </div>
+                        <div>
+                            <FieldLabel required>PIN Code</FieldLabel>
+                            <input type="text" name="pincode" value={formData.pincode}
+                                onChange={handleInputChange} placeholder="e.g. 560038" className={inputBase} />
+                        </div>
+                    </TwoCol>
+
+                    {fieldErrors.location && (
+                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                            <p className="text-base text-red-600 flex items-center gap-1.5">⚠️ {fieldErrors.location}</p>
+                        </div>
+                    )}
+
+                    <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
+                        <p className="text-base" style={{ color: '#7a4f00' }}>   {/* text-sm → text-base */}
+                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your service area manually.
+                        </p>
                     </div>
 
-                    {/* Location error */}
-                    {fieldErrors.location && (
-                        <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3.5">
-                            <p className="text-sm text-red-600 flex items-center gap-1.5">⚠️ {fieldErrors.location}</p>
-                        </div>
-                    )}
-
-                    {/* GPS tip */}
-                    {!formData.latitude && !formData.longitude && (
-                        <div className="mt-3 rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
-                            <p className="text-sm" style={{ color: '#92400e' }}>
-                                💡 <span className="font-semibold">Tip:</span> Use auto-detect to fill location automatically from your device GPS
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Location confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="mt-3 bg-green-50 border border-green-200 rounded-xl p-3.5">
-                            <p className="text-sm text-green-800">
-                                <span className="font-semibold">✓ Location detected: </span>
-                                <span className="font-mono text-xs ml-1">
-                                    {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                            <p className="text-base text-green-800">   {/* text-sm → text-base */}
+                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-mono text-sm">
+                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
                             </p>
                         </div>
                     )}
-                </Card>
+                </SectionCard>
+
+                {/* ─── ROW 5: PHOTOS ─── */}
+                <SectionCard title={`Portfolio Photos (${selectedImages.length}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className="cursor-pointer block">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#fffbf5',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e8f4fb' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-medium text-gray-700">   {/* text-base → text-lg */}
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - selectedImages.length} slots left)`}
+                                        </p>
+                                        <p className="text-base text-gray-500 mt-1">   {/* text-sm → text-base */}
+                                            Upload photos of your work or tools
+                                        </p>
+                                        <p className="text-sm text-gray-400 mt-0.5">Max 5 images · 5 MB each · JPG, PNG</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+
+                        {/* Previews */}
+                        {selectedImages.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {selectedImages.map((file, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img
+                                            src={imagePreviews[i]}
+                                            alt={`New ${i + 1}`}
+                                            className="w-full h-full object-cover rounded-xl border-2"
+                                            style={{ borderColor: BRAND }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                            New
+                                        </span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(file.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className="text-base text-gray-400">   {/* text-sm → text-base */}
+                                    Uploaded images will appear here
+                                </p>
+                            </div>
+                        )}
+                    </TwoCol>
+                </SectionCard>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-3 pt-2 pb-8">
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
+                    <button
+                        onClick={handleCancel}
+                        type="button"
+                        disabled={loading}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
+                            bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all text-lg                        
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        Cancel
+                    </button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !!successMessage}
                         type="button"
-                        className="flex-1 py-4 rounded-xl font-bold text-base text-white flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-70"
-                        style={{ backgroundColor: BRAND }}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            text-lg                                        
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
-                        {loading && (
-                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
+                        {loading ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <span className="animate-spin">⏳</span>
+                                {isEditMode ? 'Updating...' : 'Creating...'}
+                            </span>
+                        ) : successMessage ? '✓ Done' : (
+                            isEditMode ? 'Update Service' : 'Create Service'
                         )}
-                        {loading
-                            ? (isEditMode ? 'Updating...' : 'Creating...')
-                            : successMessage
-                                ? '✓ Done'
-                                : (isEditMode ? 'Update Service' : 'Create Service')}
-                    </button>
-                    <button
-                        onClick={() => window.history.back()}
-                        disabled={loading}
-                        type="button"
-                        className="px-8 py-4 rounded-xl font-bold text-base text-gray-700 bg-white border-2 border-gray-200 hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    >
-                        Cancel
                     </button>
                 </div>
 
