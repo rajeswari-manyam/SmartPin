@@ -281,23 +281,7 @@ const DigitalUserService: React.FC<DigitalUserServiceProps> = ({
                         )}
                     </div>
 
-                    {/* View Details button — visible on hover */}
-                    <button
-                        onClick={() => handleView(id)}
-                        className="w-full py-2 rounded-xl text-sm font-semibold transition-all duration-200 border"
-                        style={{
-                            color: isHovered ? "#fff" : "#00598a",
-                            backgroundColor: isHovered ? "#00598a" : "transparent",
-                            borderColor: "#00598a",
-                            opacity: isHovered ? 1 : 0,
-                            pointerEvents: isHovered ? "auto" : "none",
-                            maxHeight: isHovered ? "40px" : "0px",
-                            overflow: "hidden",
-                            marginTop: isHovered ? "0" : "-8px",
-                        }}
-                    >
-                        View Details
-                    </button>
+                    
 
                 </div>
             </div>

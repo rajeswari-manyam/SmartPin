@@ -8,6 +8,8 @@ export const API_BASE_URL = process.env.REACT_APP_API_BASE_URL ;
 export interface RealEstateWorker {
     _id?: string;
     userId: string;
+    category: string;
+    subCategory: string;
     name: string;
     propertyType: string;
     listingType: string;

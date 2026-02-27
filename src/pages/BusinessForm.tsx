@@ -13,7 +13,13 @@ import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 // ── Charge type options ───────────────────────────────────────────────────────
-const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Project', 'Fixed Rate'];
+// label = shown to user, value = sent to backend (must match Mongoose enum exactly)
+const chargeTypeOptions = [
+    { label: 'Per Day',     value: 'day' },
+    { label: 'Per Hour',    value: 'hour' },
+    { label: 'Per Project', value: 'project' },
+    { label: 'Fixed Rate',  value: 'fixed' },
+];
 
 // ── Pull business subcategories from JSON (categoryId 11) ─────────────────────
 const getBusinessSubcategories = (): string[] => {
@@ -75,6 +81,13 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
     </div>
 );
 
+const FieldError: React.FC<{ message?: string }> = ({ message }) =>
+    message ? (
+        <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
+            <span>⚠️</span> {message}
+        </p>
+    ) : null;
+
 // ============================================================================
 // GEOCODING HELPER
 // ============================================================================
@@ -95,8 +108,33 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
     }
 };
 
+// ── Resolve userId from localStorage ─────────────────────────────────────────
+const resolveUserId = (): string => {
+    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+    for (const key of candidates) {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        if (raw.length > 10 && !raw.startsWith('{')) return raw;
+        try {
+            const parsed = JSON.parse(raw);
+            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+            if (id) return String(id);
+        } catch { }
+    }
+    return '';
+};
+
+// ── Helper: convert stored backend value → label for display ─────────────────
+const chargeValueToLabel = (value: string): string => {
+    const found = chargeTypeOptions.find(
+        o => o.value.toLowerCase() === value.toLowerCase() ||
+             o.label.toLowerCase() === value.toLowerCase()
+    );
+    return found ? found.value : chargeTypeOptions[0].value;
+};
+
 // ============================================================================
-// VALIDATION
+// VALIDATION INTERFACE
 // ============================================================================
 interface FieldErrors {
     name?: string;
@@ -145,7 +183,7 @@ const BusinessForm = () => {
     }));
 
     const [formData, setFormData] = useState({
-        userId: localStorage.getItem('userId') || '',
+        userId: resolveUserId(),
         name: '',
         category: defaultCategory,
         email: '',
@@ -154,7 +192,8 @@ const BusinessForm = () => {
         bio: '',
         services: '' as string,
         serviceCharge: '',
-        chargeType: chargeTypeOptions[0],
+        // ✅ Store the backend enum value (e.g. 'PerDay'), not the display label
+        chargeType: chargeTypeOptions[0].value,
         area: '',
         city: '',
         state: '',
@@ -179,21 +218,21 @@ const BusinessForm = () => {
                 const response = await getBusinessServiceById(editId);
                 if (!response.success || !response.data) throw new Error('Service not found');
                 const data = response.data;
-                const storedChargeType = data.chargeType || chargeTypeOptions[0];
-                const matchedChargeType = chargeTypeOptions.find(
-                    o => o.toLowerCase() === storedChargeType.toLowerCase()
-                ) ?? chargeTypeOptions[0];
+
+                // ✅ Normalize stored chargeType → match our enum value
+                const storedChargeType = data.chargeType || chargeTypeOptions[0].value;
+                const matchedChargeType = chargeValueToLabel(storedChargeType);
 
                 setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || '',
+                    userId: data.userId || resolveUserId(),
                     name: data.title || data.name || '',
                     category: data.serviceType || data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
-                    alternatePhone: data.alternatePhone || '',
+                    alternatePhone: (data as any).alternatePhone || '',
                     bio: data.description || data.bio || '',
-                    services: data.skills || (data.services ? data.services.join(', ') : ''),
+                    services: data.skills || (data.services ? (data.services as string[]).join(', ') : ''),
                     serviceCharge: data.serviceCharge?.toString() || '',
                     chargeType: matchedChargeType,
                     area: data.area || '',
@@ -324,15 +363,24 @@ const BusinessForm = () => {
         setError('');
         setSuccessMessage('');
 
+        let uid = formData.userId.trim();
+        if (!uid) {
+            uid = resolveUserId();
+            if (uid) setFormData(prev => ({ ...prev, userId: uid }));
+        }
+
         const errors: FieldErrors = {};
 
-        if (!isEditMode && !formData.userId.trim())
-            errors.userId = 'User not logged in. Please log in to add a service.';
+        if (!uid)
+            errors.userId = 'User not logged in. Please log out and log back in.';
 
         if (!formData.name.trim())
             errors.name = 'Business name is required';
         else if (formData.name.trim().length < 3)
             errors.name = 'Business name must be at least 3 characters';
+
+        if (!formData.bio.trim())
+            errors.description = 'Description is required';
 
         if (!formData.services.trim())
             errors.services = 'At least one service is required';
@@ -376,23 +424,27 @@ const BusinessForm = () => {
             const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
 
             const fd = new FormData();
-            fd.append('userId', formData.userId);
+            fd.append('userId', uid);
+            fd.append('category', CATEGORY_NAME);
+            fd.append('subCategory', formData.category);
             fd.append('serviceType', formData.category);
             fd.append('title', formData.name.trim());
             fd.append('description', formData.bio.trim());
-            if (formData.email.trim()) fd.append('email', formData.email.trim());
-            if (formData.phone.trim()) fd.append('phone', formData.phone.trim());
-            if (formData.alternatePhone.trim()) fd.append('alternatePhone', formData.alternatePhone.trim());
             fd.append('skills', servicesArray.join(','));
             fd.append('serviceCharge', charge.toString());
+            // ✅ formData.chargeType is already the backend enum value (e.g. 'PerDay')
             fd.append('chargeType', formData.chargeType);
-            fd.append('experience', formData.experience.trim());
+            fd.append('experience', formData.experience.trim() || '0');
             fd.append('area', formData.area.trim());
             fd.append('city', formData.city.trim());
             fd.append('state', formData.state.trim());
             fd.append('pincode', formData.pincode.trim());
             fd.append('latitude', lat.toString());
             fd.append('longitude', lng.toString());
+            if (formData.email.trim()) fd.append('email', formData.email.trim());
+            if (formData.phone.trim()) fd.append('phone', formData.phone.trim());
+            if (formData.alternatePhone.trim()) fd.append('alternatePhone', formData.alternatePhone.trim());
+
             selectedImages.forEach(image => fd.append('images', image, image.name));
             if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
@@ -411,7 +463,7 @@ const BusinessForm = () => {
 
             setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
         } catch (err: any) {
-            console.error('Submit error:', err);
+            console.error('❌ Submit error:', err);
             setError(err.message || 'Failed to submit form. Please try again.');
         } finally {
             setLoading(false);
@@ -484,7 +536,7 @@ const BusinessForm = () => {
                 )}
 
                 {/* ─── 1. SERVICE NAME + CATEGORY ───────────────────────────── */}
-                <SectionCard>
+                <SectionCard title="Basic Information">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <FieldLabel required>Service Name</FieldLabel>
@@ -494,11 +546,7 @@ const BusinessForm = () => {
                                 placeholder="e.g. Krishna & Associates"
                                 className={fieldErrors.name ? inputError : inputBase}
                             />
-                            {fieldErrors.name && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.name}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.name} />
                         </div>
                         <div>
                             <FieldLabel required>Service Category</FieldLabel>
@@ -528,11 +576,7 @@ const BusinessForm = () => {
                                 placeholder="Enter phone number"
                                 className={fieldErrors.phone ? inputError : inputBase}
                             />
-                            {fieldErrors.phone && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.phone}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.phone} />
                         </div>
                         <div>
                             <FieldLabel>Alternate Phone (Optional)</FieldLabel>
@@ -540,6 +584,15 @@ const BusinessForm = () => {
                                 type="tel" name="alternatePhone" value={formData.alternatePhone}
                                 onChange={handleInputChange}
                                 placeholder="Enter alternate phone"
+                                className={inputBase}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Email (Optional)</FieldLabel>
+                            <input
+                                type="email" name="email" value={formData.email}
+                                onChange={handleInputChange}
+                                placeholder="Enter email address"
                                 className={inputBase}
                             />
                         </div>
@@ -557,21 +610,29 @@ const BusinessForm = () => {
                                 placeholder="Amount" min="1" step="0.01"
                                 className={fieldErrors.serviceCharge ? inputError : inputBase}
                             />
-                            {fieldErrors.serviceCharge && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.serviceCharge}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.serviceCharge} />
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
+                            {/*
+                             * ✅ KEY FIX:
+                             * - option value = backend enum string (e.g. 'PerDay')
+                             * - option text  = human-readable label (e.g. 'Per Day')
+                             * - formData.chargeType stores the backend enum value
+                             * This ensures the correct value is sent to the API
+                             */}
                             <select
-                                name="chargeType" value={formData.chargeType}
+                                name="chargeType"
+                                value={formData.chargeType}
                                 onChange={handleInputChange}
                                 className={inputBase + ' appearance-none bg-white'}
                                 style={selectStyle}
                             >
-                                {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+                                {chargeTypeOptions.map(opt => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -587,11 +648,7 @@ const BusinessForm = () => {
                             placeholder="Describe your services, experience, and what makes you unique..."
                             className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
-                        {fieldErrors.description && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.description}
-                            </p>
-                        )}
+                        <FieldError message={fieldErrors.description} />
                     </div>
                 </SectionCard>
 
@@ -606,11 +663,7 @@ const BusinessForm = () => {
                             className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
                         />
                         <p className="text-xs text-gray-400 mt-2">💡 Enter services separated by commas</p>
-                        {fieldErrors.services && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.services}
-                            </p>
-                        )}
+                        <FieldError message={fieldErrors.services} />
                     </div>
                     {formData.services && formData.services.trim() && (
                         <div>
@@ -648,21 +701,9 @@ const BusinessForm = () => {
                                 placeholder="Years of experience" min="0"
                                 className={fieldErrors.experience ? inputError : inputBase}
                             />
-                            {fieldErrors.experience && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.experience}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.experience} />
                         </div>
-                        <div>
-                            <FieldLabel>Email (Optional)</FieldLabel>
-                            <input
-                                type="email" name="email" value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="Enter email address"
-                                className={inputBase}
-                            />
-                        </div>
+                        <div />
                     </div>
                 </SectionCard>
 
@@ -694,44 +735,28 @@ const BusinessForm = () => {
                             <input type="text" name="area" value={formData.area}
                                 onChange={handleInputChange} placeholder="e.g. Banjara Hills"
                                 className={fieldErrors.area ? inputError : inputBase} />
-                            {fieldErrors.area && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.area} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input type="text" name="city" value={formData.city}
                                 onChange={handleInputChange} placeholder="e.g. Hyderabad"
                                 className={fieldErrors.city ? inputError : inputBase} />
-                            {fieldErrors.city && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.city} />
                         </div>
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state}
                                 onChange={handleInputChange} placeholder="e.g. Telangana"
                                 className={fieldErrors.state ? inputError : inputBase} />
-                            {fieldErrors.state && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.state}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.state} />
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode}
                                 onChange={handleInputChange} placeholder="e.g. 500033" maxLength={6}
                                 className={fieldErrors.pincode ? inputError : inputBase} />
-                            {fieldErrors.pincode && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.pincode}
-                                </p>
-                            )}
+                            <FieldError message={fieldErrors.pincode} />
                         </div>
                     </div>
 

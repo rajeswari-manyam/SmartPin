@@ -257,36 +257,9 @@ const ShoppingUserService: React.FC<ShoppingUserServiceProps> = ({
                         </span>
                     </div>
 
-                    {/* ── Action Buttons ── */}
-                    <div className="pt-1 border-t border-gray-100 grid grid-cols-2 gap-2">
-                        {/* Directions */}
-                        <button
-                            onClick={e => { e.stopPropagation(); openDirections(store); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 border-2 rounded-xl font-medium text-sm transition-all active:scale-95"
-                            style={{ borderColor: "#00598a", color: "#00598a" }}
-                            onMouseEnter={e => {
-                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a";
-                                (e.currentTarget as HTMLButtonElement).style.color = "white";
-                            }}
-                            onMouseLeave={e => {
-                                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-                                (e.currentTarget as HTMLButtonElement).style.color = "#00598a";
-                            }}
-                        >
-                            📍 Directions
-                        </button>
+                    
 
-                        {/* View Details */}
-                        <button
-                            onClick={e => { e.stopPropagation(); handleView(id); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl font-medium text-sm text-white transition-all active:scale-95"
-                            style={{ backgroundColor: "#00598a" }}
-                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
-                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
-                        >
-                            👁️ View
-                        </button>
-                    </div>
+              
                 </div>
             </div>
         );

@@ -364,25 +364,26 @@ const HospitalForm: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <FieldLabel required>Type</FieldLabel>
+                            <FieldLabel required>Hospital Type</FieldLabel>
                             {/*
                              * ── IconSelect replaces the old plain <select> ──
                              * Options are built from hospitalTypes (categoryId=2 subcategories).
                              * Each entry maps its name to the matching PNG in SUBCATEGORY_ICONS
                              * (e.g. "Hospitals" → HospitalsIcon, "Clinics" → ClinicsIcon, etc.)
                              */}
-                            <IconSelect
-                                label="Hospital Type"
-                                value={formData.hospitalType}
-                                placeholder="Select hospital type"
-                                options={hospitalTypes.map(t => ({
-                                    name: t,
-                                    icon: SUBCATEGORY_ICONS[t],
-                                }))}
-                                onChange={(val) =>
-                                    setFormData(prev => ({ ...prev, hospitalType: val }))
-                                }
-                            />
+    <IconSelect
+    label=""
+    value={formData.hospitalType}
+    placeholder="Select hospital type"
+    options={hospitalTypes.map(t => ({
+        name: t,
+        icon: SUBCATEGORY_ICONS[t],
+    }))}
+    onChange={(val) =>
+        setFormData(prev => ({ ...prev, hospitalType: val }))
+    }
+/>
+
                         </div>
                     </TwoCol>
                 </Card>

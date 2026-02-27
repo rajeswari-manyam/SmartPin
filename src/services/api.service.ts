@@ -109,10 +109,13 @@ export const resendOtp = async (email: string): Promise<ApiResponse> => {
     }
 };
 
+   
+// AFTER
 export interface CreateJobPayload {
     userId: string;
     title: string;
     name: string;
+    phone: string;        // ← ADD THIS
     description: string;
     category: string;
     subcategory?: string;
@@ -141,6 +144,7 @@ export const createJob = async (data: CreateJobPayload) => {
     formData.append("servicecharges", data.servicecharges);
     formData.append("startDate", data.startDate);
     formData.append("endDate", data.endDate);
+      formData.append("phone", data.phone);  
     formData.append("area", data.area);
     formData.append("city", data.city);
     formData.append("state", data.state);
@@ -898,7 +902,6 @@ export const getNearbyJobs = async (latitude: number, longitude: number) => {
     if (!res.ok) throw new Error("Failed to fetch nearby jobs");
     return res.json();
 };
-
 // ==================== GET NEARBY JOBS FOR WORKER ====================
 export interface JobDetail {
     _id: string;
@@ -1233,16 +1236,25 @@ export interface Notification {
     __v?: number;
 }
 
-export interface GetAllNotificationsResponse {
+export interface NotificationsResponse {
     success: boolean;
     count: number;
     data: Notification[];
 }
 
+export type GetAllNotificationsResponse = NotificationsResponse;
+export type NotificationItem = Notification;
+
+export interface NotificationCountResponse {
+    success: boolean;
+    count: number;
+}
+
+// GET ALL notifications — route: /getAllNotifications/:role/:id
 export const getAllNotifications = async (
     role: "User" | "Worker",
     id: string
-): Promise<GetAllNotificationsResponse> => {
+): Promise<NotificationsResponse> => {
     try {
         const response = await fetch(
             `${API_BASE_URL}/getAllNotifications/${role}/${id}`,
@@ -1256,12 +1268,41 @@ export const getAllNotifications = async (
     }
 };
 
+// GET UNREAD notifications — route: /unread/:role/:id
+export const getUnreadNotifications = async (
+    role: "User" | "Worker",
+    id: string
+): Promise<NotificationsResponse> => {
+    const response = await fetch(
+        `${API_BASE_URL}/unread/${role}/${id}`,
+        { method: "GET", redirect: "follow" }
+    );
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return await response.json();
+};
+
+// GET READ notifications — backend route is commented out, so we derive
+// read notifications client-side from getAllNotifications.
+export const getReadNotifications = async (
+    role: "User" | "Worker",
+    id: string
+): Promise<NotificationsResponse> => {
+    const all = await getAllNotifications(role, id);
+    const readData = (all.data || []).filter((n) => n.isRead);
+    return {
+        success: all.success,
+        count: readData.length,
+        data: readData,
+    };
+};
+
+// MARK single notification as read — route: PUT /read/:notificationId
 export const markNotificationAsRead = async (
     notificationId: string
 ): Promise<{ success: boolean; message: string }> => {
     try {
         const response = await fetch(
-            `${API_BASE_URL}/markNotificationRead/${notificationId}`,
+            `${API_BASE_URL}/read/${notificationId}`,
             { method: "PUT", redirect: "follow" }
         );
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -1272,6 +1313,7 @@ export const markNotificationAsRead = async (
     }
 };
 
+// DELETE notification — route: DELETE /deleteNotification/:notificationId
 export const deleteNotification = async (
     notificationId: string
 ): Promise<{ success: boolean; message: string }> => {
@@ -1288,38 +1330,7 @@ export const deleteNotification = async (
     }
 };
 
-export type NotificationItem = Notification;
-
-export interface NotificationsResponse {
-    success: boolean;
-    count: number;
-    data: Notification[];
-}
-
-export interface NotificationCountResponse {
-    success: boolean;
-    count: number;
-}
-
-export const getReadNotifications = async (
-    role: "User" | "Worker",
-    id: string
-): Promise<NotificationsResponse> => {
-    const { data } = await axios.get<NotificationsResponse>(
-        `${API_BASE_URL}/read/${role}/${id}`
-    );
-    return data;
-};
-
-export const getUnreadNotifications = async (
-    role: "User" | "Worker",
-    id: string
-): Promise<NotificationsResponse> => {
-    const res = await getAllNotifications(role, id);
-    const unread = res.data.filter((n) => !n.isRead);
-    return { success: res.success, count: unread.length, data: unread };
-};
-
+// GET notification count (unread) — route: /count/:role/:id
 export const getNotificationCount = async (
     role: "User" | "Worker",
     id: string
@@ -1334,8 +1345,6 @@ export const getNotificationCount = async (
 };
 
 // ==================== FCM TOKEN ====================
-// Save FCM token to backend for both User and Worker roles.
-// Called by FCMInitializer in App.tsx after login.
 export const saveFcmToken = async (
     userId: string,
     role: "User" | "Worker",
@@ -1361,8 +1370,6 @@ export const saveFcmToken = async (
 };
 
 // ==================== NOTIFY MATCHING WORKERS ====================
-// Call this right after createJob() succeeds.
-// Backend finds workers whose category matches the job and sends FCM push.
 export interface NotifyMatchingWorkersResponse {
     success: boolean;
     message: string;

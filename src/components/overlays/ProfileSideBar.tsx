@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Button from "../ui/Buttons";
 import { typography } from "../../styles/typography";
-
+import { useLocation } from "react-router-dom";
 type AccountType = "user" | "worker";
 
 interface ProfileSidebarProps {
@@ -64,7 +64,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   const [profilePic] = useState<string | null>(initialProfilePic || null);
 
   const navigate = useNavigate();
-
+const location = useLocation();
   const getInitial = (name: string) =>
     !name || name === "User" ? "U" : name.charAt(0).toUpperCase();
 
@@ -79,7 +79,21 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     onNavigate("/my-profile");
     navigate("/my-profile");
   };
+const handleChangeLanguage = () => {
+  // If already on home → just open selector
+  if (location.pathname === "/home" || location.pathname === "/") {
+    window.dispatchEvent(new Event("openLanguageSelector"));
+    return;
+  }
 
+  // Else navigate to home first
+  onNavigate("/home");
+
+  // Open selector after navigation
+  setTimeout(() => {
+    window.dispatchEvent(new Event("openLanguageSelector"));
+  }, 300);
+};
   return (
     <>
       {/* ================= SIDEBAR ================= */}
@@ -123,10 +137,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
             label="My Profile"
             onClick={handleViewProfile}
           />
-          <MenuItem
-            icon={h => <SidebarIcon icon={Globe} hovered={h} />}
-            label="Change Language"
-          />
+        <MenuItem
+  icon={h => <SidebarIcon icon={Globe} hovered={h} />}
+  label="Change Language"
+  onClick={handleChangeLanguage}
+/>
           <MenuItem
             icon={h => <SidebarIcon icon={Gift} hovered={h} />}
             label="Refer & Earn"

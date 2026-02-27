@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
-import { getNearbyWorkers } from "../services/api.service";
+import { getNearbyJobs } from "../services/api.service";
 
 // ── Nearby card components with dummy data ───────────────────────────────────
 import NearByPlumbarsCard from "../components/cards/Plumbers/NearByPlumbars";
@@ -16,31 +16,124 @@ import NearByGasRepairServiceCard from "../components/cards/Plumbers/NearByGasRe
 import NearByWaterPurifierCard from "../components/cards/Plumbers/NearByWaterPurifier";
 import NearBySolarServiceCard from "../components/cards/Plumbers/NearBySolarService";
 
+const BRAND = "#00598a";
+const BRAND_DARK = "#004a73";
+
 // ============================================================================
-// WORKER INTERFACE
+// JOB INTERFACE
 // ============================================================================
-export interface PlumberWorker {
+export interface Job {
     _id: string;
     userId: string;
-    workerId: string;
-    name: string;
-    category: string[];
-    subCategory: string;
-    skill: string;
-    serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
-    profilePic?: string;
-    images?: string[];
+    title?: string;
+    description: string;
+    category: string;
+    subcategory: string;
+    jobType: "FULL_TIME" | "PART_TIME";
+    servicecharges: string;
+    startDate: string;
+    endDate: string;
     area: string;
     city: string;
     state: string;
     pincode: string;
     latitude: number;
     longitude: number;
+    images?: string[];
+    distance?: string;
     createdAt: string;
     updatedAt: string;
-    phoneNumber?: string; // Added phone number field
+    status: string;
+    phone?: string;
+    phoneNumber?: string;
+    mobile?: string;
+    contact?: string;
 }
+
+// ============================================================================
+// PHONE POPUP COMPONENT
+// ============================================================================
+interface PhonePopupProps {
+    phone: string;
+    name: string;
+    onClose: () => void;
+}
+
+const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.45)" }}
+            onClick={onClose}
+        >
+            <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 flex flex-col items-center gap-4"
+                onClick={e => e.stopPropagation()}
+            >
+                {/* Phone icon */}
+                <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: "rgba(0,89,138,0.1)" }}
+                >
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 20 20" style={{ color: BRAND }}>
+                        <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                </div>
+
+                {/* Name */}
+                <div className="text-center">
+                    <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Contact</p>
+                    <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
+                </div>
+
+                {/* Phone number */}
+                <div
+                    className="w-full text-center py-3 px-4 rounded-xl"
+                    style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
+                >
+                    <p className="text-xl font-bold tracking-wide" style={{ color: BRAND }}>{phone}</p>
+                </div>
+
+                {/* Buttons */}
+                <div className="grid grid-cols-2 gap-3 w-full">
+                    <a
+                        href={`tel:${phone}`}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm text-white transition-all duration-200"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                        </svg>
+                        Call Now
+                    </a>
+                    <button
+                        onClick={onClose}
+                        className="flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
+                        style={{ color: BRAND, border: `2px solid ${BRAND}`, backgroundColor: "transparent" }}
+                        onMouseEnter={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                            (e.currentTarget as HTMLElement).style.color = "#fff";
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.color = BRAND;
+                        }}
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 // ============================================================================
 // CARD MAP
@@ -76,7 +169,7 @@ const resolveCardKey = (subcategory?: string): CardKey => {
     if (n.includes("gas") && n.includes("stove")) return "gas";
     if (n.includes("water") && n.includes("purifier") || n.includes("ro")) return "ro";
     if (n.includes("solar")) return "solar";
-    return "plumber"; // default
+    return "plumber";
 };
 
 const getDisplayTitle = (subcategory?: string): string => {
@@ -95,88 +188,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-// ============================================================================
-// PHONE POPUP COMPONENT
-// ============================================================================
-interface PhonePopupProps {
-    phoneNumber: string;
-    workerName: string;
-    onClose: () => void;
-}
-
-const PhonePopup: React.FC<PhonePopupProps> = ({ phoneNumber, workerName, onClose }) => {
-    const handleCall = () => {
-        window.location.href = `tel:${phoneNumber}`;
-    };
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(phoneNumber);
-        // Optional: Add toast notification here
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div 
-                className="bg-white rounded-2xl shadow-2xl max-w-sm w-full transform scale-100 animate-in zoom-in-95 duration-200"
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Header */}
-                <div className="bg-[#00598a] text-white p-4 rounded-t-2xl flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">📞</span>
-                        <span className="font-semibold">Contact Worker</span>
-                    </div>
-                    <button 
-                        onClick={onClose}
-                        className="text-white/80 hover:text-white transition-colors text-xl leading-none"
-                    >
-                        ×
-                    </button>
-                </div>
-
-                {/* Body */}
-                <div className="p-6 text-center space-y-4">
-                    <div className="w-16 h-16 bg-[#00598a]/10 rounded-full flex items-center justify-center mx-auto">
-                        <span className="text-3xl">👷</span>
-                    </div>
-                    
-                    <div>
-                        <p className="text-gray-500 text-sm mb-1">Calling</p>
-                        <h3 className="text-lg font-bold text-gray-900">{workerName}</h3>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <p className="text-2xl font-mono font-bold text-[#00598a] tracking-wider">
-                            {phoneNumber}
-                        </p>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                        <button
-                            onClick={handleCopy}
-                            className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:border-[#00598a] hover:text-[#00598a] transition-all duration-200"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            Copy
-                        </button>
-                        <button
-                            onClick={handleCall}
-                            className="flex items-center justify-center gap-2 px-4 py-3 bg-[#00598a] text-white rounded-xl font-medium hover:bg-[#004a70] transition-all duration-200 shadow-lg shadow-[#00598a]/25"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                            </svg>
-                            Call Now
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
+const getJobPhone = (job: Job): string =>
+    job.phone || job.phoneNumber || job.mobile || job.contact || "";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -187,13 +200,12 @@ const PlumberServicesList: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [nearbyWorkers, setNearbyWorkers] = useState<PlumberWorker[]>([]);
+    const [nearbyJobs, setNearbyJobs] = useState<Job[]>([]);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-
-    // Phone popup state
-    const [selectedWorker, setSelectedWorker] = useState<PlumberWorker | null>(null);
+    const [apiDebugInfo, setApiDebugInfo] = useState<string>("");
+    const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
     useEffect(() => {
@@ -218,93 +230,131 @@ const PlumberServicesList: React.FC = () => {
         );
     }, []);
 
-    // ── Fetch nearby workers when location ready ─────────────────────────────
+    // ── Fetch nearby JOBS when location ready ────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-        const fetchWorkers = async () => {
+
+        const fetchJobs = async () => {
             setLoading(true);
             setError("");
+            setApiDebugInfo("");
+
             try {
-                console.log("🔧 Fetching nearby plumber workers...");
-                const response = await getNearbyWorkers(
+                console.log("🔧 Fetching nearby jobs...");
+                console.log("Location:", userLocation);
+
+                const response = await getNearbyJobs(
                     userLocation.latitude,
-                    userLocation.longitude,
-                    10,
-                    "plumber",
-                    subcategory || ""
+                    userLocation.longitude
                 );
+
                 console.log("🔧 API Response:", response);
-                if (response?.success && response.workers) {
-                    console.log("✅ Workers found:", response.workers.length);
-                    setNearbyWorkers(response.workers);
+
+                if (response?.success && response.jobs) {
+                    console.log("✅ Jobs found:", response.jobs.length);
+
+                    let filteredJobs = response.jobs;
+                    if (subcategory) {
+                        filteredJobs = response.jobs.filter((job: Job) =>
+                            job.subcategory?.toLowerCase().includes(subcategory.toLowerCase()) ||
+                            job.category?.toLowerCase().includes(subcategory.toLowerCase())
+                        );
+                        console.log("📋 Filtered by subcategory:", subcategory, "→", filteredJobs.length, "jobs");
+                    }
+
+                    setNearbyJobs(filteredJobs);
+                    setApiDebugInfo(`Found ${filteredJobs.length} jobs`);
+                } else if (response?.jobs) {
+                    console.log("✅ Jobs found (no success flag):", response.jobs.length);
+                    setNearbyJobs(response.jobs);
+                    setApiDebugInfo(`Found ${response.jobs.length} jobs`);
+                } else if (Array.isArray(response)) {
+                    console.log("✅ Jobs found (direct array):", response.length);
+                    setNearbyJobs(response);
+                    setApiDebugInfo(`Found ${response.length} jobs`);
                 } else {
-                    setNearbyWorkers([]);
+                    console.log("⚠️ No jobs in response:", response);
+                    setNearbyJobs([]);
+                    setApiDebugInfo("No jobs found in your area");
                 }
-            } catch (e) {
-                console.error("❌ Error fetching workers:", e);
-                setError("Failed to load nearby workers");
-                setNearbyWorkers([]);
+            } catch (e: any) {
+                console.error("❌ Error fetching jobs:", e);
+                setError(`Failed to load nearby jobs: ${e.message}`);
+                setNearbyJobs([]);
+                setApiDebugInfo(`Error: ${e.message}`);
             } finally {
                 setLoading(false);
             }
         };
-        fetchWorkers();
+
+        fetchJobs();
     }, [userLocation, subcategory]);
 
-    // ── Navigation ───────────────────────────────────────────────────────────
-    const handleView = (worker: any) => {
-        const id = worker._id || worker.id;
-        navigate(`/plumber-services/worker/${id}`);
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const handleView = (job: Job) => {
+        navigate(`/job-details/${job._id}`);
     };
 
     const handleAddPost = () => {
         navigate(subcategory ? `/add-plumber-service-form?subcategory=${subcategory}` : "/add-plumber-service-form");
     };
 
-    const openDirections = (worker: PlumberWorker) => {
-        if (worker.latitude && worker.longitude) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=  ${worker.latitude},${worker.longitude}`, "_blank");
-        } else if (worker.area || worker.city) {
-            const addr = encodeURIComponent([worker.area, worker.city, worker.state].filter(Boolean).join(", "));
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=  ${addr}`, "_blank");
+    const handleCallClick = (e: React.MouseEvent, job: Job) => {
+        e.stopPropagation();
+        const phone = getJobPhone(job);
+        console.log("📞 Call clicked — resolved phone:", phone);
+        if (phone) {
+            setPhonePopup({ phone, name: job.subcategory || "Service Provider" });
+        } else {
+            alert("Phone number not available for this job.");
         }
     };
 
-    // ── Phone popup handlers ─────────────────────────────────────────────────
-    const handleCallClick = (e: React.MouseEvent, worker: PlumberWorker) => {
+    const handleDirectionsClick = (e: React.MouseEvent, job: Job) => {
         e.stopPropagation();
-        setSelectedWorker(worker);
+        if (job.latitude && job.longitude) {
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}`,
+                "_blank"
+            );
+        } else if (job.area || job.city) {
+            const addr = encodeURIComponent(
+                [job.area, job.city, job.state].filter(Boolean).join(", ")
+            );
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+        } else {
+            alert("Location not available for this job.");
+        }
     };
 
-    const closePhonePopup = () => {
-        setSelectedWorker(null);
-    };
+    // ── Render single JOB card ───────────────────────────────────────────────
+    const renderJobCard = (job: Job) => {
+        const location = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Location not set";
+        const imageUrls = (job.images || []).filter(Boolean) as string[];
+        const phone = getJobPhone(job);
 
-    // ── Render single worker card (matches RealEstate card style) ────────────
-    const renderWorkerCard = (worker: PlumberWorker) => {
-        const id = worker._id || "";
-        const location = [worker.area, worker.city, worker.state].filter(Boolean).join(", ") || "Location not set";
-
+        // Calculate distance if user location available
         let distance: string | null = null;
-        if (userLocation && worker.latitude && worker.longitude) {
-            const d = calculateDistance(userLocation.latitude, userLocation.longitude, worker.latitude, worker.longitude);
+        if (userLocation && job.latitude && job.longitude) {
+            const d = calculateDistance(userLocation.latitude, userLocation.longitude, job.latitude, job.longitude);
             distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
 
-        const imageUrls = (worker.images || []).filter(Boolean) as string[];
+        // Use distance from API if available
+        const apiDistance = job.distance && job.distance !== "0.00" ? `${job.distance} km` : null;
 
         return (
             <div
-                key={id}
+                key={job._id}
                 className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
-                onClick={() => handleView(worker)}
+                onClick={() => handleView(job)}
             >
-                {/* ── Image ── */}
+                {/* ── Image (without badges) ── */}
                 <div className="relative h-48 bg-gradient-to-br from-[#00598a]/5 to-[#00598a]/10 overflow-hidden">
-                    {worker.profilePic || imageUrls.length > 0 ? (
+                    {imageUrls.length > 0 ? (
                         <img
-                            src={worker.profilePic || imageUrls[0]}
-                            alt={worker.name}
+                            src={imageUrls[0]}
+                            alt={job.subcategory || "Job"}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
@@ -313,20 +363,6 @@ const PlumberServicesList: React.FC = () => {
                             <span className="text-5xl group-hover:scale-110 transition-transform duration-300">🔧</span>
                         </div>
                     )}
-
-                    {/* Live Data badge — top left */}
-                    <div className="absolute top-3 left-3 z-10">
-                        <span className="inline-flex items-center px-2.5 py-1 bg-[#00598a] text-white text-xs font-bold rounded-md shadow-md">
-                            Live Data
-                        </span>
-                    </div>
-
-                    {/* Charge type badge — top right */}
-                    <div className="absolute top-3 right-3 z-10">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#00598a] text-xs font-bold rounded-md shadow-md border border-[#00598a]/20 capitalize">
-                            Per {worker.chargeType}
-                        </span>
-                    </div>
 
                     {imageUrls.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
@@ -338,65 +374,78 @@ const PlumberServicesList: React.FC = () => {
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
                     <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-[#00598a] transition-colors duration-200">
-                        {worker.name || "Unnamed Worker"}
+                        {job.subcategory || "Job"}
                     </h2>
 
-                    {worker.subCategory && (
-                        <span className="inline-flex items-center gap-1.5 w-fit text-xs bg-[#00598a]/10 text-[#00598a] px-3 py-1 rounded-md border border-[#00598a]/20">
-                            🔧 {worker.subCategory}
-                        </span>
-                    )}
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                        {job.description}
+                    </p>
 
                     <p className="text-sm text-gray-500 flex items-start gap-1.5">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {distance && (
+                    {(distance || apiDistance) && (
                         <p className="text-sm font-semibold text-[#00598a] flex items-center gap-1">
-                            <span>📍</span> {distance} away
+                            <span>📍</span> {distance || apiDistance} away
                         </p>
                     )}
 
-                    {worker.skill && (
-                        <p className="text-sm text-gray-600 line-clamp-2">🛠️ {worker.skill}</p>
-                    )}
-
-                    {/* Charge info */}
+                    {/* Price info */}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <div>
-                            <p className="text-xs text-gray-500">Charge Type</p>
-                            <p className="text-sm font-semibold text-gray-900 capitalize">
-                                Per {worker.chargeType}
+                            <p className="text-xs text-gray-500">Service Charge</p>
+                            <p className="text-base font-bold text-green-600">₹{job.servicecharges}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-xs text-gray-500">Duration</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                                {new Date(job.startDate).toLocaleDateString()} - {new Date(job.endDate).toLocaleDateString()}
                             </p>
                         </div>
-                        {worker.serviceCharge && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase tracking-wide">Charges</p>
-                                <p className="text-base font-bold text-[#00598a]">₹{worker.serviceCharge}</p>
-                            </div>
-                        )}
                     </div>
 
-                    {/* Action buttons */}
-                    <div className="grid grid-cols-3 gap-2 pt-3 mt-1">
+                    {/* ── Directions + Call buttons ── */}
+                    <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        {/* Directions */}
                         <button
-                            onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 border-2 border-[#00598a] text-[#00598a] rounded-lg font-medium text-xs hover:bg-[#00598a] hover:text-white transition-all duration-200"
+                            onClick={e => handleDirectionsClick(e, job)}
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg font-medium text-xs transition-all duration-200"
+                            style={{ border: `2px solid ${BRAND}`, color: BRAND, backgroundColor: "transparent" }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
+                                (e.currentTarget as HTMLElement).style.color = "#fff";
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                                (e.currentTarget as HTMLElement).style.color = BRAND;
+                            }}
                         >
-                            <span>📍</span> Directions
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                            Directions
                         </button>
+
+                        {/* Call */}
                         <button
-                            onClick={(e) => handleCallClick(e, worker)}
-                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 border-2 border-green-600 text-green-600 rounded-lg font-medium text-xs hover:bg-green-600 hover:text-white transition-all duration-200"
+                            onClick={e => handleCallClick(e, job)}
+                            disabled={!phone}
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg font-medium text-xs transition-all duration-200"
+                            style={
+                                phone
+                                    ? { backgroundColor: BRAND, color: "#fff" }
+                                    : { backgroundColor: "#d1d5db", color: "#9ca3af", cursor: "not-allowed" }
+                            }
+                            onMouseEnter={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK; }}
+                            onMouseLeave={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND; }}
+                            title={phone ? `Call ${phone}` : "No phone number available"}
                         >
-                            <span>📞</span> Call
-                        </button>
-                        <button
-                            onClick={e => { e.stopPropagation(); handleView(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 bg-[#00598a] text-white rounded-lg font-medium text-xs hover:bg-[#004a70] transition-all duration-200"
-                        >
-                            <span>👁️</span> View
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                            </svg>
+                            Call
                         </button>
                     </div>
                 </div>
@@ -404,14 +453,14 @@ const PlumberServicesList: React.FC = () => {
         );
     };
 
-    // ── Dummy cards — always shown first ─────────────────────────────────────
+    // ── Dummy cards ──────────────────────────────────────────────────────────
     const renderDummyCards = () => {
         const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
         return <CardComponent onViewDetails={handleView} />;
     };
 
-    // ── API nearby workers — shown second ────────────────────────────────────
-    const renderNearbyWorkers = () => {
+    // ── API nearby jobs ──────────────────────────────────────────────────────
+    const renderNearbyJobs = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
@@ -420,37 +469,49 @@ const PlumberServicesList: React.FC = () => {
             );
         }
 
-        if (nearbyWorkers.length === 0) {
+        if (nearbyJobs.length === 0) {
             return (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
                     <div className="text-5xl mb-3">🔧</div>
-                    <p className="text-gray-500 font-medium">No workers found in your area.</p>
-                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
+                    <p className="text-gray-500 font-medium">No jobs found in your area.</p>
+                    {apiDebugInfo && (
+                        <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded">
+                            Debug: {apiDebugInfo}
+                        </p>
+                    )}
                 </div>
             );
         }
 
         return (
             <div className="space-y-4">
-                {/* Header with count — mirrors RealEstate style */}
                 <div className="flex items-center justify-between px-1">
-                    <h2 className="text-xl font-bold text-gray-800">Nearby Workers</h2>
+                    <h2 className="text-xl font-bold text-gray-800">Nearby Jobs</h2>
                     <span className="inline-flex items-center justify-center min-w-[2rem] h-7 bg-[#00598a] text-white text-sm font-bold rounded-full px-2.5">
-                        {nearbyWorkers.length}
+                        {nearbyJobs.length}
                     </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {nearbyWorkers.map(renderWorkerCard)}
+                    {nearbyJobs.map(renderJobCard)}
                 </div>
             </div>
         );
     };
 
     // ============================================================================
-    // MAIN RENDER — DUMMY FIRST, API SECOND
+    // MAIN RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#00598a]/5 to-white">
+            {/* Phone Popup */}
+            {phonePopup && (
+                <PhonePopup
+                    phone={phonePopup.phone}
+                    name={phonePopup.name}
+                    onClose={() => setPhonePopup(null)}
+                />
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
                 {/* ── Header ── */}
@@ -459,7 +520,7 @@ const PlumberServicesList: React.FC = () => {
                         <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
                             {getDisplayTitle(subcategory)}
                         </h1>
-                        <p className="text-sm text-gray-500 mt-1">Find service workers near you</p>
+                        <p className="text-sm text-gray-500 mt-1">Find service jobs near you</p>
                     </div>
                     <Button
                         variant="primary"
@@ -467,7 +528,7 @@ const PlumberServicesList: React.FC = () => {
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#004a70]"
                     >
-                        + Add Post
+                        + Post a Job
                     </Button>
                 </div>
 
@@ -489,24 +550,22 @@ const PlumberServicesList: React.FC = () => {
                     </div>
                 )}
 
-                {/* ✅ 1. DUMMY CARDS FIRST — always visible */}
+                {/* Debug info */}
+                {apiDebugInfo && !error && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                        <p className="text-blue-700 text-xs">API Status: {apiDebugInfo}</p>
+                    </div>
+                )}
+
+                {/* 1. DUMMY CARDS FIRST */}
                 <div className="space-y-4">
                     {renderDummyCards()}
                 </div>
 
-                {/* ✅ 2. API DATA SECOND — only after location is ready */}
-                {userLocation && !fetchingLocation && renderNearbyWorkers()}
+                {/* 2. API DATA SECOND */}
+                {userLocation && !fetchingLocation && renderNearbyJobs()}
 
             </div>
-
-            {/* Phone Popup Modal */}
-            {selectedWorker && (
-                <PhonePopup
-                    phoneNumber={selectedWorker.phoneNumber || "+91 98765 43210"}
-                    workerName={selectedWorker.name || "Worker"}
-                    onClose={closePhonePopup}
-                />
-            )}
         </div>
     );
 };

@@ -2,10 +2,11 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     MapPin, Loader2, ChevronDown, ChevronLeft, ChevronRight,
-    ArrowRight, IndianRupee, Briefcase, Calendar, Clock, Image as ImageIcon
+    ArrowRight, IndianRupee, Briefcase, Calendar
 } from "lucide-react";
 import { getNearbyJobsForWorker, JobDetail, API_BASE_URL } from "../services/api.service";
 import CategoriesData from "../data/categories.json";
+import { categories } from "../components/categories/Categories";  // ← for id→name lookup
 import typography from "../styles/typography";
 
 const BRAND = "#00598a";
@@ -18,6 +19,21 @@ interface AllJobsProps {
     filterCategory?: string;
     workerId?: string;
 }
+
+// ── Resolve category value → display name ─────────────────────────────────────
+// Handles three cases:
+//   "3"           → numeric id stored by old PostJob → resolve via categories array
+//   "Carpenters"  → already a name → return as-is
+//   undefined     → fallback "—"
+const resolveCategoryName = (raw: string | undefined): string => {
+    if (!raw) return "—";
+    // If it looks like a pure number, try to find the category by id
+    if (/^\d+$/.test(raw.trim())) {
+        const match = categories.find(c => String(c.id) === raw.trim());
+        return match?.name ?? raw;
+    }
+    return raw;
+};
 
 // ── resolve relative image paths ─────────────────────────────────────────────
 const resolveImageUrl = (path: string): string | null => {
@@ -48,14 +64,8 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
         );
     }
 
-    const prev = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdx(i => (i - 1 + images.length) % images.length);
-    };
-    const next = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIdx(i => (i + 1) % images.length);
-    };
+    const prev = (e: React.MouseEvent) => { e.stopPropagation(); setIdx(i => (i - 1 + images.length) % images.length); };
+    const next = (e: React.MouseEvent) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
 
     return (
         <div className="relative w-full h-full group">
@@ -107,20 +117,28 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
 };
 
 // ── Job Card ──────────────────────────────────────────────────────────────────
-const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: React.MouseEvent) => void }> = ({
-    job, onClick, onViewClick
-}) => {
+const JobCard: React.FC<{
+    job: JobDetail;
+    onClick: () => void;
+    onViewClick: (e: React.MouseEvent) => void;
+}> = ({ job, onClick, onViewClick }) => {
     const [isHovered, setIsHovered] = useState(false);
     const imgs = getImageUrls(job.images || []);
+
     const distLabel = job.distance != null
         ? job.distance >= 1000
             ? `${(job.distance / 1000).toFixed(1)} km`
             : `${Math.round(job.distance)} m`
         : null;
+
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Nearby";
     const startDate = new Date(job.startDate);
     const endDate = new Date(job.endDate);
     const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // ✅ Always resolve to a human-readable name
+    const categoryName = resolveCategoryName(job.category);
+    const subcategoryName = job.subcategory || "";
 
     return (
         <div
@@ -145,20 +163,6 @@ const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: 
                     <ImageCarousel images={imgs} title={job.title} />
                 </div>
 
-                {/* Job type badge */}
-                <div className="absolute top-3 left-3 z-10">
-                    <span
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full ${typography.misc.badge} shadow`}
-                        style={{
-                            backgroundColor: job.jobType === "FULL_TIME" ? "#22c55e" : BRAND,
-                            color: "#fff",
-                        }}
-                    >
-                        <Clock size={11} />
-                        {job.jobType === "FULL_TIME" ? "Full Time" : "Part Time"}
-                    </span>
-                </div>
-
                 {/* Distance badge */}
                 {distLabel && (
                     <div className="absolute top-3 right-3 z-10">
@@ -167,22 +171,12 @@ const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: 
                         </span>
                     </div>
                 )}
-
-                {/* Duration badge */}
-                <div className="absolute bottom-3 left-3 z-10">
-                    <span
-                        className={`inline-flex items-center gap-1 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}
-                        style={{ backgroundColor: BRAND }}
-                    >
-                        <Calendar size={11} />
-                        {duration} day{duration !== 1 ? "s" : ""}
-                    </span>
-                </div>
             </div>
 
             {/* Card body */}
             <div className="flex flex-col flex-1 px-3 md:px-4 pt-3 pb-4">
-                {/* Category + subcategory badges */}
+
+                {/* ✅ Category + subcategory badges — always shows resolved name */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
                     <span
                         className={`${typography.misc.badge} px-2 py-0.5 rounded-full border transition-colors duration-200`}
@@ -191,11 +185,11 @@ const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: 
                             : { backgroundColor: "rgba(0,89,138,0.08)", color: BRAND, borderColor: "rgba(0,89,138,0.2)" }
                         }
                     >
-                        {job.category}
+                        {categoryName}
                     </span>
-                    {job.subcategory && (
+                    {subcategoryName && (
                         <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full bg-gray-50 text-gray-600 border border-gray-200`}>
-                            {job.subcategory}
+                            {subcategoryName}
                         </span>
                     )}
                 </div>
@@ -237,8 +231,8 @@ const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: 
                     style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}
                 >
                     <div>
-                        <p className={`${typography.misc.caption} uppercase tracking-wide mb-0.5`} style={{ fontSize: "10px" }}>
-                            Charges
+                        <p className="uppercase tracking-wide text-gray-400 mb-0.5" style={{ fontSize: "10px" }}>
+                            Service Charges
                         </p>
                         <p className={`${typography.heading.h6} text-green-600 flex items-center gap-0.5 leading-none`}>
                             <IndianRupee size={15} className="mt-0.5" />
@@ -252,7 +246,7 @@ const JobCard: React.FC<{ job: JobDetail; onClick: () => void; onViewClick: (e: 
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
-                        View <ArrowRight size={14} />
+                        View Details <ArrowRight size={14} />
                     </button>
                 </div>
             </div>
@@ -291,22 +285,14 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
     const fetchJobs = async () => {
         try {
-            setLoading(true);
-            setError("");
-            setNoProfile(false);
-
+            setLoading(true); setError(""); setNoProfile(false);
             const workerId =
                 workerIdProp ||
                 localStorage.getItem("workerId") ||
                 localStorage.getItem("@worker_id") ||
                 localStorage.getItem("worker_id");
 
-            if (!workerId) {
-                setNoProfile(true);
-                setJobs([]);
-                setLoading(false);
-                return;
-            }
+            if (!workerId) { setNoProfile(true); setJobs([]); setLoading(false); return; }
 
             const res = await getNearbyJobsForWorker(workerId);
             const data: JobDetail[] = res.jobs || [];
@@ -320,25 +306,25 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 msg.toLowerCase().includes("worker not found") ||
                 msg.toLowerCase().includes("profile not found")
             ) {
-                setNoProfile(true);
-                setJobs([]);
+                setNoProfile(true); setJobs([]);
             } else {
-                setError(msg || "Failed to fetch jobs");
-                setJobs([]);
+                setError(msg || "Failed to fetch jobs"); setJobs([]);
             }
         } finally {
             setLoading(false);
         }
     };
 
+    // ✅ Filter also resolves numeric category for matching
     const filtered = jobs.filter(job => {
         const sl = searchText.toLowerCase();
+        const resolvedCat = resolveCategoryName(job.category);
         const matchSearch = !sl
             || job.title.toLowerCase().includes(sl)
             || job.description.toLowerCase().includes(sl)
-            || job.category.toLowerCase().includes(sl)
+            || resolvedCat.toLowerCase().includes(sl)
             || (job.subcategory && job.subcategory.toLowerCase().includes(sl));
-        const matchCat = selectedCategory === "all" || job.category === selectedCategory;
+        const matchCat = selectedCategory === "all" || resolvedCat === selectedCategory;
         const matchRadius = job.distance == null || job.distance <= selectedRadius * 1000;
         return matchSearch && matchCat && matchRadius;
     });
@@ -440,14 +426,8 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                             ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
                                             : { color: "#374151" }
                                         }
-                                        onMouseEnter={e => {
-                                            if (selectedRadius !== r)
-                                                (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)";
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (selectedRadius !== r)
-                                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                                        }}
+                                        onMouseEnter={e => { if (selectedRadius !== r) (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
+                                        onMouseLeave={e => { if (selectedRadius !== r) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                                     >
                                         {r} km
                                     </button>
@@ -463,9 +443,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                             className={`flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 ${typography.body.xs} font-medium text-gray-700 shadow-sm min-w-[130px] md:min-w-[150px] justify-between transition-colors duration-150`}
                             style={dropdownOpen ? { borderColor: BRAND, color: BRAND } : {}}
                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = BRAND}
-                            onMouseLeave={e => {
-                                if (!dropdownOpen) (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb";
-                            }}
+                            onMouseLeave={e => { if (!dropdownOpen) (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; }}
                         >
                             <span className="truncate">{categoryLabel}</span>
                             <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
@@ -480,14 +458,8 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                             ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
                                             : { color: "#374151" }
                                         }
-                                        onMouseEnter={e => {
-                                            if (selectedCategory !== "all")
-                                                (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)";
-                                        }}
-                                        onMouseLeave={e => {
-                                            if (selectedCategory !== "all")
-                                                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                                        }}
+                                        onMouseEnter={e => { if (selectedCategory !== "all") (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
+                                        onMouseLeave={e => { if (selectedCategory !== "all") (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                                     >
                                         All Categories
                                     </button>
@@ -501,14 +473,8 @@ const AllJobs: React.FC<AllJobsProps> = ({
                                                 ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
                                                 : { color: "#374151" }
                                             }
-                                            onMouseEnter={e => {
-                                                if (selectedCategory !== cat.name)
-                                                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)";
-                                            }}
-                                            onMouseLeave={e => {
-                                                if (selectedCategory !== cat.name)
-                                                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                                            }}
+                                            onMouseEnter={e => { if (selectedCategory !== cat.name) (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
+                                            onMouseLeave={e => { if (selectedCategory !== cat.name) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                                         >
                                             {cat.name}
                                         </button>

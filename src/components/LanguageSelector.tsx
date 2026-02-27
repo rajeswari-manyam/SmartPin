@@ -23,20 +23,30 @@ const LanguageSelector = () => {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target as Node)
-            ) {
-                setOpen(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () =>
-            document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
+    // useEffect(() => {
+    //     const handleClickOutside = (event: MouseEvent) => {
+    //         if (
+    //             dropdownRef.current &&
+    //             !dropdownRef.current.contains(event.target as Node)
+    //         ) {
+    //             setOpen(false);
+    //         }
+    //     };
+    //     document.addEventListener("mousedown", handleClickOutside);
+    //     return () =>
+    //         document.removeEventListener("mousedown", handleClickOutside);
+    // }, []);
+useEffect(() => {
+  const openFromOutside = () => {
+    setOpen(true);
+  };
 
+  window.addEventListener("openLanguageSelector", openFromOutside);
+
+  return () => {
+    window.removeEventListener("openLanguageSelector", openFromOutside);
+  };
+}, []);
     const changeLanguage = (langCode: string, langName: string) => {
         const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
         if (!select) return alert("Translator loading, please wait...");

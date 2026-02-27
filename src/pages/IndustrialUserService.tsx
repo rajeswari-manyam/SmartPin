@@ -262,15 +262,7 @@ const IndustrialUserService: React.FC<IndustrialUserServiceProps> = ({
                     </div>
 
                     {/* View Details button */}
-                    <button
-                        onClick={() => handleView(id)}
-                        className="w-full py-2.5 rounded-xl font-semibold text-sm text-white transition-all"
-                        style={{ backgroundColor: '#00598a' }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
-                    >
-                        View Details
-                    </button>
+                 
                 </div>
             </div>
         );

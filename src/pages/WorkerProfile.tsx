@@ -1,58 +1,107 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin } from "lucide-react";
-import LocationSection from "../components/WorkerProfile/LocationSection";
+import { ArrowLeft, Mic, MapPin, RefreshCw, User, Phone, CheckCircle, AlertTriangle, X } from "lucide-react";
 import ProfilePhotoUpload from "../components/WorkerProfile/ProfilePhotoUpload";
 import { createWorkerBase, CreateWorkerBasePayload } from "../services/api.service";
 import typography from "../styles/typography";
 
-const BRAND = '#00598a';
+const BRAND = "#00598a";
+const BRAND_LIGHT = "#e8f4fb";
+const BRAND_MID = "#cce5f4";
 
 // ── Shared input style ────────────────────────────────────────────────────────
 const inputBase =
-  `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-  `focus:ring-2 focus:ring-[#00598a] focus:border-[#00598a] ` +
+  `w-full px-4 py-3.5 border border-gray-200 rounded-xl ` +
+  `focus:ring-1 focus:ring-[#00598a]/30 focus:border-[#00598a] ` +
   `placeholder-gray-400 transition-all duration-200 ` +
-  `${typography.form.input} text-gray-800 bg-white`;
+  `text-gray-800 bg-white outline-none`;
 
 const inputDisabled =
-  `w-full px-4 py-3 border border-gray-200 rounded-xl ` +
-  `bg-gray-50 text-gray-500 cursor-not-allowed ` +
-  `${typography.form.input}`;
+  `w-full px-4 py-3.5 border border-gray-100 rounded-xl ` +
+  `bg-gray-50 text-gray-400 cursor-not-allowed`;
 
-const selectStyle = {
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat' as const,
-  backgroundPosition: 'right 0.75rem center',
-  backgroundSize: '1.5em 1.5em',
-  paddingRight: '2.5rem',
-};
-
-// ── Sub-components ────────────────────────────────────────────────────────────
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-  <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-    {children}{required && <span className="text-red-500 ml-1">*</span>}
-  </label>
-);
-
-const SectionCard: React.FC<{
-  title?: string;
+// ── Section card ──────────────────────────────────────────────────────────────
+const Section: React.FC<{
+  icon: React.ElementType;
+  title: string;
+  required?: boolean;
   children: React.ReactNode;
-  action?: React.ReactNode;
-}> = ({ title, children, action }) => (
-  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-    {title && (
-      <div className="flex items-center justify-between mb-1">
-        <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-        {action}
+  tinted?: boolean;
+}> = ({ icon: Icon, title, required, children, tinted }) => (
+  <div
+    className="rounded-2xl overflow-hidden border shadow-sm"
+    style={{
+      backgroundColor: tinted ? "#f0f7fb" : "#fff",
+      borderColor: tinted ? BRAND_MID : "#e9ecef",
+    }}
+  >
+    <div
+      className="px-5 py-3.5 flex items-center gap-2.5 border-b"
+      style={{
+        background: tinted
+          ? `linear-gradient(135deg, ${BRAND}18, ${BRAND}08)`
+          : `linear-gradient(135deg, ${BRAND}0d, ${BRAND}05)`,
+        borderColor: tinted ? BRAND_MID : "#f0f0f0",
+      }}
+    >
+      <div
+        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: BRAND }}
+      >
+        <Icon size={15} className="text-white" />
       </div>
-    )}
-    {children}
+      <h2 className={`${typography.card.subtitle} text-gray-900 leading-tight`}>
+        {title}
+        {required && <span className="text-red-500 ml-1">*</span>}
+      </h2>
+    </div>
+    <div className="px-5 py-4 space-y-4">{children}</div>
   </div>
 );
 
-const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <div className="grid grid-cols-2 gap-6">{children}</div>
+// ── Field label ───────────────────────────────────────────────────────────────
+const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
+  children,
+  required,
+}) => (
+  <label className={`block ${typography.form.label} text-gray-700 mb-1.5`}>
+    {children}
+    {required && <span className="text-red-500 ml-1">*</span>}
+  </label>
+);
+
+// ── Voice input row ───────────────────────────────────────────────────────────
+const VoiceInput: React.FC<{
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  disabled?: boolean;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+}> = ({ type = "text", value, onChange, placeholder, disabled, maxLength, inputMode }) => (
+  <div className="flex gap-2">
+    <input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      disabled={disabled}
+      maxLength={maxLength}
+      inputMode={inputMode}
+      className={`flex-1 ${typography.form.input} ${disabled ? inputDisabled : inputBase} ${
+        value && !disabled ? "border-[#00598a] ring-1 ring-[#00598a]/20" : ""
+      }`}
+    />
+    <button
+      type="button"
+      className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0 transition-opacity hover:opacity-90 active:opacity-80"
+      style={{ backgroundColor: BRAND }}
+      disabled={disabled}
+    >
+      <Mic size={17} />
+    </button>
+  </div>
 );
 
 // ============================================================================
@@ -61,33 +110,29 @@ const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const WorkerProfile: React.FC = () => {
   const navigate = useNavigate();
 
-  const [fullName, setFullName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [experience, setExperience] = useState("");
-
-  const [address, setAddress] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [pincode, setPincode] = useState("");
-  const [latitude, setLatitude] = useState(0);
-  const [longitude, setLongitude] = useState(0);
-
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+  const [fullName, setFullName]               = useState("");
+  const [phoneNumber, setPhoneNumber]         = useState("");
+  const [address, setAddress]                 = useState("");
+  const [city, setCity]                       = useState("");
+  const [state, setState]                     = useState("");
+  const [pincode, setPincode]                 = useState("");
+  const [latitude, setLatitude]               = useState(0);
+  const [longitude, setLongitude]             = useState(0);
+  const [profilePhoto, setProfilePhoto]       = useState<string | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading]                 = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError]                     = useState<string | null>(null);
   const [locationWarning, setLocationWarning] = useState("");
 
-  // Get phone from localStorage on mount
   React.useEffect(() => {
-    const phone = localStorage.getItem("phoneNumber") || localStorage.getItem("userPhone") || "";
+    const phone =
+      localStorage.getItem("phoneNumber") ||
+      localStorage.getItem("userPhone") ||
+      "";
     setPhoneNumber(phone);
   }, []);
 
-  // ── Location ──────────────────────────────────────────────────────────────
   const fetchLocation = () => {
     setLocationLoading(true);
     setLocationWarning("");
@@ -104,20 +149,25 @@ const WorkerProfile: React.FC = () => {
         setLongitude(lng);
         if (pos.coords.accuracy > 500) {
           setLocationWarning(
-            `⚠️ Low accuracy detected (~${Math.round(pos.coords.accuracy)}m). Please verify the address fields below.`
+            `Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify the address fields.`
           );
         }
         try {
-          const response = await fetch(
+          const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
           );
-          const data = await response.json();
-          setAddress(data.address.road || data.address.neighbourhood || data.address.suburb || "");
+          const data = await res.json();
+          setAddress(
+            data.address.road ||
+            data.address.neighbourhood ||
+            data.address.suburb ||
+            ""
+          );
           setCity(data.address.city || data.address.town || data.address.village || "");
           setState(data.address.state || "");
           setPincode(data.address.postcode || "");
         } catch (err) {
-          console.error("Error fetching address:", err);
+          console.error("Reverse geocode error:", err);
         }
         setLocationLoading(false);
       },
@@ -129,14 +179,13 @@ const WorkerProfile: React.FC = () => {
     );
   };
 
-  // ── Submit ────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
     if (!userId) { navigate("/loginPage"); return; }
 
-    if (!fullName.trim() || !address.trim() || !city.trim() || !state.trim() || !pincode.trim() || !experience) {
-      setError("Please fill all required fields");
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!fullName.trim() || !city.trim()) {
+      setError("Name and City are required");
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
@@ -144,29 +193,35 @@ const WorkerProfile: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const payload: CreateWorkerBasePayload = {
-        userId,
-        name: fullName,
-        area: address,
-        city,
-        state,
-        pincode,
-        latitude,
-        longitude,
-        experience,
-        profilePic: profilePhotoFile ?? undefined,
-      };
+      const formData = new FormData();
+      formData.append("userId", userId);
+      formData.append("name", fullName);
+      formData.append("area", address);
+      formData.append("city", city);
+      formData.append("state", state);
+      formData.append("pincode", pincode);
+      formData.append("latitude", String(latitude));
+      formData.append("longitude", String(longitude));
+      if (phoneNumber) formData.append("phone", phoneNumber);
+      if (profilePhotoFile) formData.append("profilePic", profilePhotoFile);
 
-      const res = await createWorkerBase(payload);
-      if (!res.success) throw new Error(res.message);
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
+      const response = await fetch(`${API_BASE_URL}/createworkers`, {
+        method: "POST",
+        body: formData,
+        redirect: "follow",
+      });
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const res = await response.json();
+      if (!res.success) throw new Error(res.message || "Failed to create profile");
 
       localStorage.setItem("workerId", res.worker._id);
       localStorage.setItem("@worker_id", res.worker._id);
-
       navigate("/add-skills");
     } catch (e: any) {
       setError(e.message);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
@@ -176,268 +231,271 @@ const WorkerProfile: React.FC = () => {
   // RENDER
   // ============================================================================
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: "#f5f7fa" }}>
 
-      {/* ── Sticky Header ── */}
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-center gap-3">
-          <button
-            onClick={() => navigate("/")}
-            disabled={loading}
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition disabled:opacity-50"
-          >
-            <ArrowLeft className="w-6 h-6 text-gray-700" />
-          </button>
-          <div className="flex-1">
-            <h1 className={`${typography.heading.h5} text-gray-900`}>Create Worker Profile</h1>
-            <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>
-              Fill in your details to start receiving job requests
-            </p>
-          </div>
+      {/* ── Header ── */}
+      <div
+        className="sticky top-0 z-10 bg-white px-4 py-3.5 flex items-center gap-3"
+        style={{ borderBottom: "1px solid #e9ecef" }}
+      >
+        <button
+          onClick={() => navigate("/")}
+          disabled={loading}
+          className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50"
+        >
+          <ArrowLeft className="w-5 h-5 text-gray-700" />
+        </button>
+        <div className="flex-1">
+          <h1 className={`${typography.heading.h6} text-gray-900 leading-tight`}>
+            Complete Your Profile
+          </h1>
+          <p className={`${typography.misc.caption} leading-none`}>
+            Tell us about yourself to get started
+          </p>
         </div>
       </div>
 
-      {/* ── Wide container ── */}
-      <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-10">
 
-        {/* Error alert */}
+        {/* ── Error banner ── */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
-            <span className="text-red-600 mt-0.5 shrink-0">⚠️</span>
-            <div>
-              <p className={`font-semibold text-red-800 ${typography.body.small}`}>Error</p>
-              <p className={`text-red-700 ${typography.body.small}`}>{error}</p>
-            </div>
+            <X size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
+            <p className={`${typography.form.error} flex-1`}>{error}</p>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+              <X size={14} />
+            </button>
           </div>
         )}
 
-        {/* ─── PROFILE PHOTO (full width centred) ─── */}
-        <SectionCard title="Profile Photo">
-          <div className="flex justify-center py-2">
-            <ProfilePhotoUpload
-              profilePhoto={profilePhoto}
-              onPhotoUpload={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setProfilePhotoFile(file);
-                const r = new FileReader();
-                r.onload = () => setProfilePhoto(r.result as string);
-                r.readAsDataURL(file);
-              }}
-            />
-          </div>
-        </SectionCard>
+        {/* ══ Personal Information ══════════════════════════════════════════ */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
 
-        {/* ─── ROW 1: FULL NAME + PHONE ─── */}
-        <SectionCard title="Personal Information">
-          <TwoCol>
-            <div>
-              <FieldLabel required>Full Name</FieldLabel>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
-                disabled={loading}
-                className={loading ? inputDisabled : inputBase}
-              />
+          {/* Card header */}
+          <div
+            className="px-5 py-3.5 flex items-center gap-2.5 border-b"
+            style={{
+              background: `linear-gradient(135deg, ${BRAND}0d, ${BRAND}05)`,
+              borderColor: "#f0f0f0",
+            }}
+          >
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: BRAND }}
+            >
+              <User size={15} className="text-white" />
             </div>
-            <div>
-              <FieldLabel required>Phone Number</FieldLabel>
-              <input
-                type="tel"
-                value={phoneNumber}
-                disabled
-                className={inputDisabled}
+            <h2 className={`${typography.card.subtitle} text-gray-900 leading-tight`}>
+              Personal Information
+            </h2>
+          </div>
+
+          <div className="px-5 py-5 space-y-5">
+
+            {/* Profile photo — centered at top */}
+            <div className="flex flex-col items-center gap-2">
+              <ProfilePhotoUpload
+                profilePhoto={profilePhoto}
+                onPhotoUpload={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setProfilePhotoFile(file);
+                  const r = new FileReader();
+                  r.onload = () => setProfilePhoto(r.result as string);
+                  r.readAsDataURL(file);
+                }}
               />
-              <p className={`mt-1.5 ${typography.body.xs} text-gray-400 flex items-center gap-1`}>
-                🔒 Phone number is locked
+              <p className={`${typography.misc.caption} text-center`}>
+                {profilePhoto ? "Tap to change photo" : "Upload profile photo (optional)"}
               </p>
             </div>
-          </TwoCol>
-        </SectionCard>
 
-        {/* ─── ROW 2: EXPERIENCE + EMAIL ─── */}
-        <SectionCard title="Professional Details">
-          <TwoCol>
+            {/* Divider */}
+            <div className="border-t border-gray-100" />
+
+            {/* Full Name — full width */}
             <div>
-              <FieldLabel required>Years of Experience</FieldLabel>
-              <select
-                value={experience}
-                onChange={(e) => setExperience(e.target.value)}
+              <Label required>Full Name</Label>
+              <VoiceInput
+                value={fullName}
+                onChange={setFullName}
+                placeholder="Enter your full name"
                 disabled={loading}
-                className={(loading ? inputDisabled : inputBase) + ' appearance-none'}
-                style={selectStyle}
-              >
-                <option value="">Select experience level</option>
-                <option value="0-1">Less than 1 year</option>
-                <option value="1-3">1–3 years</option>
-                <option value="3-5">3–5 years</option>
-                <option value="5-10">5–10 years</option>
-                <option value="10+">10+ years</option>
-              </select>
-            </div>
-            <div>
-              <FieldLabel>Email</FieldLabel>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                disabled={loading}
-                className={loading ? inputDisabled : inputBase}
               />
             </div>
-          </TwoCol>
-        </SectionCard>
 
-        {/* ─── LOCATION ─── */}
-        <SectionCard
-          title="Service Location"
-          action={
-            <button
-              type="button"
-              onClick={fetchLocation}
-              disabled={locationLoading || loading}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
-                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              {locationLoading ? (
-                <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-              ) : (
-                <><MapPin className="w-4 h-4" />Auto Detect</>
-              )}
-            </button>
-          }
-        >
+            {/* Phone Number — full width */}
+            <div>
+              <Label>Phone Number</Label>
+              <VoiceInput
+                type="tel"
+                value={phoneNumber}
+                onChange={setPhoneNumber}
+                placeholder="Enter your phone number"
+                disabled={loading}
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* ══ Location Details ══════════════════════════════════════════════ */}
+        <Section icon={MapPin} title="Location Details" required tinted>
+
+          {/* Auto-detect button — full width */}
+          <button
+            type="button"
+            onClick={fetchLocation}
+            disabled={locationLoading || loading}
+            className="w-full px-4 py-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-all disabled:opacity-60 hover:bg-blue-50/50"
+            style={{ borderColor: BRAND, color: BRAND }}
+          >
+            <RefreshCw size={15} className={locationLoading ? "animate-spin" : ""} />
+            <span className={`${typography.misc.badge}`} style={{ color: BRAND }}>
+              {locationLoading ? "Detecting your location..." : "Auto-Detect My Location"}
+            </span>
+          </button>
+
+          {/* Location status alerts */}
           {locationWarning && (
-            <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-              <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
-              <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-start gap-2">
+              <AlertTriangle size={15} className="text-yellow-600 mt-0.5 flex-shrink-0" />
+              <p className={`${typography.misc.caption} text-yellow-800`}>{locationWarning}</p>
             </div>
           )}
 
-          {/* Area + City */}
-          <TwoCol>
-            <div>
-              <FieldLabel required>Area / Street</FieldLabel>
-              <input
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. Banjara Hills"
-                disabled={loading}
-                className={loading ? inputDisabled : inputBase}
-              />
+          {locationLoading && (
+            <div className="rounded-xl p-3 flex items-center gap-2" style={{ backgroundColor: BRAND_LIGHT }}>
+              <MapPin size={15} style={{ color: BRAND }} className="animate-pulse" />
+              <p className={`${typography.misc.caption}`} style={{ color: BRAND }}>
+                Detecting your location…
+              </p>
             </div>
-            <div>
-              <FieldLabel required>City</FieldLabel>
+          )}
+
+          {latitude !== 0 && longitude !== 0 && !locationLoading && (
+            <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
+              <CheckCircle size={15} className="text-green-600 flex-shrink-0" />
+              <p className={`${typography.misc.caption} text-green-800`}>
+                Location detected: {latitude.toFixed(5)}, {longitude.toFixed(5)}
+              </p>
+            </div>
+          )}
+
+          {/* Street Address — full width */}
+          <div>
+            <Label>Street Address</Label>
+            <VoiceInput
+              value={address}
+              onChange={setAddress}
+              placeholder="Enter your street address"
+              disabled={loading}
+            />
+          </div>
+
+          {/* City — full width */}
+          <div>
+            <Label required>City</Label>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Hyderabad"
+                placeholder="Enter your city"
                 disabled={loading}
-                className={loading ? inputDisabled : inputBase}
+                className={[
+                  "flex-1",
+                  typography.form.input,
+                  loading ? inputDisabled : inputBase,
+                  city && !loading ? "border-[#00598a] ring-1 ring-[#00598a]/20" : "",
+                ].join(" ")}
               />
+              <button
+                type="button"
+                className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
+                style={{ backgroundColor: BRAND }}
+              >
+                <Mic size={15} />
+              </button>
             </div>
-          </TwoCol>
-
-          {/* State + PIN */}
-          <TwoCol>
-            <div>
-              <FieldLabel required>State</FieldLabel>
-              <input
-                type="text"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-                placeholder="e.g. Telangana"
-                disabled={loading}
-                className={loading ? inputDisabled : inputBase}
-              />
-            </div>
-            <div>
-              <FieldLabel required>PIN Code</FieldLabel>
-              <input
-                type="text"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
-                placeholder="e.g. 500016"
-                maxLength={6}
-                disabled={loading}
-                className={loading ? inputDisabled : inputBase}
-              />
-            </div>
-          </TwoCol>
-
-          {/* Tip box */}
-          <div className="rounded-xl p-3" style={{ backgroundColor: '#fff8ee', border: '1px solid #f0c070' }}>
-            <p className={`${typography.body.small}`} style={{ color: '#7a4f00' }}>
-              📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to fill your location automatically, or enter it manually above.
-            </p>
           </div>
 
-          {/* Coords confirmation */}
-          {latitude !== 0 && longitude !== 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-              <p className={`${typography.body.small} text-green-800`}>
-                <span className="font-semibold">✓ Location set: </span>
-                <span className="font-mono text-xs">
-                  {latitude.toFixed(6)}, {longitude.toFixed(6)}
-                </span>
+          {/* State — full width */}
+          <div>
+            <Label>State</Label>
+            <input
+              type="text"
+              value={state}
+              onChange={(e) => setState(e.target.value)}
+              placeholder="Enter your state"
+              disabled={loading}
+              className={[
+                typography.form.input,
+                loading ? inputDisabled : inputBase,
+                state && !loading ? "border-[#00598a] ring-1 ring-[#00598a]/20" : "",
+              ].join(" ")}
+            />
+          </div>
+
+          {/* Pincode — full width */}
+          <div>
+            <Label>Pincode</Label>
+            <input
+              type="text"
+              value={pincode}
+              onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="Enter 6-digit pincode"
+              maxLength={6}
+              inputMode="numeric"
+              disabled={loading}
+              className={[
+                typography.form.input,
+                loading ? inputDisabled : inputBase,
+                pincode.length === 6 ? "border-[#00598a] ring-1 ring-[#00598a]/20" : "",
+              ].join(" ")}
+            />
+            {pincode.length > 0 && pincode.length < 6 && (
+              <p className={`${typography.misc.caption} text-amber-600 mt-1.5`}>
+                {6 - pincode.length} more digit{6 - pincode.length !== 1 ? "s" : ""} needed
               </p>
-            </div>
-          )}
-        </SectionCard>
-
-        {/* ── Tip banner ── */}
-        <div className="p-4 rounded-xl" style={{ backgroundColor: '#e8f4fb', border: '1px solid #b3d4e8' }}>
-          <p className={`${typography.body.small}`} style={{ color: BRAND }}>
-            💡 <span className="font-semibold">Tip:</span> Complete your profile to start receiving job requests from customers in your area.
-          </p>
-        </div>
-
-        {/* ── Action Buttons ── */}
-        <div className="flex gap-4 pt-2 pb-8 justify-end">
-          <button
-            onClick={() => navigate("/")}
-            type="button"
-            disabled={loading}
-            className={`px-10 py-3.5 rounded-xl font-semibold text-[#00598a]
-                            bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all ${typography.body.base}
-                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            type="button"
-            className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg
-                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                            ${typography.body.base}
-                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block" />
-                Saving...
-              </span>
-            ) : (
-              "Continue to Add Skills →"
             )}
-          </button>
-        </div>
+          </div>
 
-        <p className={`${typography.body.xs} text-gray-500 text-center pb-4`}>
-          <span className="text-red-500">*</span> Required fields
+        </Section>
+
+        {/* ── Required note + Save Button ── */}
+        <p className={`${typography.misc.caption} text-red-500 text-center`}>
+          * Name and City are required fields
         </p>
 
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          type="button"
+          className={[
+            "w-full py-4 rounded-2xl text-white transition-all active:scale-[0.99]",
+            typography.form.label,
+            "font-bold disabled:opacity-70",
+          ].join(" ")}
+          style={{
+            background: loading ? BRAND : `linear-gradient(135deg, #00598a, #0077b6)`,
+            boxShadow: loading ? "none" : `0 4px 20px ${BRAND}55`,
+          }}
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full inline-block" />
+              Saving Profile...
+            </span>
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <User size={18} />
+              Save &amp; Continue
+            </span>
+          )}
+        </button>
+
+        <div className="h-4" />
       </div>
     </div>
   );

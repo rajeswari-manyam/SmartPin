@@ -12,8 +12,8 @@ import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin, Plus, ChevronDown } from 'lucide-react';
 import { useAccount } from "../context/AccountContext";
-import IconSelect from "../components/common/IconDropDown";       // ← added
-import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";   // ← added
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
 const BRAND = '#00598a';
 
@@ -380,10 +380,10 @@ const AgricultureForm: React.FC = () => {
 
     const totalImages = selectedImages.length + existingImages.length;
 
-    // ── IconSelect options: map subcategory names → { name, icon } ────────────
+    // ── IconSelect options ────────────────────────────────────────────────────
     const subcategoryOptions = AGRICULTURE_SUBCATEGORIES.map(s => ({
         name: s.name,
-        icon: SUBCATEGORY_ICONS[s.name],   // resolved from the shared icon map
+        icon: SUBCATEGORY_ICONS[s.name],
     }));
 
     // ============================================================================
@@ -443,10 +443,10 @@ const AgricultureForm: React.FC = () => {
                             />
                         </div>
                         <div>
-                            {/* ── IconSelect replaces the plain <select> ── */}
+                            {/* ✅ FIXED: Only ONE label, label="" on IconSelect to prevent double heading */}
                             <FieldLabel required>Service Category</FieldLabel>
                             <IconSelect
-                                label="Service Category"
+                                label=""
                                 value={formData.subCategory}
                                 placeholder="Select subcategory"
                                 options={subcategoryOptions}

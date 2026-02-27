@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { X, Loader2, Briefcase } from "lucide-react";
 
+// Custom icon
+import MyBusinessIcon from "../assets/icons/MyBusiness.png";
+
 // Service screens
 import HotelUserService from "./HotelUserService";
 import BeautyUserService from "./BeautyUserServcie";
@@ -21,9 +24,7 @@ import AgricultureUserService from "./AgricultureUserService";
 import CorporativeUserService from "./CorporativeUserService";
 import WeddingUserService from "./WeddingUserService";
 import ArtUserService from "./ArtUserService";
-
 import RealEstateUserService from "./RealEstateUserService";
-
 import FoodUserService from "./FoodUserService";
 
 import { typography } from "../styles/typography";
@@ -61,7 +62,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
             setLoading(true);
             setError("");
             const res = await getAllDataByUserId(userId);
-            console.log("✅ allData from API:", res.data); // helpful for debugging
+            console.log("✅ allData from API:", res.data);
             setAllData(res.data || {});
         } catch (err: any) {
             console.error("Error fetching user data:", err);
@@ -76,7 +77,6 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
         const sub = selectedSubcategory.toLowerCase().replace(/\s+/g, "-");
 
         switch (selectedCategoryId) {
-
             case 3: return `/add-hospital-service-form?subcategory=${sub}`;
             case 4: return `/add-hotel-service-form?subcategory=${sub}`;
             case 5: return `/add-beauty-service-form?subcategory=${sub}`;
@@ -96,7 +96,6 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
             case 22: return `/add-art-form?subcategory=${sub}`;
             case 23: return `/add-automotive-form?subcategory=${sub}`;
             case 24: return `/add-real-estate-form?subcategory=${sub}`;
-
             case 26: return `/add-food-form?subcategory=${sub}`;
             default: return null;
         }
@@ -140,7 +139,7 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                     <p className="text-gray-600 mb-4">{error}</p>
                     <button
                         onClick={fetchAllData}
-                        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl :bg-blue-600 transition font-semibold"
+                        className="bg-blue-500 text-white px-6 py-2.5 rounded-xl hover:bg-blue-600 transition font-semibold"
                     >
                         Try Again
                     </button>
@@ -157,12 +156,16 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                 <div className="flex flex-col sm:flex-row justify-between gap-3">
                     <div>
                         <div className="flex items-center gap-2 mb-2">
-                            <Briefcase className="w-7 h-7 text-blue-600" />
+                            {/* ── Custom MyBusiness asset icon replaces Briefcase ── */}
+                            <img
+                                src={MyBusinessIcon}
+                                alt="My Business"
+                                className="w-7 h-7 object-contain"
+                            />
                             <h1 className={`${typography.heading.h3} text-gray-900`}>
-                                My Busines
+                                My Business
                             </h1>
                         </div>
-
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
@@ -194,8 +197,6 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                     </div>
                 </div>
 
-
-
                 {/* ─── ACTIVE FILTER TAGS ───────────────────────────────────── */}
                 {(selectedCategoryId || selectedSubcategory) && (
                     <div className="flex flex-wrap gap-2">
@@ -226,196 +227,72 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                 {/* ─── SERVICE SECTIONS ─────────────────────────────────────── */}
                 <div className="space-y-6">
                     {selectedCategoryId ? (
-                        /* ── FILTERED: show only selected category ── */
                         <>
                             {!isCustomerJobCategory(selectedCategoryId) && (
                                 <>
                                     {selectedCategoryId === 1 && (
-                                        <FoodUserService
-                                            userId={userId}
-                                            data={filterItems(allData.food)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <FoodUserService userId={userId} data={filterItems(allData.food)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
-
                                     {selectedCategoryId === 3 && (
-                                        <HospitalUserService
-                                            userId={userId}
-                                            data={filterItems(allData.healthcare)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <HospitalUserService userId={userId} data={filterItems(allData.healthcare)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 4 && (
-                                        <HotelUserService
-                                            userId={userId}
-                                            data={filterItems(allData.hotelTravel)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <HotelUserService userId={userId} data={filterItems(allData.hotelTravel)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 5 && (
-                                        <BeautyUserService
-                                            userId={userId}
-                                            data={filterItems(allData.beauty)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <BeautyUserService userId={userId} data={filterItems(allData.beauty)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 6 && (
-                                        <SportsUserService
-                                            userId={userId}
-                                            data={filterItems(allData.sports)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <SportsUserService userId={userId} data={filterItems(allData.sports)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 7 && (
-                                        <EducationUserService
-                                            userId={userId}
-                                            data={filterItems(allData.education)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <EducationUserService userId={userId} data={filterItems(allData.education)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 9 && (
-                                        <ShoppingUserService
-                                            userId={userId}
-                                            data={filterItems(allData.shopping)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <ShoppingUserService userId={userId} data={filterItems(allData.shopping)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
-                                    {
-                                        selectedCategoryId === 10 && (
-                                            <AutomotiveUserService
-                                                userId={userId}
-                                                data={filterItems(allData.automotive)}
-                                                selectedSubcategory={selectedSubcategory}
-                                                hideHeader={false}
-                                                hideEmptyState={true}
-                                            />
-                                        )}
+                                    {selectedCategoryId === 10 && (
+                                        <AutomotiveUserService userId={userId} data={filterItems(allData.automotive)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
+                                    )}
                                     {selectedCategoryId === 12 && (
-                                        <DigitalUserService
-                                            userId={userId}
-                                            data={allData.techDigital}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <DigitalUserService userId={userId} data={allData.techDigital} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 13 && (
-                                        <PetUserService
-                                            userId={userId}
-                                            data={filterItems(allData.pet)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <PetUserService userId={userId} data={filterItems(allData.pet)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 14 && (
-                                        <EventUserService
-                                            userId={userId}
-                                            data={filterItems(allData.events)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <EventUserService userId={userId} data={filterItems(allData.events)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 15 && (
-                                        <IndustrialUserService
-                                            userId={userId}
-                                            data={filterItems(allData.industrialLocal)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <IndustrialUserService userId={userId} data={filterItems(allData.industrialLocal)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 16 && (
-                                        <BusinessUserService
-                                            userId={userId}
-                                            data={filterItems(allData.business)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <BusinessUserService userId={userId} data={filterItems(allData.business)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 17 && (
-                                        <CourierUserService
-                                            userId={userId}
-                                            data={filterItems(allData.courier)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <CourierUserService userId={userId} data={filterItems(allData.courier)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 18 && (
-                                        <DailyWageUserService
-                                            userId={userId}
-                                            data={filterItems(allData.dailyWage)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <DailyWageUserService userId={userId} data={filterItems(allData.dailyWage)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 19 && (
-                                        <AgricultureUserService
-                                            userId={userId}
-                                            data={filterItems(allData.agriculture)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <AgricultureUserService userId={userId} data={filterItems(allData.agriculture)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 20 && (
-                                        <CorporativeUserService
-                                            userId={userId}
-                                            data={filterItems(allData.corporate)}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <CorporativeUserService userId={userId} data={filterItems(allData.corporate)} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 21 && (
-                                        <WeddingUserService
-                                            userId={userId}
-                                            data={filterItems(allData.wedding)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <WeddingUserService userId={userId} data={filterItems(allData.wedding)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                     {selectedCategoryId === 22 && (
-                                        <ArtUserService
-                                            userId={userId}
-                                            data={filterItems(allData.creative)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <ArtUserService userId={userId} data={filterItems(allData.creative)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
-
                                     {selectedCategoryId === 24 && (
-                                        <RealEstateUserService
-                                            userId={userId}
-                                            data={filterItems(allData.realEstate)}
-                                            selectedSubcategory={selectedSubcategory}
-                                            hideHeader={false}
-                                            hideEmptyState={true}
-                                        />
+                                        <RealEstateUserService userId={userId} data={filterItems(allData.realEstate)} selectedSubcategory={selectedSubcategory} hideHeader={false} hideEmptyState={true} />
                                     )}
                                 </>
                             )}
 
-                            {/* 🔹 Customer Job Categories Not Available */}
                             {isCustomerJobCategory(selectedCategoryId) && (
                                 <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
                                     <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
@@ -430,28 +307,25 @@ const MyBusiness: React.FC<MyBusinessProps> = ({ userId }) => {
                             )}
                         </>
                     ) : (
-                        /* ── ALL WORKER SERVICES: show all non-customer categories ── */
                         <>
-
-
-                            <HospitalUserService userId={userId} data={allData.healthcare} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hospital */}
-                            <HotelUserService userId={userId} data={allData.hotelTravel} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.hotel */}
+                            <HospitalUserService userId={userId} data={allData.healthcare} hideHeader={false} hideEmptyState={true} />
+                            <HotelUserService userId={userId} data={allData.hotelTravel} hideHeader={false} hideEmptyState={true} />
                             <BeautyUserService userId={userId} data={allData.beauty} hideHeader={false} hideEmptyState={true} />
                             <RealEstateUserService userId={userId} data={allData.realEstate} hideHeader={false} hideEmptyState={true} />
                             <ShoppingUserService userId={userId} data={allData.shopping} hideHeader={false} hideEmptyState={true} />
                             <EducationUserService userId={userId} data={allData.education} hideHeader={false} hideEmptyState={true} />
-                            <DigitalUserService userId={userId} data={allData.techDigital} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.digital */}
+                            <DigitalUserService userId={userId} data={allData.techDigital} hideHeader={false} hideEmptyState={true} />
                             <PetUserService userId={userId} data={allData.pet} hideHeader={false} hideEmptyState={true} />
-                            <EventUserService userId={userId} data={allData.events} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.event */}
-                            <IndustrialUserService userId={userId} data={allData.industrialLocal} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.industrial */}
+                            <EventUserService userId={userId} data={allData.events} hideHeader={false} hideEmptyState={true} />
+                            <IndustrialUserService userId={userId} data={allData.industrialLocal} hideHeader={false} hideEmptyState={true} />
                             <BusinessUserService userId={userId} data={allData.business} hideHeader={false} hideEmptyState={true} />
                             <CourierUserService userId={userId} data={allData.courier} hideHeader={false} hideEmptyState={true} />
                             <DailyWageUserService userId={userId} data={allData.dailyWage} hideHeader={false} hideEmptyState={true} />
                             <AgricultureUserService userId={userId} data={allData.agriculture} hideHeader={false} hideEmptyState={true} />
-                            <CorporativeUserService userId={userId} data={allData.corporate} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.corporative */}
+                            <CorporativeUserService userId={userId} data={allData.corporate} hideHeader={false} hideEmptyState={true} />
                             <WeddingUserService userId={userId} data={allData.wedding} hideHeader={false} hideEmptyState={true} />
-                            <ArtUserService userId={userId} data={allData.creative} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.art */}
-                            <AutomotiveUserService userId={userId} data={allData.automotive} hideHeader={false} hideEmptyState={true} />  {/* ✅ was: allData.automotive */}
+                            <ArtUserService userId={userId} data={allData.creative} hideHeader={false} hideEmptyState={true} />
+                            <AutomotiveUserService userId={userId} data={allData.automotive} hideHeader={false} hideEmptyState={true} />
                             <SportsUserService userId={userId} data={allData.sports} hideHeader={false} hideEmptyState={true} />
                             <FoodUserService userId={userId} data={allData.food} hideHeader={false} hideEmptyState={true} />
                         </>

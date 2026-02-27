@@ -131,13 +131,13 @@ const IndustrialForm: React.FC = () => {
     const isEditMode = !!editId;
 
     const industrialTypes = getIndustrialSubcategories();
-    
+
     // ── Prepare subcategory options with icons ───────────────────────────────
     const subcategoryOptions = industrialTypes.map((name: string) => ({
         name,
         icon: SUBCATEGORY_ICONS[name],
     }));
-    
+
     const defaultType = getSubFromUrl() || industrialTypes[0] || 'Borewell Services';
 
     // ── UI state ──────────────────────────────────────────────────────────────
@@ -510,7 +510,6 @@ const IndustrialForm: React.FC = () => {
                             />
                             <FieldError msg={fieldErrors.phone} />
                         </div>
-                        {/* Empty right column for balance */}
                         <div />
                     </TwoCol>
                 </SectionCard>
@@ -581,97 +580,11 @@ const IndustrialForm: React.FC = () => {
                             />
                             <FieldError msg={fieldErrors.description} />
                         </div>
-                        {/* Empty right column for balance */}
                         <div />
                     </TwoCol>
                 </SectionCard>
 
-                {/* ── 5. Service Photos ── */}
-                <SectionCard title={`Service Photos (${totalImages}/5)`}>
-                    <TwoCol>
-                        {/* Upload zone */}
-                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
-                            <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                disabled={maxImagesReached}
-                            />
-                            <div
-                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                                style={{
-                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
-                                    minHeight: '180px',
-                                }}
-                            >
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
-                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                    </div>
-                                    <div>
-                                        <p className="text-base font-semibold text-gray-700">
-                                            {maxImagesReached
-                                                ? 'Maximum 5 images reached'
-                                                : `Add Photos (${5 - totalImages} slots left)`}
-                                        </p>
-                                        <p className="text-sm text-gray-400 mt-1">
-                                            Max 5 images · 5 MB each · JPG, PNG, WEBP
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-
-                        {/* Thumbnail grid */}
-                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
-                            <div className="grid grid-cols-3 gap-3">
-                                {existingImages.map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
-                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeExistingImg(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span 
-                                            className="absolute bottom-1.5 left-1.5 text-white text-xs px-2 py-0.5 rounded-full font-medium"
-                                            style={{ backgroundColor: BRAND }}
-                                        >
-                                            Saved
-                                        </span>
-                                    </div>
-                                ))}
-                                {imagePreviews.map((src, i) => (
-                                    <div key={`new-${i}`} className="relative aspect-square group">
-                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeNewImg(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                                            New
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
-                                style={{ minHeight: '180px' }}>
-                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
-                            </div>
-                        )}
-                    </TwoCol>
-                </SectionCard>
-
-                {/* ── 6. Location Details ── */}
+                {/* ── 5. Location Details ── */}
                 <SectionCard
                     title="Location Details"
                     action={
@@ -775,6 +688,91 @@ const IndustrialForm: React.FC = () => {
                             </p>
                         </div>
                     )}
+                </SectionCard>
+
+                {/* ── 6. Service Photos (moved below location, matching HospitalForm) ── */}
+                <SectionCard title={`Service Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleImageSelect}
+                                className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                style={{
+                                    borderColor: maxImagesReached ? '#d1d5db' : '#00598a',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className="text-base font-semibold text-gray-700">
+                                            {maxImagesReached
+                                                ? 'Maximum 5 images reached'
+                                                : `Add Photos (${5 - totalImages} slots left)`}
+                                        </p>
+                                        <p className="text-sm text-gray-400 mt-1">
+                                            Max 5 images · 5 MB each · JPG, PNG, WEBP
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+
+                        {/* Thumbnail grid */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeExistingImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span
+                                            className="absolute bottom-1.5 left-1.5 text-white text-xs px-2 py-0.5 rounded-full font-medium"
+                                            style={{ backgroundColor: BRAND }}
+                                        >
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((src, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeNewImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                                            New
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+                                style={{ minHeight: '180px' }}>
+                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}

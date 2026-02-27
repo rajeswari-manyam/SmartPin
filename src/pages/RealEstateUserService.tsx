@@ -229,17 +229,7 @@ const RealEstateUserService: React.FC<RealEstateUserServiceProps> = ({
                         )}
                     </div>
 
-                    {/* View Details button — visible on hover */}
-                    <div className="pt-1 border-t border-gray-100">
-                        <button
-                            onClick={e => { e.stopPropagation(); handleView(id); }}
-                            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200
-                                       border-2 border-[#00598a] text-[#00598a]
-                                       hover:bg-[#00598a] hover:text-white active:bg-[#004a73]"
-                        >
-                            View Details
-                        </button>
-                    </div>
+                 
                 </div>
             </div>
         );

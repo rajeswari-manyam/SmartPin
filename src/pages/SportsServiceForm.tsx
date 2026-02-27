@@ -74,7 +74,6 @@ const inputErr =
     'focus:ring-2 focus:ring-red-300 focus:border-red-400 ' +
     'placeholder-gray-400 transition-all duration-200 bg-white text-gray-800 outline-none';
 
-// ── select arrow style ───────────────────────────────────────────────────────
 const selectStyle: React.CSSProperties = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat',
@@ -100,12 +99,10 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 const FieldError: React.FC<{ msg?: string }> = ({ msg }) =>
     msg ? <p className="mt-1.5 text-sm text-red-500 flex items-center gap-1">⚠️ {msg}</p> : null;
 
-// ── Two-column grid ───────────────────────────────────────────────────────────
 const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">{children}</div>
 );
 
-// ── Section card ─────────────────────────────────────────────────────────────
 const SectionCard: React.FC<{
     title?: string;
     children: React.ReactNode;
@@ -139,25 +136,24 @@ const SportsForm: React.FC = () => {
     const isEditMode = !!editId;
 
     const sportsTypes = getSportsSubcategories();
-    
-    // ── Prepare subcategory options with icons ───────────────────────────────
+
     const subcategoryOptions = sportsTypes.map((name: string) => ({
         name,
         icon: SUBCATEGORY_ICONS[name],
     }));
-    
+
     const defaultType = getSubFromUrl() || sportsTypes[0] || 'Gym & Fitness';
 
     // ── UI state ──────────────────────────────────────────────────────────────
-    const [loading, setLoading]               = useState(false);
-    const [loadingData, setLoadingData]       = useState(false);
-    const [error, setError]                   = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [locationWarning, setLocationWarning] = useState('');
-    const [locationLoading, setLocationLoading] = useState(false);
-    const [fieldErrors, setFieldErrors]       = useState<FieldErrors>({});
-    const [customService, setCustomService]   = useState('');
-    const [commonServices, setCommonServices] = useState<string[]>(getCommonServices(defaultType));
+    const [loading, setLoading]                   = useState(false);
+    const [loadingData, setLoadingData]           = useState(false);
+    const [error, setError]                       = useState('');
+    const [successMessage, setSuccessMessage]     = useState('');
+    const [locationWarning, setLocationWarning]   = useState('');
+    const [locationLoading, setLocationLoading]   = useState(false);
+    const [fieldErrors, setFieldErrors]           = useState<FieldErrors>({});
+    const [customService, setCustomService]       = useState('');
+    const [commonServices, setCommonServices]     = useState<string[]>(getCommonServices(defaultType));
     const isGPSDetected = useRef(false);
 
     // ── Form state ────────────────────────────────────────────────────────────
@@ -179,9 +175,9 @@ const SportsForm: React.FC = () => {
         availability: true,
     });
 
-    const [selectedImages, setSelectedImages]   = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews]     = useState<string[]>([]);
-    const [existingImages, setExistingImages]   = useState<string[]>([]);
+    const [selectedImages, setSelectedImages] = useState<File[]>([]);
+    const [imagePreviews, setImagePreviews]   = useState<string[]>([]);
+    const [existingImages, setExistingImages] = useState<string[]>([]);
 
     // ── Fetch edit data ───────────────────────────────────────────────────────
     useEffect(() => {
@@ -466,15 +462,14 @@ const SportsForm: React.FC = () => {
                             <FieldError msg={fieldErrors.serviceName} />
                         </div>
                         <div>
-                            <FieldLabel required>Sport Category</FieldLabel>
+                            {/* ✅ FIXED: Removed duplicate FieldLabel */}
+                            <FieldLabel required>Service Category</FieldLabel>
                             <IconSelect
                                 label=""
                                 value={formData.subCategory}
-                                placeholder="Select sport category"
+                                placeholder="Select subcategory"
                                 options={subcategoryOptions}
-                                onChange={(val) =>
-                                    setFormData(prev => ({ ...prev, subCategory: val }))
-                                }
+                                onChange={(val) => setFormData(prev => ({ ...prev, subCategory: val }))}
                                 disabled={loading}
                             />
                             <p className="text-xs text-gray-400 mt-1">
@@ -627,83 +622,7 @@ const SportsForm: React.FC = () => {
                     </TwoCol>
                 </SectionCard>
 
-                {/* ── 5. Portfolio Photos ── */}
-                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
-                    <TwoCol>
-                        {/* Upload zone */}
-                        <label className={maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}>
-                            <input
-                                type="file" accept="image/*" multiple
-                                onChange={handleImageSelect} className="hidden"
-                                disabled={maxImagesReached}
-                            />
-                            <div
-                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all h-full flex items-center justify-center ${
-                                    maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'
-                                }`}
-                                style={{
-                                    borderColor:     maxImagesReached ? '#d1d5db' : BRAND,
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
-                                    minHeight: '180px',
-                                }}
-                            >
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
-                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-700">
-                                            {maxImagesReached ? 'Maximum 5 images reached' : `Add Photos (${5 - totalImages} slots left)`}
-                                        </p>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Upload photos of your facilities or coaching sessions
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-
-                        {/* Thumbnails */}
-                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
-                            <div className="grid grid-cols-3 gap-3">
-                                {existingImages.map((url, i) => (
-                                    <div key={`ex-${i}`} className="relative aspect-square group">
-                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
-                                        <button type="button" onClick={() => removeExistingImg(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span 
-                                            className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
-                                            style={{ backgroundColor: BRAND }}
-                                        >
-                                            Saved
-                                        </span>
-                                    </div>
-                                ))}
-                                {imagePreviews.map((src, i) => (
-                                    <div key={`new-${i}`} className="relative aspect-square group">
-                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                        <button type="button" onClick={() => removeNewImg(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
-                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
-                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center" style={{ minHeight: '180px' }}>
-                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
-                            </div>
-                        )}
-                    </TwoCol>
-                </SectionCard>
-
-                {/* ── 6. Location Details ── */}
+                {/* ── 5. Service Location ── */}
                 <SectionCard
                     title="Service Location"
                     action={
@@ -770,6 +689,82 @@ const SportsForm: React.FC = () => {
                             </p>
                         </div>
                     )}
+                </SectionCard>
+
+                {/* ── 6. Portfolio Photos ── */}
+                <SectionCard title={`Portfolio Photos (${totalImages}/5)`}>
+                    <TwoCol>
+                        {/* Upload zone */}
+                        <label className={maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}>
+                            <input
+                                type="file" accept="image/*" multiple
+                                onChange={handleImageSelect} className="hidden"
+                                disabled={maxImagesReached}
+                            />
+                            <div
+                                className={`border-2 border-dashed rounded-2xl p-10 text-center transition-all h-full flex items-center justify-center ${
+                                    maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'
+                                }`}
+                                style={{
+                                    borderColor:     maxImagesReached ? '#d1d5db' : BRAND,
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : '#f0f7fb',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-700">
+                                            {maxImagesReached ? 'Maximum 5 images reached' : `Add Photos (${5 - totalImages} slots left)`}
+                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Upload photos of your facilities or coaching sessions
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+
+                        {/* Thumbnails */}
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button type="button" onClick={() => removeExistingImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span
+                                            className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full"
+                                            style={{ backgroundColor: BRAND }}
+                                        >
+                                            Saved
+                                        </span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((src, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={src} alt={`Preview ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                        <button type="button" onClick={() => removeNewImg(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                                        <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
+                                            {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center" style={{ minHeight: '180px' }}>
+                                <p className="text-sm text-gray-400">Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
                 </SectionCard>
 
                 {/* ── Action Buttons ── */}

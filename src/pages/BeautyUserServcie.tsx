@@ -40,7 +40,6 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
 
     const [services, setServices] = useState<BeautyWorker[]>(data as BeautyWorker[]);
     const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
-    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
     // ── Filter ────────────────────────────────────────────────────────────────
     const filteredServices = selectedSubcategory
@@ -73,63 +72,39 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD
+    // CARD — matches HotelUserService hover style
     // ============================================================================
     const renderCard = (beauty: BeautyWorker) => {
-        const id = beauty._id || "";
-        const imageUrls = (beauty.images || []).filter(Boolean) as string[];
-        const location = [beauty.area, beauty.city, beauty.state]
-            .filter(Boolean).join(", ") || "Location not specified";
+        const id          = beauty._id || "";
+        const imageUrls   = (beauty.images || []).filter(Boolean) as string[];
+        const location    = [beauty.area, beauty.city, beauty.state].filter(Boolean).join(", ") || "Location not specified";
         const servicesList = ensureArray(beauty.services);
         const isAvailable = beauty.availability;
         const description = beauty.bio || "";
-        const isHovered = hoveredCard === id;
 
         return (
             <div
                 key={id}
-                onMouseEnter={() => setHoveredCard(id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                className="bg-white rounded-2xl overflow-hidden border border-gray-100 transition-all duration-300 cursor-pointer"
-                style={{
-                    boxShadow: isHovered
-                        ? '0 8px 30px rgba(0, 89, 138, 0.18)'
-                        : '0 1px 4px rgba(0,0,0,0.06)',
-                    borderColor: isHovered ? '#00598a' : '#f3f4f6',
-                    transform: isHovered ? 'translateY(-3px)' : 'translateY(0)',
-                }}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 hover:shadow-lg hover:border-[#00598a] hover:-translate-y-1"
             >
                 {/* ── Image ── */}
-                <div className="relative h-52 bg-gray-100 overflow-hidden">
+                <div className="relative h-52 bg-gray-100">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={beauty.name}
-                            className="w-full h-full object-cover transition-transform duration-300"
-                            style={{ transform: isHovered ? 'scale(1.04)' : 'scale(1)' }}
+                            className="w-full h-full object-cover"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div
-                            className="w-full h-full flex items-center justify-center transition-colors duration-300"
-                            style={{ backgroundColor: isHovered ? 'rgba(0,89,138,0.08)' : 'rgba(0,89,138,0.05)' }}
-                        >
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5">
                             <span className="text-6xl">💅</span>
                         </div>
                     )}
 
-                    {/* Top colour bar on hover */}
-                    <div
-                        className="absolute top-0 left-0 right-0 h-1 transition-all duration-300"
-                        style={{ backgroundColor: '#00598a', opacity: isHovered ? 1 : 0 }}
-                    />
-
                     {/* Category badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
-                        <span
-                            className="text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm transition-colors duration-300"
-                            style={{ backgroundColor: isHovered ? '#00598a' : 'rgba(0,0,0,0.60)' }}
-                        >
+                        <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {beauty.category || "Beauty & Wellness"}
                         </span>
                     </div>
@@ -138,7 +113,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                     <div className="absolute top-3 right-3">
                         {deleteLoading === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: '#00598a' }} />
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
                             </div>
                         ) : (
                             <ActionDropdown
@@ -153,36 +128,27 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                 <div className="p-4">
 
                     {/* Name */}
-                    <h3
-                        className="text-lg font-bold mb-1 truncate transition-colors duration-300"
-                        style={{ color: isHovered ? '#00598a' : '#111827' }}
-                    >
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
                         {beauty.name || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
                     <div className="flex items-center gap-1.5 mb-3">
-                        <span className="text-sm" style={{ color: '#00598a' }}>📍</span>
+                        <span className="text-red-500 text-sm">📍</span>
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
                     {/* Category pill + Availability status */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span
-                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border transition-colors duration-300"
-                            style={{
-                                color: '#00598a',
-                                backgroundColor: isHovered ? 'rgba(0,89,138,0.1)' : 'rgba(0,89,138,0.06)',
-                                borderColor: isHovered ? 'rgba(0,89,138,0.3)' : 'rgba(0,89,138,0.15)',
-                            }}
-                        >
+                        <span className="flex-1 text-center text-sm font-medium text-[#00598a] bg-[#00598a]/8 border border-[#00598a]/20 px-3 py-1.5 rounded-full truncate">
                             {beauty.category || "Beauty & Wellness"}
                         </span>
-                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${isAvailable
-                            ? "text-green-600 bg-green-50 border-green-200"
-                            : "text-gray-500 bg-gray-50 border-gray-200"
-                            }`}>
-                            <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-gray-400"}`} />
+                        <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
+                            isAvailable
+                                ? "text-green-600 bg-green-50 border-green-200"
+                                : "text-red-500 bg-red-50 border-red-200"
+                        }`}>
+                            <span className={`w-2 h-2 rounded-full ${isAvailable ? "bg-green-500" : "bg-red-500"}`} />
                             {isAvailable ? "Active" : "Inactive"}
                         </span>
                     </div>
@@ -196,15 +162,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                     {!description && servicesList.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {servicesList.slice(0, 3).map((svc, idx) => (
-                                <span
-                                    key={idx}
-                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-300"
-                                    style={{
-                                        color: '#00598a',
-                                        backgroundColor: isHovered ? 'rgba(0,89,138,0.08)' : 'rgba(0,89,138,0.05)',
-                                        borderColor: isHovered ? 'rgba(0,89,138,0.25)' : 'rgba(0,89,138,0.12)',
-                                    }}
-                                >
+                                <span key={idx} className="text-xs bg-[#00598a]/5 text-[#00598a] px-2 py-0.5 rounded-full">
                                     {svc}
                                 </span>
                             ))}
@@ -214,16 +172,9 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                         </div>
                     )}
 
-                    {/* Rating + experience + charge row */}
+                    {/* Rating + experience + charge */}
                     <div className="flex items-center gap-2 mb-4">
-                        <span
-                            className="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full border transition-colors duration-300"
-                            style={{
-                                color: isHovered ? '#00598a' : '#92400e',
-                                backgroundColor: isHovered ? 'rgba(0,89,138,0.07)' : '#fefce8',
-                                borderColor: isHovered ? 'rgba(0,89,138,0.25)' : '#fde68a',
-                            }}
-                        >
+                        <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                             ⭐ {beauty.rating ?? "4.5"}
                         </span>
                         {beauty.experience && (
@@ -232,33 +183,10 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                             </span>
                         )}
                         {beauty.serviceCharge && (
-                            <span
-                                className="ml-auto text-sm font-bold transition-colors duration-300"
-                                style={{ color: '#00598a' }}
-                            >
+                            <span className="ml-auto text-sm font-bold text-[#00598a]">
                                 ₹{beauty.serviceCharge}+
                             </span>
                         )}
-                    </div>
-
-                    {/* ── Hover CTA buttons ── */}
-                    <div
-                        className="flex gap-2 overflow-hidden transition-all duration-300"
-                        style={{ maxHeight: isHovered ? '48px' : '0px', opacity: isHovered ? 1 : 0 }}
-                    >
-                        <button
-                            onClick={() => handleEdit(id)}
-                            className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:opacity-90 active:scale-95"
-                            style={{ backgroundColor: '#00598a' }}
-                        >
-                            ✏️ Edit
-                        </button>
-                        <button
-                            onClick={() => handleDelete(id)}
-                            className="flex-1 py-2 rounded-xl text-sm font-semibold text-red-600 bg-red-50 border border-red-200 hover:bg-red-100 transition-all duration-200 active:scale-95"
-                        >
-                            🗑️ Delete
-                        </button>
                     </div>
 
                 </div>
@@ -271,7 +199,6 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
     // ============================================================================
     if (filteredServices.length === 0) {
         if (hideEmptyState) return null;
-
         return (
             <div>
                 {!hideHeader && (
@@ -279,7 +206,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                         <span>💅</span> Beauty & Wellness Services (0)
                     </h2>
                 )}
-                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
+                <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center">
                     <div className="text-6xl mb-4">💅</div>
                     <h3 className={`${typography.heading.h6} text-gray-700 mb-2`}>No Beauty Services Yet</h3>
                     <p className={`${typography.body.small} text-gray-500 mb-4`}>
@@ -287,10 +214,7 @@ const BeautyUserService: React.FC<BeautyUserServiceProps> = ({
                     </p>
                     <button
                         onClick={() => navigate("/add-beauty-service-form")}
-                        className="inline-flex items-center gap-1.5 px-6 py-3 rounded-xl font-semibold text-white text-sm transition-all shadow-md hover:shadow-lg active:scale-95"
-                        style={{ backgroundColor: '#00598a' }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#004a73')}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = '#00598a')}
+                        className="px-5 py-2.5 rounded-xl text-white text-sm font-semibold bg-[#00598a] hover:bg-[#004a73] transition-colors"
                     >
                         + Add Beauty Service
                     </button>

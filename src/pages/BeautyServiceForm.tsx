@@ -5,142 +5,84 @@ import {
     updateBeautyWorker,
     getBeautyWorkerById,
 } from '../services/Beauty.Service.service';
-import typography from "../styles/typography";
+import subcategoriesData from '../data/subcategories.json';
 import { X, Upload, MapPin } from 'lucide-react';
-import { useAccount } from "../context/AccountContext";
-import { categories } from "../components/categories/Categories";
-import SubCategoriesData from "../components/data/SubCategories.json";
-import IconSelect from "../components/common/IconDropDown";
-import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
+import { useAccount } from '../context/AccountContext';
+import { typography } from '../styles/typography';
+import IconSelect from '../components/common/IconDropDown';
+import { SUBCATEGORY_ICONS } from '../assets/subcategoryIcons';
 
 // ─────────────────────────────────────────────────────────────────────────────
-const BRAND = '#00598a';
+const BRAND      = '#00598a';
+const BRAND_DARK = '#004a73';
 
 const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', 'Weekends Only'];
 
-interface SubCategoryGroup {
-    categoryId: number;
-    items: { name: string; icon?: string }[];
-}
-
-const subcategoryGroups: SubCategoryGroup[] = (SubCategoriesData as any).subcategories || [];
-
-// ============================================================================
-// SHARED INPUT CLASSES  (same as ArtForm)
-// ============================================================================
-const inputBase =
-    `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
-    `focus:outline-none focus:border-[#00598a] focus:ring-1 focus:ring-[#00598a] ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
-
-const inputError =
-    `w-full px-4 py-3 border border-red-400 rounded-xl ` +
-    `focus:ring-2 focus:ring-red-400 focus:border-red-400 ` +
-    `placeholder-gray-400 transition-all duration-200 ` +
-    `${typography.form.input} bg-white`;
-
-const selectStyle = {
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
+// ── Pull beauty subcategories — adjust categoryId to match your data ──────────
+const getBeautySubcategories = (): string[] => {
+    const cat = (subcategoriesData as any).subcategories.find((c: any) => c.categoryId === 5);
+    return cat ? cat.items.map((i: any) => i.name) : ['Beauty Salon', 'Spa', 'Makeup Artist'];
 };
 
-// ============================================================================
-// REUSABLE COMPONENTS  (same as ArtForm)
-// ============================================================================
-const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
-    <label className={`block ${typography.form.label} text-gray-800 mb-2`}>
-        {children}{required && <span className="text-red-500 ml-1">*</span>}
-    </label>
+const inputCls =
+    'w-full px-4 py-3.5 border border-gray-200 rounded-xl text-base text-gray-800 ' +
+    'placeholder-gray-400 bg-white focus:outline-none focus:border-[#00598a] ' +
+    'focus:ring-1 focus:ring-[#00598a] transition-all';
+
+// ── Shared layout components (identical to HospitalForm) ─────────────────────
+const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-6 ${className}`}>{children}</div>
 );
 
-const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?: React.ReactNode }> = ({ title, children, action }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
-        {title && (
-            <div className="flex items-center justify-between mb-1">
-                <h3 className={`${typography.card.subtitle} text-gray-900`}>{title}</h3>
-                {action}
-            </div>
-        )}
-        {children}
+const CardTitle: React.FC<{ title: string; action?: React.ReactNode }> = ({ title, action }) => (
+    <div className="flex items-center justify-between mb-4">
+        <h3 className={`${typography.heading.h6} text-gray-900`}>{title}</h3>
+        {action}
     </div>
 );
 
-// ============================================================================
-// GEOCODING HELPER
-// ============================================================================
-const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    try {
-        const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
-        const res = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
-        );
-        const data = await res.json();
-        if (data.status === 'OK' && data.results.length > 0) {
-            const loc = data.results[0].geometry.location;
-            return { lat: loc.lat, lng: loc.lng };
-        }
-        return null;
-    } catch { return null; }
-};
+const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = ({ children, required }) => (
+    <label className={`block ${typography.form.label} font-semibold text-gray-700 mb-2`}>
+        {children}{required && <span className="text-red-500 ml-0.5">*</span>}
+    </label>
+);
 
-// ============================================================================
-// FIELD ERRORS
-// ============================================================================
-interface FieldErrors {
-    userId?: string;
-    name?: string;
-    phone?: string;
-    email?: string;
-    services?: string;
-    serviceCharge?: string;
-    area?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    location?: string;
-    category?: string;
-    subcategory?: string;
-}
+const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="grid grid-cols-2 gap-6">{children}</div>
+);
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 const BeautyServiceForm: React.FC = () => {
     const navigate = useNavigate();
+    const { setAccountType } = useAccount();
 
-    const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+    const getIdFromUrl  = () => new URLSearchParams(window.location.search).get('id');
+    const getSubFromUrl = () => {
+        const s = new URLSearchParams(window.location.search).get('subcategory');
+        return s ? s.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+    };
+
     const [editId] = useState<string | null>(getIdFromUrl());
     const isEditMode = !!editId;
 
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
+    const beautyTypes  = getBeautySubcategories();
+    const defaultType  = getSubFromUrl() || beautyTypes[0] || 'Beauty Salon';
+
+    const [loading,        setLoading]        = useState(false);
+    const [loadingData,    setLoadingData]    = useState(false);
+    const [error,          setError]          = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+    const [locationLoading, setLocationLoading] = useState(false);
     const [locationWarning, setLocationWarning] = useState('');
-    const { setAccountType } = useAccount();
-
-    // ── Category / Subcategory state ──────────────────────────────────────────
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [selectedSubcategory, setSelectedSubcategory] = useState('');
-
-    const filteredSubcategories = selectedCategory
-        ? (subcategoryGroups.find(g => String(g.categoryId) === selectedCategory)?.items || [])
-        : [];
-
-    const subcategoryOptions = filteredSubcategories.map(s => ({
-        name: s.name,
-        icon: SUBCATEGORY_ICONS[s.name],
-    }));
+    const isGPSDetected = useRef(false);
 
     // ── Form fields ───────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         userId:        localStorage.getItem('userId') || '',
         name:          '',
+        beautyType:    defaultType,
         email:         '',
         phone:         '',
         bio:           '',
@@ -157,51 +99,44 @@ const BeautyServiceForm: React.FC = () => {
     });
 
     const [isCurrentlyAvailable, setIsCurrentlyAvailable] = useState(true);
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+    const [selectedImages,  setSelectedImages]  = useState<File[]>([]);
+    const [imagePreviews,   setImagePreviews]   = useState<string[]>([]);
+    const [existingImages,  setExistingImages]  = useState<string[]>([]);
 
     // ── Fetch for edit ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
-        const fetchData = async () => {
+        (async () => {
             setLoadingData(true);
             try {
                 const data = await getBeautyWorkerById(editId);
                 if (!data) throw new Error('Service not found');
 
-                const savedCategory = (data as any).category || '';
-                const savedType     = (data as any).type || (data as any).subCategory || '';
-                const matchedCat    = categories.find(c => c.name === savedCategory);
-                if (matchedCat) setSelectedCategory(matchedCat.id);
-                setSelectedSubcategory(savedType);
-
-                const servicesString = Array.isArray(data.services)
+                const servicesStr = Array.isArray(data.services)
                     ? data.services.join(', ')
                     : (data.services || '');
+
                 const availStr = typeof data.availability === 'boolean'
-                    ? (data.availability ? 'Full Time' : availabilityOptions[0])
+                    ? (data.availability ? 'Full Time' : 'Part Time')
                     : (data.availability || availabilityOptions[0]);
 
                 setFormData(prev => ({
                     ...prev,
                     userId:        data.userId || prev.userId,
-                    name:          data.name || '',
-                    email:         data.email || '',
-                    phone:         data.phone || '',
-                    bio:           data.bio || '',
-                    services:      servicesString,
+                    name:          data.name          || '',
+                    beautyType:    (data as any).type || (data as any).subCategory || defaultType,
+                    email:         data.email         || '',
+                    phone:         data.phone         || '',
+                    bio:           data.bio           || '',
+                    services:      servicesStr,
                     serviceCharge: data.serviceCharge?.toString() || '',
-                    area:          data.area || '',
-                    city:          data.city || '',
-                    state:         data.state || '',
-                    pincode:       data.pincode || '',
-                    latitude:      data.latitude?.toString() || '',
+                    area:          data.area          || '',
+                    city:          data.city          || '',
+                    state:         data.state         || '',
+                    pincode:       data.pincode       || '',
+                    latitude:      data.latitude?.toString()  || '',
                     longitude:     data.longitude?.toString() || '',
-                    experience:    data.experience?.toString() || '',
+                    experience:    data.experience?.toString()|| '',
                     availability:  availStr,
                 }));
                 setIsCurrentlyAvailable(
@@ -209,56 +144,43 @@ const BeautyServiceForm: React.FC = () => {
                         ? data.availability
                         : (data.availability === 'Full Time' || data.availability === 'On Demand')
                 );
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
-            } catch (err) {
-                console.error(err);
+                if (Array.isArray(data.images)) setExistingImages(data.images);
+            } catch {
                 setError('Failed to load service data');
             } finally {
                 setLoadingData(false);
             }
-        };
-        fetchData();
+        })();
     }, [editId]);
 
     // ── Auto-geocode ──────────────────────────────────────────────────────────
     useEffect(() => {
-        const detect = async () => {
+        const run = async () => {
             if (isGPSDetected.current) { isGPSDetected.current = false; return; }
             if (formData.area && !formData.latitude && !formData.longitude) {
-                const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
-                const coords = await geocodeAddress(addr);
-                if (coords) setFormData(prev => ({
-                    ...prev,
-                    latitude:  coords.lat.toString(),
-                    longitude: coords.lng.toString(),
-                }));
+                try {
+                    const q   = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`);
+                    const [hit] = await res.json();
+                    if (hit) setFormData(p => ({ ...p, latitude: hit.lat, longitude: hit.lon }));
+                } catch { }
             }
         };
-        const t = setTimeout(detect, 1000);
+        const t = setTimeout(run, 1000);
         return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    const handleAvailabilityToggle = () => {
-        const next = !isCurrentlyAvailable;
-        setIsCurrentlyAvailable(next);
-        setFormData(prev => ({ ...prev, availability: next ? 'Full Time' : 'Part Time' }));
-    };
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors])
-            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        setFormData(p => ({ ...p, [name]: value }));
     };
 
     // ── Image helpers ─────────────────────────────────────────────────────────
-    const remainingExistingCount = existingImages.filter(url => !imagesToDelete.includes(url)).length;
-    const totalImages = remainingExistingCount + selectedImages.length;
+    const totalImages      = selectedImages.length + existingImages.length;
     const maxImagesReached = totalImages >= 5;
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        if (!files.length) return;
         const slots = 5 - totalImages;
         if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
         const valid = files.slice(0, slots).filter(f => {
@@ -268,27 +190,24 @@ const BeautyServiceForm: React.FC = () => {
         });
         if (!valid.length) return;
         const previews: string[] = [];
-        let loaded = 0;
         valid.forEach(f => {
             const r = new FileReader();
             r.onloadend = () => {
                 previews.push(r.result as string);
-                if (++loaded === valid.length) setImagePreviews(prev => [...prev, ...previews]);
+                if (previews.length === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
             r.readAsDataURL(f);
         });
-        setSelectedImages(prev => [...prev, ...valid]);
+        setSelectedImages(p => [...p, ...valid]);
         setError('');
     };
 
-    const handleRemoveNewImage      = (i: number)   => { setSelectedImages(p => p.filter((_, idx) => idx !== i)); setImagePreviews(p => p.filter((_, idx) => idx !== i)); };
-    const handleRemoveExistingImage = (url: string) => setImagesToDelete(prev => [...prev, url]);
-    const handleRestoreExistingImage= (url: string) => setImagesToDelete(prev => prev.filter(u => u !== url));
+    const handleRemoveNewImage      = (i: number) => { setSelectedImages(p => p.filter((_, x) => x !== i)); setImagePreviews(p => p.filter((_, x) => x !== i)); };
+    const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, x) => x !== i));
 
-    // ── GPS location ──────────────────────────────────────────────────────────
+    // ── GPS ───────────────────────────────────────────────────────────────────
     const getCurrentLocation = () => {
         setLocationLoading(true); setError(''); setLocationWarning('');
-        setFieldErrors(prev => ({ ...prev, location: undefined }));
         if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
         navigator.geolocation.getCurrentPosition(
             async pos => {
@@ -297,20 +216,20 @@ const BeautyServiceForm: React.FC = () => {
                 const lng = pos.coords.longitude.toString();
                 if (pos.coords.accuracy > 500)
                     setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
-                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+                setFormData(p => ({ ...p, latitude: lat, longitude: lng }));
                 try {
                     const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                     const data = await res.json();
                     if (data.address) {
-                        setFormData(prev => ({
-                            ...prev, latitude: lat, longitude: lng,
-                            area:    data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
-                            city:    data.address.city   || data.address.town || data.address.village || prev.city,
-                            state:   data.address.state  || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
+                        setFormData(p => ({
+                            ...p, latitude: lat, longitude: lng,
+                            area:    data.address.suburb || data.address.neighbourhood || data.address.road || p.area,
+                            city:    data.address.city   || data.address.town || data.address.village || p.city,
+                            state:   data.address.state  || p.state,
+                            pincode: data.address.postcode || p.pincode,
                         }));
                     }
-                } catch (e) { console.error(e); }
+                } catch { }
                 setLocationLoading(false);
             },
             err => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
@@ -322,62 +241,38 @@ const BeautyServiceForm: React.FC = () => {
     const handleSubmit = async () => {
         setError(''); setSuccessMessage('');
 
-        const errors: FieldErrors = {};
-        if (!selectedCategory)   errors.category    = 'Please select a category';
-        if (!selectedSubcategory) errors.subcategory = 'Please select a service type';
-        if (!formData.name.trim())  errors.name    = 'Business / professional name is required';
-        if (!formData.phone.trim()) {
-            errors.phone = 'Phone number is required';
-        } else if (!/^\+?[\d\s\-()]{7,}$/.test(formData.phone.trim())) {
-            errors.phone = 'Enter a valid phone number';
-        }
-        if (!formData.email.trim()) {
-            errors.email = 'Email is required';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-            errors.email = 'Enter a valid email address';
-        }
-        if (!formData.services.trim()) errors.services = 'Please enter at least one service';
-        if (formData.serviceCharge.trim()) {
-            const charge = parseFloat(formData.serviceCharge);
-            if (isNaN(charge) || charge < 0) errors.serviceCharge = 'Enter a valid service charge';
-        }
-        if (!formData.area.trim())   errors.area   = 'Area is required';
-        if (!formData.city.trim())   errors.city   = 'City is required';
-        if (!formData.state.trim())  errors.state  = 'State is required';
-        if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
-        if (!formData.latitude || !formData.longitude)
-            errors.location = 'Location is required — use Auto Detect or enter your address';
+        if (!formData.name.trim())    { setError('Business / professional name is required.'); return; }
+        if (!formData.beautyType)     { setError('Please select a beauty service type.'); return; }
+        if (!formData.phone.trim())   { setError('Phone number is required.'); return; }
+        if (!/^\+?[\d\s\-()]{7,}$/.test(formData.phone.trim())) { setError('Please enter a valid phone number.'); return; }
+        if (!formData.email.trim())   { setError('Email address is required.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) { setError('Please enter a valid email.'); return; }
+        if (!formData.services.trim()) { setError('Please enter at least one service.'); return; }
+        if (!formData.area.trim() || !formData.city.trim() || !formData.state.trim() || !formData.pincode.trim())
+            { setError('Please fill in all location fields.'); return; }
+        if (!/^\d{6}$/.test(formData.pincode.trim())) { setError('PIN code must be exactly 6 digits.'); return; }
+        if (!formData.latitude || !formData.longitude) { setError('Please detect your location.'); return; }
 
-        if (Object.keys(errors).length > 0) {
-            setFieldErrors(errors);
-            setError('Please fix the errors below before submitting');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-        setFieldErrors({});
         setLoading(true);
-
         try {
-            const categoryName  = categories.find(c => c.id === selectedCategory)?.name || '';
             const servicesArray = formData.services.split(',').map(s => s.trim()).filter(Boolean);
             const charge        = formData.serviceCharge.trim() ? parseFloat(formData.serviceCharge) : 0;
             const exp           = formData.experience.trim() ? parseInt(formData.experience, 10) : 0;
 
             const payload = {
                 userId:        formData.userId,
-                name:          formData.name,
-                email:         formData.email,
-                phone:         formData.phone,
-                category:      categoryName,
-                type:          selectedSubcategory,
-                bio:           formData.bio,
+                name:          formData.name.trim(),
+                email:         formData.email.trim(),
+                phone:         formData.phone.trim(),
+                type:          formData.beautyType,
+                bio:           formData.bio.trim(),
                 services:      servicesArray,
                 serviceCharge: charge,
                 experience:    exp,
-                area:          formData.area,
-                city:          formData.city,
-                state:         formData.state,
-                pincode:       formData.pincode,
+                area:          formData.area.trim(),
+                city:          formData.city.trim(),
+                state:         formData.state.trim(),
+                pincode:       formData.pincode.trim(),
                 latitude:      parseFloat(formData.latitude),
                 longitude:     parseFloat(formData.longitude),
                 availability:  formData.availability,
@@ -391,23 +286,24 @@ const BeautyServiceForm: React.FC = () => {
                 setSuccessMessage('Service created successfully!');
             }
             setTimeout(() => { setAccountType('worker'); navigate('/my-business'); }, 1500);
-        } catch (err: unknown) {
-            if (err instanceof Error) setError(err.message);
-            else setError('Failed to submit form. Please try again.');
+        } catch (err: any) {
+            setError(err.message || 'Failed to submit. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
     // ── Loading screen ────────────────────────────────────────────────────────
-    if (loadingData) return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
-                <p className={`${typography.body.base} text-gray-600`}>Loading...</p>
+    if (loadingData) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 mx-auto mb-3" style={{ borderColor: BRAND }} />
+                    <p className={`${typography.body.small} text-gray-500`}>Loading...</p>
+                </div>
             </div>
-        </div>
-    );
+        );
+    }
 
     // ============================================================================
     // RENDER
@@ -416,10 +312,11 @@ const BeautyServiceForm: React.FC = () => {
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
-            <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-                <div className="max-w-5xl mx-auto flex items-center gap-3">
-                    <button onClick={() => window.history.back()} className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
+                <div className="max-w-6xl mx-auto flex items-center gap-3">
+                    <button onClick={() => window.history.back()}
+                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition">
+                        <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
@@ -428,218 +325,100 @@ const BeautyServiceForm: React.FC = () => {
                             {isEditMode ? 'Update Beauty Service' : 'Add Beauty Service'}
                         </h1>
                         <p className={`${typography.body.small} text-gray-500`}>
-                            {isEditMode ? 'Update your service listing' : 'Create new service listing'}
+                            {isEditMode ? 'Update your beauty listing' : 'Create new beauty listing'}
                         </p>
                     </div>
                 </div>
             </div>
 
-            <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
+            <div className="max-w-6xl mx-auto px-8 py-6 space-y-4">
 
-                {/* Global error banner */}
+                {/* Alerts */}
                 {error && (
-                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-                        <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
-                            <div>
-                                <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
-                                <p className={`${typography.form.error} text-red-700`}>{error}</p>
-                            </div>
+                    <div className="flex items-start gap-2 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <span className="text-red-500 mt-0.5 flex-shrink-0">⚠️</span>
+                        <div>
+                            <p className="font-semibold text-red-800 mb-0.5">Error</p>
+                            <p className={`${typography.form.error}`}>{error}</p>
                         </div>
                     </div>
                 )}
-
-                {/* Success banner */}
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-600 text-lg">✓</span>
-                        <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
+                        <span className="text-green-600">✓</span>
+                        <p className={`${typography.body.small} text-green-700`}>{successMessage}</p>
                     </div>
                 )}
 
-                {/* Not logged in warning */}
-                {!formData.userId && !isEditMode && (
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
-                        <p className={`${typography.body.small} text-orange-700`}>
-                            ⚠️ You must be logged in to add a service.
-                        </p>
-                    </div>
-                )}
-
-                {/* ─── 1. NAME + CATEGORY + SUBCATEGORY ───────────────────── */}
-                <SectionCard>
-                    {/* Business name — full width */}
-                    <div>
-                        <FieldLabel required>Business / Professional Name</FieldLabel>
-                        <input
-                            type="text" name="name" value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="e.g. Glam Beauty Salon"
-                            className={fieldErrors.name ? inputError : inputBase}
-                        />
-                        {fieldErrors.name && (
-                            <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.name}
-                            </p>
-                        )}
-                    </div>
-
-                    {/* Category + Subcategory — two columns */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ─── ROW 1: Name + Beauty Type ─── */}
+                <Card>
+                    <TwoCol>
                         <div>
-                            <FieldLabel required>Category</FieldLabel>
+                            <FieldLabel required>Business / Professional Name</FieldLabel>
+                            <input
+                                type="text" name="name" value={formData.name}
+                                onChange={handleChange}
+                                placeholder="e.g. Glam Beauty Salon"
+                                className={inputCls}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel required>Beauty Type</FieldLabel>
                             <IconSelect
                                 label=""
-                                value={selectedCategory}
-                                placeholder="Select category"
-                                options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
-                                onChange={(val) => {
-                                    setSelectedCategory(val);
-                                    setSelectedSubcategory('');
-                                    setFieldErrors(prev => ({ ...prev, category: undefined, subcategory: undefined }));
-                                }}
+                                value={formData.beautyType}
+                                placeholder="Select beauty type"
+                                options={beautyTypes.map(t => ({
+                                    name: t,
+                                    icon: SUBCATEGORY_ICONS[t],
+                                }))}
+                                onChange={(val) => setFormData(p => ({ ...p, beautyType: val }))}
                                 disabled={loading}
                             />
-                            {fieldErrors.category && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.category}
-                                </p>
-                            )}
                         </div>
-                        <div>
-                            <FieldLabel required>Service Type</FieldLabel>
-                            <IconSelect
-                                label=""
-                                value={selectedSubcategory}
-                                placeholder={selectedCategory ? 'Select type' : 'Select category first'}
-                                disabled={!selectedCategory || loading}
-                                options={subcategoryOptions}
-                                onChange={(val) => {
-                                    setSelectedSubcategory(val);
-                                    setFieldErrors(prev => ({ ...prev, subcategory: undefined }));
-                                }}
-                            />
-                            {fieldErrors.subcategory && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.subcategory}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                </SectionCard>
+                    </TwoCol>
+                </Card>
 
-                {/* ─── 2. CONTACT ──────────────────────────────────────────── */}
-                <SectionCard title="Contact Information">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ─── ROW 2: Contact ─── */}
+                <Card>
+                    <CardTitle title="Contact Information" />
+                    <TwoCol>
                         <div>
-                            <FieldLabel required>Phone</FieldLabel>
+                            <FieldLabel required>Phone Number</FieldLabel>
                             <input
                                 type="tel" name="phone" value={formData.phone}
-                                onChange={handleInputChange}
+                                onChange={handleChange}
                                 placeholder="Enter phone number"
-                                className={fieldErrors.phone ? inputError : inputBase}
+                                className={inputCls}
                             />
-                            {fieldErrors.phone && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.phone}
-                                </p>
-                            )}
                         </div>
                         <div>
-                            <FieldLabel required>Email</FieldLabel>
+                            <FieldLabel required>Email Address</FieldLabel>
                             <input
                                 type="email" name="email" value={formData.email}
-                                onChange={handleInputChange}
+                                onChange={handleChange}
                                 placeholder="Enter email address"
-                                className={fieldErrors.email ? inputError : inputBase}
+                                className={inputCls}
                             />
-                            {fieldErrors.email && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.email}
-                                </p>
-                            )}
                         </div>
-                    </div>
-                </SectionCard>
+                    </TwoCol>
+                </Card>
 
-                {/* ─── 3. PROFESSIONAL DETAILS ─────────────────────────────── */}
-                <SectionCard title="Professional Details">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <FieldLabel>Experience (years)</FieldLabel>
-                            <input
-                                type="number" name="experience" value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years of experience" min="0"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel>Service Charge (₹)</FieldLabel>
-                            <input
-                                type="number" name="serviceCharge" value={formData.serviceCharge}
-                                onChange={handleInputChange}
-                                placeholder="Amount" min="0"
-                                className={fieldErrors.serviceCharge ? inputError : inputBase}
-                            />
-                            {fieldErrors.serviceCharge && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.serviceCharge}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <FieldLabel>Availability</FieldLabel>
-                            <select
-                                name="availability" value={formData.availability}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
-                            >
-                                {availabilityOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                        </div>
-                        {/* Currently Available toggle */}
-                        <div className="flex items-center justify-between px-1 py-2">
-                            <div>
-                                <span className={`${typography.body.small} font-semibold text-gray-800`}>Currently Available</span>
-                                <p className={`${typography.body.small} text-gray-500 mt-0.5 text-xs`}>
-                                    Toggle on to appear available to clients
-                                </p>
-                            </div>
-                            <button
-                                type="button" onClick={handleAvailabilityToggle}
-                                className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0"
-                                style={{ backgroundColor: isCurrentlyAvailable ? BRAND : '#D1D5DB' }}
-                            >
-                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
-                        </div>
-                    </div>
-                </SectionCard>
-
-                {/* ─── 4. SERVICES + BIO ───────────────────────────────────── */}
-                <SectionCard title="Service Description">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ─── ROW 3: Services + Bio ─── */}
+                <Card>
+                    <CardTitle title="Service Details" />
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Services Offered</FieldLabel>
                             <textarea
                                 name="services" value={formData.services}
-                                onChange={handleInputChange} rows={4}
-                                placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure, Pedicure"
-                                className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
+                                onChange={handleChange} rows={4}
+                                placeholder="Haircut, Hair Coloring, Facial, Makeup, Manicure"
+                                className={inputCls + ' resize-none'}
                             />
-                            {fieldErrors.services ? (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.services}
-                                </p>
-                            ) : (
-                                <p className={`${typography.body.xs} text-gray-400 mt-1`}>
-                                    💡 Separate each service with a comma
-                                </p>
-                            )}
+                            <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                                💡 Separate each service with a comma
+                            </p>
                             {formData.services.trim() && (
                                 <div className="mt-3 flex flex-wrap gap-2">
                                     {formData.services.split(',').map((s, i) => {
@@ -647,12 +426,9 @@ const BeautyServiceForm: React.FC = () => {
                                         if (!t) return null;
                                         return (
                                             <span key={i}
-                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full ${typography.misc.badge} font-medium text-white`}
+                                                className={`inline-flex items-center gap-1.5 pl-3 pr-3 py-1.5 rounded-full ${typography.misc.badge} text-white`}
                                                 style={{ backgroundColor: BRAND }}>
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                                </svg>
-                                                {t}
+                                                ✓ {t}
                                             </span>
                                         );
                                     })}
@@ -663,225 +439,226 @@ const BeautyServiceForm: React.FC = () => {
                             <FieldLabel>Bio</FieldLabel>
                             <textarea
                                 name="bio" value={formData.bio}
-                                onChange={handleInputChange} rows={4}
+                                onChange={handleChange} rows={4}
                                 placeholder="Tell clients about yourself and your expertise..."
-                                className={inputBase + ' resize-none'}
+                                className={inputCls + ' resize-none'}
                             />
                         </div>
-                    </div>
-                </SectionCard>
+                    </TwoCol>
+                </Card>
 
-                {/* ─── 5. LOCATION ─────────────────────────────────────────── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <button
-                            type="button" onClick={getCurrentLocation} disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                            style={{ backgroundColor: BRAND }}
-                        >
-                            {locationLoading
-                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
-                                : <><MapPin className="w-4 h-4" /> Auto Detect</>
-                            }
-                        </button>
-                    }
-                >
+                {/* ─── ROW 4: Pricing + Availability ─── */}
+                <Card>
+                    <CardTitle title="Pricing & Availability" />
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Service Charge (₹)</FieldLabel>
+                            <input
+                                type="number" name="serviceCharge" value={formData.serviceCharge}
+                                onChange={handleChange} placeholder="Amount" min="0"
+                                className={inputCls}
+                            />
+                        </div>
+                        <div>
+                            <FieldLabel>Experience (years)</FieldLabel>
+                            <input
+                                type="number" name="experience" value={formData.experience}
+                                onChange={handleChange} placeholder="Years of experience" min="0"
+                                className={inputCls}
+                            />
+                        </div>
+                    </TwoCol>
+                    <TwoCol>
+                        <div>
+                            <FieldLabel>Availability</FieldLabel>
+                            <select name="availability" value={formData.availability}
+                                onChange={handleChange} className={inputCls + ' appearance-none'}>
+                                {availabilityOptions.map(a => <option key={a} value={a}>{a}</option>)}
+                            </select>
+                        </div>
+                        <div className="flex items-center gap-4 pt-7">
+                            <span className={`${typography.body.small} font-semibold text-gray-700`}>Currently Available</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const next = !isCurrentlyAvailable;
+                                    setIsCurrentlyAvailable(next);
+                                    setFormData(p => ({ ...p, availability: next ? 'Full Time' : 'Part Time' }));
+                                }}
+                                className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors flex-shrink-0"
+                                style={{ backgroundColor: isCurrentlyAvailable ? BRAND : '#d1d5db' }}
+                            >
+                                <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${isCurrentlyAvailable ? 'translate-x-6' : 'translate-x-1'}`} />
+                            </button>
+                        </div>
+                    </TwoCol>
+                </Card>
+
+                {/* ─── ROW 5: Location ─── */}
+                <Card>
+                    <CardTitle
+                        title="Location Details"
+                        action={
+                            <button
+                                type="button" onClick={getCurrentLocation} disabled={locationLoading}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
+                                    transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                style={{ backgroundColor: BRAND }}
+                                onMouseEnter={e => !locationLoading && ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK)}
+                                onMouseLeave={e => ((e.currentTarget as HTMLElement).style.backgroundColor = BRAND)}
+                            >
+                                {locationLoading
+                                    ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
+                                    : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>}
+                            </button>
+                        }
+                    />
+
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <span className="text-yellow-600 shrink-0">⚠️</span>
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
 
-                    {/* Area + City */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <TwoCol>
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="e.g. Banjara Hills"
-                                className={fieldErrors.area ? inputError : inputBase} />
-                            {fieldErrors.area && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
-                                </p>
-                            )}
+                                onChange={handleChange} placeholder="e.g. Banjara Hills" className={inputCls} />
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="e.g. Hyderabad"
-                                className={fieldErrors.city ? inputError : inputBase} />
-                            {fieldErrors.city && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
-                                </p>
-                            )}
+                                onChange={handleChange} placeholder="e.g. Hyderabad" className={inputCls} />
                         </div>
-                    </div>
-
-                    {/* State + PIN Code */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    </TwoCol>
+                    <TwoCol>
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state}
-                                onChange={handleInputChange} placeholder="e.g. Telangana"
-                                className={fieldErrors.state ? inputError : inputBase} />
-                            {fieldErrors.state && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.state}
-                                </p>
-                            )}
+                                onChange={handleChange} placeholder="e.g. Telangana" className={inputCls} />
                         </div>
                         <div>
-                            <FieldLabel>PIN Code</FieldLabel>
+                            <FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode}
-                                onChange={handleInputChange} placeholder="e.g. 500016" maxLength={6}
-                                className={fieldErrors.pincode ? inputError : inputBase} />
-                            {fieldErrors.pincode && (
-                                <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.pincode}
-                                </p>
-                            )}
+                                onChange={handleChange} placeholder="6-digit PIN code" className={inputCls} />
                         </div>
+                    </TwoCol>
+
+                    <div className="rounded-xl p-3.5" style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                        <p className={`${typography.body.xs} font-medium`} style={{ color: '#92400e' }}>
+                            💡 <span className="font-semibold">Tip:</span> Click "Auto Detect" to fill location automatically from your device GPS.
+                        </p>
                     </div>
 
-                    {/* Location error */}
-                    {fieldErrors.location && (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
-                            <p className="text-sm text-red-700 flex items-center gap-1.5">
-                                <span>⚠️</span> {fieldErrors.location}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Tip */}
-                    {!formData.latitude && !formData.longitude && (
-                        <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
-                            <p className={`${typography.body.small} text-amber-800`}>
-                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Confirmed */}
                     {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set: </span>
-                                <span className="font-mono text-xs ml-1">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
+                        <div className="bg-green-50 border border-green-200 rounded-xl p-3.5">
+                            <p className={`${typography.body.xs} font-medium text-green-800`}>
+                                <span className="font-bold">✓ Location detected: </span>
+                                <span className="font-mono">
+                                    {parseFloat(formData.latitude).toFixed(5)}, {parseFloat(formData.longitude).toFixed(5)}
                                 </span>
                             </p>
                         </div>
                     )}
-                </SectionCard>
+                </Card>
 
-                {/* ─── 6. PORTFOLIO PHOTOS ─────────────────────────────────── */}
-                <SectionCard title="Portfolio Photos (Optional)">
-                    <label className="cursor-pointer block">
-                        <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={maxImagesReached}
-                        />
-                        <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
-                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
-                                : 'hover:opacity-90 cursor-pointer'}`}
-                            style={!maxImagesReached ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
-                        >
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
-                                    <Upload className="w-8 h-8" style={{ color: BRAND }} />
-                                </div>
-                                <div>
-                                    <p className={`${typography.form.input} font-medium text-gray-700`}>
-                                        {maxImagesReached ? 'Maximum 5 images reached' : `Tap to upload photos (${5 - totalImages} slots left)`}
-                                    </p>
-                                    <p className={`${typography.body.small} text-gray-500 mt-1`}>Maximum 5 images · 5 MB each</p>
+                {/* ─── ROW 6: Photos ─── */}
+                <Card>
+                    <CardTitle title={`Portfolio Photos (${totalImages}/5)`} />
+                    <TwoCol>
+                        <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                            <input type="file" accept="image/*" multiple onChange={handleImageSelect}
+                                className="hidden" disabled={maxImagesReached} />
+                            <div
+                                className="border-2 border-dashed rounded-2xl p-10 text-center h-full flex items-center justify-center transition-colors"
+                                style={{
+                                    borderColor:     maxImagesReached ? '#d1d5db' : '#7ab3cc',
+                                    backgroundColor: maxImagesReached ? '#f9fafb' : 'rgba(0,89,138,0.04)',
+                                    minHeight: '180px',
+                                }}
+                            >
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-16 h-16 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: 'rgba(0,89,138,0.1)' }}>
+                                        <Upload className="w-8 h-8" style={{ color: BRAND }} />
+                                    </div>
+                                    <div>
+                                        <p className={`${typography.form.label} text-gray-700 font-medium`}>
+                                            {maxImagesReached ? 'Maximum limit reached' : `Add Photos (${5 - totalImages} slots left)`}
+                                        </p>
+                                        <p className={`${typography.body.xs} text-gray-400 mt-1`}>
+                                            Maximum 5 images · 5 MB each
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </label>
+                        </label>
 
-                    {(existingImages.filter(u => !imagesToDelete.includes(u)).length > 0 || imagePreviews.length > 0) && (
-                        <div className="grid grid-cols-3 gap-3 mt-4">
-                            {existingImages.filter(url => !imagesToDelete.includes(url)).map((url, i) => (
-                                <div key={`ex-${i}`} className="relative aspect-square group">
-                                    <img src={url} alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=Error'; }} />
-                                    <button type="button" onClick={() => handleRemoveExistingImage(url)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: BRAND }}>Saved</span>
-                                </div>
-                            ))}
-                            {imagePreviews.map((preview, i) => (
-                                <div key={`new-${i}`} className="relative aspect-square group">
-                                    <img src={preview} alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
-                                    <button type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
-                                        <X className="w-4 h-4" />
-                                    </button>
-                                    <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* Restore deleted images */}
-                    {imagesToDelete.length > 0 && (
-                        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-xl">
-                            <p className={`${typography.body.small} text-red-700 mb-2`}>
-                                Images marked for deletion ({imagesToDelete.length}):
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                                {imagesToDelete.map((url, i) => (
-                                    <button key={`del-${i}`} onClick={() => handleRestoreExistingImage(url)}
-                                        className="inline-flex items-center gap-1 text-xs bg-white border border-red-300 text-red-600 px-2 py-1 rounded hover:bg-red-50">
-                                        <span>↩</span> Restore image {i + 1}
-                                    </button>
+                        {(existingImages.length > 0 || imagePreviews.length > 0) ? (
+                            <div className="grid grid-cols-3 gap-3">
+                                {existingImages.map((url, i) => (
+                                    <div key={`ex-${i}`} className="relative aspect-square group">
+                                        <img src={url} alt="" className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+                                        <button type="button" onClick={() => handleRemoveExistingImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className={`absolute bottom-1.5 left-1.5 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full text-xs`}
+                                            style={{ backgroundColor: BRAND }}>Saved</span>
+                                    </div>
+                                ))}
+                                {imagePreviews.map((src, i) => (
+                                    <div key={`new-${i}`} className="relative aspect-square group">
+                                        <img src={src} alt="" className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
+                                        <button type="button" onClick={() => handleRemoveNewImage(i)}
+                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                        <span className="absolute bottom-1.5 left-1.5 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">New</span>
+                                    </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                </SectionCard>
+                        ) : (
+                            <div className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl"
+                                style={{ minHeight: '180px' }}>
+                                <p className={`${typography.body.small} text-gray-400`}>Uploaded images will appear here</p>
+                            </div>
+                        )}
+                    </TwoCol>
+                </Card>
 
                 {/* ── Action Buttons ── */}
-                <div className="flex gap-4 pt-2 pb-8">
+                <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
-                        style={{ backgroundColor: BRAND }}
-                    >
+                        type="button" onClick={() => window.history.back()} disabled={loading}
+                        className={`px-10 py-3.5 rounded-xl font-semibold
+                            text-[#00598a] bg-white border-2 border-[#00598a]
+                            hover:bg-[#00598a] hover:text-white
+                            active:bg-[#004a73] active:text-white
+                            transition-all ${typography.body.base}
+                            ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        Cancel
+                    </button>
+                    <button
+                        type="button" onClick={handleSubmit} disabled={loading}
+                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
+                            transition-all shadow-md hover:shadow-lg
+                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+                            ${typography.body.base}
+                            ${loading ? 'cursor-not-allowed opacity-70' : ''}`}>
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
+                                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                </svg>
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
-                        ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
                         ) : (
                             isEditMode ? 'Update Service' : 'Create Service'
                         )}
-                    </button>
-                    <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    >
-                        Cancel
                     </button>
                 </div>
 

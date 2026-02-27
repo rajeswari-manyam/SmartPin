@@ -14,6 +14,7 @@ import {
 } from '../services/api.service';
 import { useAccount } from '../context/AccountContext';
 import { useAuth } from '../context/AuthContext';
+import typography from '../styles/typography';
 
 // ============================================================================
 // VISUAL HELPERS
@@ -45,11 +46,6 @@ const formatRelativeTime = (dateStr: string): string => {
 };
 
 // ============================================================================
-// TYPES
-// ============================================================================
-type FilterTab = 'all' | 'unread' | 'read';
-
-// ============================================================================
 // DELETE CONFIRM MODAL
 // ============================================================================
 const DeleteConfirmModal: React.FC<{
@@ -70,21 +66,25 @@ const DeleteConfirmModal: React.FC<{
                 <Trash2 className="w-7 h-7 text-red-500" />
             </div>
             <div className="text-center">
-                <h3 className="text-base font-bold text-gray-900">Delete Notification?</h3>
-                <p className="text-sm text-gray-500 mt-1">This action cannot be undone.</p>
+                <h3 className={`${typography.heading.h6} text-gray-900`}>
+                    Delete Notification?
+                </h3>
+                <p className={`${typography.body.xs} text-gray-500 mt-1`}>
+                    This action cannot be undone.
+                </p>
             </div>
             <div className="grid grid-cols-2 gap-3 w-full">
                 <button
                     onClick={onCancel}
                     disabled={deleting}
-                    className="py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    className={`py-2.5 rounded-xl border border-gray-200 ${typography.body.xs} font-semibold text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50`}
                 >
                     Cancel
                 </button>
                 <button
                     onClick={onConfirm}
                     disabled={deleting}
-                    className="py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                    className={`py-2.5 rounded-xl bg-red-500 text-white ${typography.body.xs} font-semibold hover:bg-red-600 transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5`}
                 >
                     {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     Delete
@@ -130,7 +130,7 @@ const NotificationCard: React.FC<{
 
             <div className="flex items-start gap-3 p-4 pl-5">
                 <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typography.icon.lg}`}
                     style={{ backgroundColor: config.iconBg }}
                 >
                     {config.icon}
@@ -138,25 +138,29 @@ const NotificationCard: React.FC<{
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                        <h3 className={`text-sm font-bold truncate ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                        <h3 className={`${typography.fontSize.sm} font-bold truncate ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
                             {notification.title}
                         </h3>
                         {isUnread && (
                             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: config.accent }} />
                         )}
                     </div>
-                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mb-1.5">
+
+                    <p className={`${typography.misc.caption} line-clamp-2 leading-relaxed mb-1.5`}>
                         {notification.message}
                     </p>
+
                     <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[11px] text-gray-400">{formatRelativeTime(notification.createdAt)}</span>
+                        <span className={`${typography.fontSize.xs} text-gray-400`}>
+                            {formatRelativeTime(notification.createdAt)}
+                        </span>
                         <span
-                            className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                            className={`${typography.misc.badge} px-2 py-0.5 rounded-full`}
                             style={{ backgroundColor: config.iconBg, color: config.accent }}
                         >
                             {notification.type.replace(/_/g, ' ')}
                         </span>
-                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                        <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full ${
                             isUnread
                                 ? 'bg-orange-50 text-orange-500 border border-orange-100'
                                 : 'bg-green-50 text-green-600 border border-green-100'
@@ -199,14 +203,14 @@ const RoleTab: React.FC<{
     <button
         onClick={onClick}
         className={`
-            flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold
+            flex items-center gap-1.5 px-4 py-2 rounded-xl ${typography.body.xs} font-semibold
             transition-all duration-200
             ${active ? 'bg-[#00598a] text-white shadow-sm' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}
         `}
     >
         {label}
         {count != null && count > 0 && (
-            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+            <span className={`${typography.fontSize.xs} font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
                 active ? 'bg-white/25 text-white' : 'bg-gray-300 text-gray-600'
             }`}>
                 {count}
@@ -214,55 +218,6 @@ const RoleTab: React.FC<{
         )}
     </button>
 );
-
-// ============================================================================
-// FILTER TAB BAR — All / Unread / Read
-// ============================================================================
-const FilterTabBar: React.FC<{
-    active:       FilterTab;
-    allCount:     number;
-    unreadCount:  number;
-    readCount:    number;
-    onChange:     (tab: FilterTab) => void;
-    loading:      boolean;
-}> = ({ active, allCount, unreadCount, readCount, onChange, loading }) => {
-    const tabs: { key: FilterTab; label: string; count: number; icon: React.ReactNode }[] = [
-        { key: 'all',    label: 'All',    count: allCount,    icon: null },
-        { key: 'unread', label: 'Unread', count: unreadCount, icon: <EyeOff className="w-3.5 h-3.5" /> },
-        { key: 'read',   label: 'Read',   count: readCount,   icon: <Eye   className="w-3.5 h-3.5" /> },
-    ];
-
-    return (
-        <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl">
-            {tabs.map(tab => (
-                <button
-                    key={tab.key}
-                    onClick={() => onChange(tab.key)}
-                    disabled={loading}
-                    className={`
-                        flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
-                        text-xs font-semibold transition-all duration-200 disabled:opacity-60
-                        ${active === tab.key
-                            ? 'bg-white text-[#00598a] shadow-sm'
-                            : 'text-gray-500 hover:text-gray-700'
-                        }
-                    `}
-                >
-                    {tab.icon}
-                    {tab.label}
-                    {tab.count > 0 && (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                            active === tab.key ? 'bg-[#00598a] text-white' : 'bg-gray-200 text-gray-600'
-                        }`}>
-                            {tab.count}
-                        </span>
-                    )}
-                    {loading && active === tab.key && <Loader2 className="w-3 h-3 animate-spin" />}
-                </button>
-            ))}
-        </div>
-    );
-};
 
 // ============================================================================
 // MAIN PAGE
@@ -278,10 +233,8 @@ const NotificationsPage: React.FC = () => {
     const currentId   = accountType === 'worker' ? workerId : userId;
     const currentRole = accountType === 'worker' ? 'Worker' : 'User';
 
-    // ── Notification lists (one per API) ─────────────────────────────────────
-    const [allNotifications,    setAllNotifications]    = useState<Notification[]>([]);
-    const [readNotifications,   setReadNotifications]   = useState<Notification[]>([]);
-    const [unreadNotifications, setUnreadNotifications] = useState<Notification[]>([]);
+    // ── Notification list ─────────────────────────────────────────────────────
+    const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
 
     // ── Counts ────────────────────────────────────────────────────────────────
     const [liveUnreadCount, setLiveUnreadCount] = useState(0);
@@ -289,24 +242,16 @@ const NotificationsPage: React.FC = () => {
     const [workerUnread,    setWorkerUnread]    = useState(0);
 
     // ── UI state ──────────────────────────────────────────────────────────────
-    const [activeFilter,  setActiveFilter]  = useState<FilterTab>('all');
-    const [loading,       setLoading]       = useState(true);
-    const [filterLoading, setFilterLoading] = useState(false);
-    const [refreshing,    setRefreshing]    = useState(false);
-    const [error,         setError]         = useState<string | null>(null);
+    const [loading,    setLoading]    = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error,      setError]      = useState<string | null>(null);
 
     // ── Delete modal ──────────────────────────────────────────────────────────
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
     const [deleting,        setDeleting]        = useState(false);
 
-    // ── Which list to show ────────────────────────────────────────────────────
-    const displayedNotifications =
-        activeFilter === 'read'   ? readNotifications   :
-        activeFilter === 'unread' ? unreadNotifications :
-        allNotifications;
-
     // ============================================================================
-    // FETCH — fire all 4 APIs in parallel on mount / refresh
+    // FETCH
     // ============================================================================
     const fetchAll = useCallback(async (isRefresh = false) => {
         if (!currentId) {
@@ -318,14 +263,11 @@ const NotificationsPage: React.FC = () => {
             isRefresh ? setRefreshing(true) : setLoading(true);
             setError(null);
 
-            const [allRes, readRes, unreadRes, countRes] = await Promise.allSettled([
+            const [allRes, countRes] = await Promise.allSettled([
                 getAllNotifications(currentRole as 'User' | 'Worker', currentId),
-                getReadNotifications(currentRole as 'User' | 'Worker', currentId),
-                getUnreadNotifications(currentRole as 'User' | 'Worker', currentId),
                 getNotificationCount(currentRole as 'User' | 'Worker', currentId),
             ]);
 
-            // All notifications
             if (allRes.status === 'fulfilled') {
                 const sorted = [...(allRes.value.data || [])].sort((a, b) => {
                     if (a.isRead !== b.isRead) return a.isRead ? 1 : -1;
@@ -337,33 +279,8 @@ const NotificationsPage: React.FC = () => {
                 else                        setWorkerUnread(unread);
             }
 
-            // Read notifications — response is NotificationsResponse, unwrap .data
-            if (readRes.status === 'fulfilled') {
-                setReadNotifications(
-                    [...(readRes.value.data || [])].sort((a, b) =>
-                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                    )
-                );
-            } else {
-                console.warn('⚠️ /read API failed:', readRes.reason);
-            }
-
-            // Unread notifications — response is NotificationsResponse, unwrap .data
-            if (unreadRes.status === 'fulfilled') {
-                setUnreadNotifications(
-                    [...(unreadRes.value.data || [])].sort((a, b) =>
-                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                    )
-                );
-            } else {
-                console.warn('⚠️ /unread API failed:', unreadRes.reason);
-            }
-
-            // Live count — response is NotificationCountResponse, unwrap .count
             if (countRes.status === 'fulfilled') {
                 setLiveUnreadCount(countRes.value.count ?? 0);
-            } else {
-                console.warn('⚠️ /count API failed:', countRes.reason);
             }
 
         } catch (err: any) {
@@ -376,48 +293,13 @@ const NotificationsPage: React.FC = () => {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    // ── Re-fetch read/unread lists when switching filter tabs ─────────────────
-    const handleFilterChange = async (tab: FilterTab) => {
-        setActiveFilter(tab);
-        if (tab === 'all' || !currentId) return;
-
-        setFilterLoading(true);
-        try {
-            if (tab === 'read') {
-                const res = await getReadNotifications(currentRole as 'User' | 'Worker', currentId);
-                setReadNotifications([...(res.data || [])].sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                ));
-            } else if (tab === 'unread') {
-                const res = await getUnreadNotifications(currentRole as 'User' | 'Worker', currentId);
-                setUnreadNotifications([...(res.data || [])].sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                ));
-            }
-        } catch (err) {
-            console.warn(`⚠️ Filter fetch failed for tab: ${tab}`, err);
-        } finally {
-            setFilterLoading(false);
-        }
-    };
-
     // ============================================================================
-    // MARK READ — updates all three local lists
+    // MARK READ
     // ============================================================================
     const handleMarkRead = (id: string) => {
-        setUnreadNotifications(prev => prev.filter(n => n._id !== id));
-
-        setAllNotifications(prev => {
-            const found = prev.find(n => n._id === id);
-            if (found && !found.isRead) {
-                setReadNotifications(r => {
-                    const exists = r.some(n => n._id === id);
-                    return exists ? r : [{ ...found, isRead: true }, ...r];
-                });
-            }
-            return prev.map(n => n._id === id ? { ...n, isRead: true } : n);
-        });
-
+        setAllNotifications(prev =>
+            prev.map(n => n._id === id ? { ...n, isRead: true } : n)
+        );
         setLiveUnreadCount(c => Math.max(0, c - 1));
         if (currentRole === 'User') setUserUnread(c => Math.max(0, c - 1));
         else                        setWorkerUnread(c => Math.max(0, c - 1));
@@ -425,25 +307,14 @@ const NotificationsPage: React.FC = () => {
 
     const handleMarkAllRead = () => {
         const unread = allNotifications.filter(n => !n.isRead).length;
-        const markAll = (list: Notification[]) => list.map(n => ({ ...n, isRead: true }));
-
-        setAllNotifications(markAll);
-        setReadNotifications(prev => {
-            const existingIds = new Set(prev.map(n => n._id));
-            const newlyRead = allNotifications
-                .filter(n => !n.isRead)
-                .map(n => ({ ...n, isRead: true }))
-                .filter(n => !existingIds.has(n._id));
-            return [...newlyRead, ...prev];
-        });
-        setUnreadNotifications([]);
+        setAllNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setLiveUnreadCount(0);
         if (currentRole === 'User') setUserUnread(c => Math.max(0, c - unread));
         else                        setWorkerUnread(c => Math.max(0, c - unread));
     };
 
     // ============================================================================
-    // DELETE — removes from all three local lists
+    // DELETE
     // ============================================================================
     const handleDeleteRequest  = (id: string) => setPendingDeleteId(id);
     const handleDeleteCancel   = () => { if (!deleting) setPendingDeleteId(null); };
@@ -453,14 +324,8 @@ const NotificationsPage: React.FC = () => {
         setDeleting(true);
         try {
             await deleteNotification(pendingDeleteId);
-
             const wasUnread = allNotifications.find(n => n._id === pendingDeleteId && !n.isRead);
-            const removeById = (list: Notification[]) => list.filter(n => n._id !== pendingDeleteId);
-
-            setAllNotifications(removeById);
-            setReadNotifications(removeById);
-            setUnreadNotifications(removeById);
-
+            setAllNotifications(prev => prev.filter(n => n._id !== pendingDeleteId));
             if (wasUnread) {
                 setLiveUnreadCount(c => Math.max(0, c - 1));
                 if (currentRole === 'User') setUserUnread(c => Math.max(0, c - 1));
@@ -490,7 +355,7 @@ const NotificationsPage: React.FC = () => {
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <Loader2 className="w-9 h-9 animate-spin text-[#00598a]" />
-                    <p className="text-sm text-gray-500">Loading notifications…</p>
+                    <p className={`${typography.body.xs} text-gray-500`}>Loading notifications…</p>
                 </div>
             </div>
         );
@@ -514,12 +379,14 @@ const NotificationsPage: React.FC = () => {
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
                             </button>
                             <div>
-                                <h1 className="text-lg font-bold text-gray-900">Notifications</h1>
-                                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                                <h1 className={`${typography.heading.h5} text-gray-900`}>
+                                    Notifications
+                                </h1>
+                                <p className={`${typography.misc.caption} flex items-center gap-1.5`}>
                                     {liveUnreadCount > 0 ? (
                                         <>
                                             <span
-                                                className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white"
+                                                className={`inline-flex items-center justify-center w-4 h-4 rounded-full ${typography.fontSize.xs} font-bold text-white`}
                                                 style={{ backgroundColor: '#00598a' }}
                                             >
                                                 {liveUnreadCount}
@@ -542,7 +409,7 @@ const NotificationsPage: React.FC = () => {
                             {allNotifications.some(n => !n.isRead) && (
                                 <button
                                     onClick={handleMarkAllRead}
-                                    className="text-xs font-semibold text-[#00598a] px-3 py-2 rounded-xl hover:bg-blue-50 transition-colors"
+                                    className={`${typography.fontSize.xs} font-semibold text-[#00598a] px-3 py-2 rounded-xl hover:bg-blue-50 transition-colors`}
                                 >
                                     Mark all read
                                 </button>
@@ -557,13 +424,13 @@ const NotificationsPage: React.FC = () => {
                                 label="As Customer"
                                 active={accountType === 'user'}
                                 count={userUnread}
-                                onClick={() => { setAccountType('user'); setActiveFilter('all'); }}
+                                onClick={() => setAccountType('user')}
                             />
                             <RoleTab
                                 label="As Worker"
                                 active={accountType === 'worker'}
                                 count={workerUnread}
-                                onClick={() => { setAccountType('worker'); setActiveFilter('all'); }}
+                                onClick={() => setAccountType('worker')}
                             />
                         </div>
                     )}
@@ -573,19 +440,10 @@ const NotificationsPage: React.FC = () => {
             {/* ── Content ───────────────────────────────────────────────────── */}
             <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-                <FilterTabBar
-                    active={activeFilter}
-                    allCount={allNotifications.length}
-                    unreadCount={unreadNotifications.length}
-                    readCount={readNotifications.length}
-                    onChange={handleFilterChange}
-                    loading={filterLoading}
-                />
-
                 {/* Context + live count badges */}
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className={`
-                        text-xs font-semibold px-3 py-1.5 rounded-full
+                        ${typography.misc.badge} px-3 py-1.5 rounded-full
                         ${currentRole === 'User'
                             ? 'bg-blue-50 text-blue-600 border border-blue-100'
                             : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
@@ -597,19 +455,19 @@ const NotificationsPage: React.FC = () => {
                         }
                     </span>
                     {liveUnreadCount > 0 && (
-                        <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100">
+                        <span className={`${typography.misc.badge} px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100`}>
                             🔴 {liveUnreadCount} unread
                         </span>
                     )}
                 </div>
 
-                {/* Unread banner (only on "All" tab) */}
-                {liveUnreadCount > 0 && activeFilter === 'all' && (
+                {/* Unread banner */}
+                {liveUnreadCount > 0 && (
                     <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
-                        <span className="bg-[#00598a] text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                        <span className={`bg-[#00598a] text-white ${typography.fontSize.xs} font-bold px-2.5 py-1 rounded-full`}>
                             {liveUnreadCount} new
                         </span>
-                        <p className="text-sm text-blue-700">
+                        <p className={`${typography.body.xs} text-blue-700`}>
                             You have {liveUnreadCount} unread notification{liveUnreadCount !== 1 ? 's' : ''}
                         </p>
                     </div>
@@ -619,28 +477,21 @@ const NotificationsPage: React.FC = () => {
                 {error && (
                     <div className="text-center py-10">
                         <div className="text-5xl mb-3">⚠️</div>
-                        <h2 className="text-base font-bold text-gray-800 mb-1">Failed to load</h2>
-                        <p className="text-sm text-gray-500 mb-4">{error}</p>
+                        <h2 className={`${typography.heading.h6} text-gray-800 mb-1`}>Failed to load</h2>
+                        <p className={`${typography.body.xs} text-gray-500 mb-4`}>{error}</p>
                         <button
                             onClick={() => fetchAll()}
-                            className="bg-[#00598a] text-white px-5 py-2.5 rounded-xl text-sm font-semibold"
+                            className={`bg-[#00598a] text-white px-5 py-2.5 rounded-xl ${typography.body.xs} font-semibold`}
                         >
                             Try Again
                         </button>
                     </div>
                 )}
 
-                {/* Filter loading spinner */}
-                {filterLoading && (
-                    <div className="flex justify-center py-6">
-                        <Loader2 className="w-6 h-6 animate-spin text-[#00598a]" />
-                    </div>
-                )}
-
                 {/* Notification list */}
-                {!error && !filterLoading && displayedNotifications.length > 0 && (
+                {!error && allNotifications.length > 0 && (
                     <div className="space-y-3">
-                        {displayedNotifications.map(n => (
+                        {allNotifications.map(n => (
                             <NotificationCard
                                 key={n._id}
                                 notification={n}
@@ -653,25 +504,16 @@ const NotificationsPage: React.FC = () => {
                 )}
 
                 {/* Empty state */}
-                {!error && !filterLoading && displayedNotifications.length === 0 && (
+                {!error && allNotifications.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-20 text-center px-6">
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-5">
-                            {activeFilter === 'read'   ? <Eye     className="w-9 h-9 text-gray-300" /> :
-                             activeFilter === 'unread' ? <EyeOff  className="w-9 h-9 text-gray-300" /> :
-                                                         <BellOff className="w-9 h-9 text-gray-300" />
-                            }
+                            <BellOff className="w-9 h-9 text-gray-300" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">
-                            {activeFilter === 'read'   ? 'No Read Notifications'   :
-                             activeFilter === 'unread' ? 'No Unread Notifications' :
-                             'No Notifications'}
+                        <h2 className={`${typography.heading.h5} text-gray-800 mb-2`}>
+                            No Notifications
                         </h2>
-                        <p className="text-sm text-gray-500 max-w-xs leading-relaxed">
-                            {activeFilter === 'read'
-                                ? 'Notifications you have read will appear here.'
-                                : activeFilter === 'unread'
-                                ? "You're all caught up! No unread notifications."
-                                : currentRole === 'Worker'
+                        <p className={`${typography.body.small} text-gray-500 max-w-xs leading-relaxed`}>
+                            {currentRole === 'Worker'
                                 ? "You'll be notified when new jobs matching your skills are posted nearby."
                                 : "You'll be notified when workers enquire about your jobs."
                             }

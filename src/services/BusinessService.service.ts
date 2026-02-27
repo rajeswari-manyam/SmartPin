@@ -7,18 +7,19 @@ export interface BusinessWorker {
   _id?: string;
   userId?: string;
   name?: string;
-  title?: string; // API field
+  title?: string;
   email?: string;
   phone?: string;
   category?: string;
-  serviceType?: string; // API field
+  subCategory?: string;
+  serviceType?: string;
   services?: string[];
-  skills?: string; // API field (comma-separated string)
+  skills?: string;
   experience?: number;
   serviceCharge?: number;
   chargeType?: string;
   bio?: string;
-  description?: string; // API field
+  description?: string;
   images?: string[];
   area?: string;
   city?: string;
@@ -76,6 +77,16 @@ export interface AllServicesResponse {
   data: BusinessWorker[];
 }
 
+// ── Helper: parse error body from response ────────────────────────────────────
+const parseErrorMessage = async (response: Response): Promise<string> => {
+  try {
+    const body = await response.json();
+    return body.message || body.error || `Server error (${response.status})`;
+  } catch {
+    return `Server error (${response.status})`;
+  }
+};
+
 // ---- Fetch nearby business workers ----
 export const getNearbyBusinessServices = async (
   latitude: number,
@@ -83,49 +94,40 @@ export const getNearbyBusinessServices = async (
   distance?: number
 ): Promise<BusinessWorkerResponse> => {
   try {
-    // Build URL based on whether distance is provided
     const url = distance
       ? `${API_BASE_URL}/nearby?latitude=${latitude}&longitude=${longitude}&distance=${distance}`
       : `${API_BASE_URL}/nearby?latitude=${latitude}&longitude=${longitude}`;
 
-    const response = await fetch(url, {
-      method: "GET",
-      redirect: "follow"
-    });
+    const response = await fetch(url, { method: "GET", redirect: "follow" });
+    if (!response.ok) throw new Error(await parseErrorMessage(response));
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: BusinessWorkerResponse = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
-    console.error("Error fetching business workers:", error);
+    console.error("Error fetching nearby business workers:", error);
     return { success: false, count: 0, data: [] };
   }
 };
 
-// ---- Create new business service (with FormData support for images) ----
+// ---- Create new business service ----
 export const createBusinessService = async (
   payload: FormData
 ): Promise<CreateServiceResponse> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/createService`, {
-      method: "POST",
-      body: payload,
-      redirect: "follow",
-    });
+  const response = await fetch(`${API_BASE_URL}/createService`, {
+    method: "POST",
+    body: payload,
+    redirect: "follow",
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  // ✅ Always parse the body — surface the real backend message on failure
+  const data = await response.json().catch(() => ({}));
 
-    const data: CreateServiceResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error creating business service:", error);
-    return { success: false, message: "Failed to create service" };
+  if (!response.ok) {
+    const msg = data.message || data.error || `Server error (${response.status})`;
+    console.error("❌ createService backend error:", msg, data);
+    throw new Error(msg);
   }
+
+  return data as CreateServiceResponse;
 };
 
 // ---- Fetch all business services ----
@@ -135,13 +137,8 @@ export const getAllBusinessServices = async (): Promise<AllServicesResponse> => 
       method: "GET",
       redirect: "follow",
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: AllServicesResponse = await response.json();
-    return data;
+    if (!response.ok) throw new Error(await parseErrorMessage(response));
+    return await response.json();
   } catch (error) {
     console.error("Error fetching all business services:", error);
     return { success: false, count: 0, data: [] };
@@ -157,41 +154,35 @@ export const getBusinessServiceById = async (
       method: "GET",
       redirect: "follow",
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: ServiceByIdResponse = await response.json();
-    return data;
+    if (!response.ok) throw new Error(await parseErrorMessage(response));
+    return await response.json();
   } catch (error) {
     console.error(`Error fetching service by ID (${serviceId}):`, error);
     return { success: false, message: "Failed to fetch service" };
   }
 };
 
-// ---- Update business service (with FormData support for images) ----
+// ---- Update business service ----
 export const updateBusinessService = async (
   serviceId: string,
   payload: FormData
 ): Promise<UpdateServiceResponse> => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/updateService/${serviceId}`, {
-      method: "PUT",
-      body: payload,
-      redirect: "follow",
-    });
+  const response = await fetch(`${API_BASE_URL}/updateService/${serviceId}`, {
+    method: "PUT",
+    body: payload,
+    redirect: "follow",
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  // ✅ Surface real backend message on failure
+  const data = await response.json().catch(() => ({}));
 
-    const data: UpdateServiceResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error(`Error updating service (${serviceId}):`, error);
-    return { success: false, message: "Failed to update service" };
+  if (!response.ok) {
+    const msg = data.message || data.error || `Server error (${response.status})`;
+    console.error("❌ updateService backend error:", msg, data);
+    throw new Error(msg);
   }
+
+  return data as UpdateServiceResponse;
 };
 
 // ---- Delete business service ----
@@ -203,13 +194,8 @@ export const deleteBusinessService = async (
       method: "DELETE",
       redirect: "follow",
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: DeleteServiceResponse = await response.json();
-    return data;
+    if (!response.ok) throw new Error(await parseErrorMessage(response));
+    return await response.json();
   } catch (error) {
     console.error(`Error deleting service (${serviceId}):`, error);
     return { success: false, message: "Failed to delete service" };
@@ -223,29 +209,18 @@ export const getUserBusinessServices = async (
   title?: string
 ): Promise<UserBusinessResponse> => {
   try {
-    if (!userId) {
-      throw new Error("User ID is required");
-    }
+    if (!userId) throw new Error("User ID is required");
 
     const params = new URLSearchParams({ userId });
-
     if (serviceType) params.append("serviceType", serviceType);
     if (title) params.append("title", title);
 
     const response = await fetch(
       `${API_BASE_URL}/getUserBusiness?${params.toString()}`,
-      {
-        method: "GET",
-        redirect: "follow",
-      }
+      { method: "GET", redirect: "follow" }
     );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: UserBusinessResponse = await response.json();
-    return data;
+    if (!response.ok) throw new Error(await parseErrorMessage(response));
+    return await response.json();
   } catch (error) {
     console.error("Error fetching user business services:", error);
     return {

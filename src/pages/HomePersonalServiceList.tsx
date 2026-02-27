@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
-import { getNearbyWorkers } from "../services/api.service";
+import { getNearbyJobs } from "../services/api.service";
 
 // ── Dummy Nearby Cards ───────────────────────────────────────────────────────
 import NearbyMaidCard from "../components/cards/Home Repair/NearByMaidService";
@@ -15,43 +14,40 @@ import MineralWaterSuppliers from "../components/cards/Home Repair/NearByWaterSu
 
 const BRAND = "#00598a";
 const BRAND_DARK = "#004a73";
-const BRAND_DARKER = "#003d5c";
 
 // ============================================================================
-// WORKER INTERFACE
+// JOB INTERFACE
 // ============================================================================
-export interface HomePersonalWorker {
+export interface HomePersonalJob {
     _id: string;
     userId: string;
-    workerId: string;
-    name: string;
-    category: string[];
-    subCategory: string;
-    skill: string;
-    serviceCharge: number;
-    chargeType: "hour" | "day" | "fixed";
-    profilePic?: string;
-    images?: string[];
-    phone?: string;
-    phoneNumber?: string;
-    mobile?: string;
-    contact?: string;
+    title?: string;
+    description: string;
+    category: string;
+    subcategory: string;
+    jobType: "FULL_TIME" | "PART_TIME";
+    servicecharges: string;
+    startDate: string;
+    endDate: string;
     area: string;
     city: string;
     state: string;
     pincode: string;
     latitude: number;
     longitude: number;
+    images?: string[];
+    distance?: string;
     createdAt: string;
     updatedAt: string;
+    status: string;
+    phone?: string;
+    phoneNumber?: string;
+    mobile?: string;
+    contact?: string;
 }
 
-// ── Helper: resolve phone from any field name ────────────────────────────────
-const getWorkerPhone = (worker: any): string =>
-    worker.phone || worker.phoneNumber || worker.mobile || worker.contact || "";
-
 // ============================================================================
-// PHONE POPUP
+// PHONE POPUP COMPONENT
 // ============================================================================
 interface PhonePopupProps {
     phone: string;
@@ -92,7 +88,7 @@ const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
                     <h3 className="text-lg font-bold text-gray-900 line-clamp-1">{name}</h3>
                 </div>
 
-                {/* Phone number */}
+                {/* Phone number display */}
                 <div
                     className="w-full text-center py-3 px-4 rounded-xl"
                     style={{ backgroundColor: "rgba(0,89,138,0.07)", border: "1px solid rgba(0,89,138,0.2)" }}
@@ -100,7 +96,7 @@ const PhonePopup: React.FC<PhonePopupProps> = ({ phone, name, onClose }) => {
                     <p className="text-xl font-bold tracking-wide" style={{ color: BRAND }}>{phone}</p>
                 </div>
 
-                {/* Buttons */}
+                {/* Action buttons */}
                 <div className="grid grid-cols-2 gap-3 w-full">
                     <a
                         href={`tel:${phone}`}
@@ -180,47 +176,8 @@ const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const extractWorkers = (response: any): HomePersonalWorker[] => {
-    if (!response) return [];
-    console.log("🔍 FULL RAW RESPONSE:", response);
-
-    const candidates: Array<{ label: string; value: any }> = [
-        { label: "response.workers",               value: response.workers },
-        { label: "response.data?.workers",         value: response.data?.workers },
-        { label: "response.data (array)",          value: response.data },
-        { label: "response.result",                value: response.result },
-        { label: "response.results",               value: response.results },
-        { label: "response.data?.data",            value: response.data?.data },
-        { label: "response.data?.result",          value: response.data?.result },
-        { label: "response.data?.results",         value: response.data?.results },
-        { label: "response.nearbyWorkers",         value: response.nearbyWorkers },
-        { label: "response.data?.nearbyWorkers",   value: response.data?.nearbyWorkers },
-        { label: "response.services",              value: response.services },
-        { label: "response.data?.services",        value: response.data?.services },
-    ];
-
-    for (const { label, value } of candidates) {
-        if (Array.isArray(value)) {
-            console.log(`✅ Workers found at: ${label} — count: ${value.length}`);
-            if (value.length > 0) {
-                console.log("📞 First worker phone fields:", {
-                    phone: value[0].phone,
-                    phoneNumber: value[0].phoneNumber,
-                    mobile: value[0].mobile,
-                    contact: value[0].contact,
-                });
-            }
-            return value as HomePersonalWorker[];
-        }
-        if (value && typeof value === "object" && !Array.isArray(value) && value._id) {
-            console.log(`✅ Single worker found at: ${label}, wrapping in array`);
-            return [value] as HomePersonalWorker[];
-        }
-    }
-
-    console.warn("⚠️ Could not extract workers. Top-level keys:", Object.keys(response));
-    return [];
-};
+const getJobPhone = (job: HomePersonalJob): string =>
+    job.phone || job.phoneNumber || job.mobile || job.contact || "";
 
 // ============================================================================
 // MAIN COMPONENT
@@ -231,11 +188,11 @@ const HomePersonalServicesList: React.FC = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [nearbyWorkers, setNearbyWorkers] = useState<HomePersonalWorker[]>([]);
+    const [nearbyJobs, setNearbyJobs] = useState<HomePersonalJob[]>([]);
     const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
     const [locationError, setLocationError] = useState("");
     const [fetchingLocation, setFetchingLocation] = useState(false);
-    const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+    const [apiDebugInfo, setApiDebugInfo] = useState<string>("");
     const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
 
     // ── Get user location ────────────────────────────────────────────────────
@@ -250,6 +207,7 @@ const HomePersonalServicesList: React.FC = () => {
             (pos) => {
                 setUserLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
                 setFetchingLocation(false);
+                console.log("📍 User location:", pos.coords.latitude, pos.coords.longitude);
             },
             (err) => {
                 console.error(err);
@@ -260,146 +218,118 @@ const HomePersonalServicesList: React.FC = () => {
         );
     }, []);
 
-    // ── Fetch nearby workers when location ready ─────────────────────────────
+    // ── Fetch nearby JOBS when location ready ────────────────────────────────
     useEffect(() => {
         if (!userLocation) return;
-        const fetch_ = async () => {
+
+        const fetchJobs = async () => {
             setLoading(true);
             setError("");
+            setApiDebugInfo("");
+
             try {
-                const response = await getNearbyWorkers(
-                    userLocation.latitude,
-                    userLocation.longitude,
-                    10,
-                    "home",
-                    subcategory || ""
-                );
-                setNearbyWorkers(extractWorkers(response));
-            } catch (e) {
-                console.error("❌ Error fetching workers:", e);
-                setError("Failed to load nearby workers");
-                setNearbyWorkers([]);
+                const response = await getNearbyJobs(userLocation.latitude, userLocation.longitude);
+
+                if (response?.success && response.jobs) {
+                    let filteredJobs = response.jobs;
+                    if (subcategory) {
+                        filteredJobs = response.jobs.filter((job: HomePersonalJob) =>
+                            job.subcategory?.toLowerCase().includes(subcategory.toLowerCase()) ||
+                            job.category?.toLowerCase().includes(subcategory.toLowerCase())
+                        );
+                    }
+                    setNearbyJobs(filteredJobs);
+                    setApiDebugInfo(`Found ${filteredJobs.length} jobs`);
+                } else if (response?.jobs) {
+                    setNearbyJobs(response.jobs);
+                    setApiDebugInfo(`Found ${response.jobs.length} jobs`);
+                } else if (Array.isArray(response)) {
+                    setNearbyJobs(response);
+                    setApiDebugInfo(`Found ${response.length} jobs`);
+                } else {
+                    setNearbyJobs([]);
+                    setApiDebugInfo("No jobs found in your area");
+                }
+            } catch (e: any) {
+                console.error("❌ Error fetching jobs:", e);
+                setError(`Failed to load nearby jobs: ${e.message}`);
+                setNearbyJobs([]);
+                setApiDebugInfo(`Error: ${e.message}`);
             } finally {
                 setLoading(false);
             }
         };
-        fetch_();
-    }, [userLocation]);
 
-    // ── Navigation handlers ──────────────────────────────────────────────────
-    const handleView = (worker: any) =>
-        navigate(`/home-personal-services/worker/${worker._id || worker.id}`);
+        fetchJobs();
+    }, [userLocation, subcategory]);
+
+    // ── Handlers ─────────────────────────────────────────────────────────────
+    const handleView = (job: HomePersonalJob) => navigate(`/job-details/${job._id}`);
 
     const handleAddPost = () =>
         navigate(subcategory ? `/add-home-service-form?subcategory=${subcategory}` : "/add-home-service-form");
 
-    const openDirections = (worker: HomePersonalWorker) => {
-        if (worker.latitude && worker.longitude)
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${worker.latitude},${worker.longitude}`, "_blank");
-        else if (worker.area || worker.city)
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([worker.area, worker.city, worker.state].filter(Boolean).join(", "))}`, "_blank");
-    };
-
-    const handleCallClick = (e: React.MouseEvent, worker: HomePersonalWorker) => {
+    const handleCallClick = (e: React.MouseEvent, job: HomePersonalJob) => {
         e.stopPropagation();
-        const phone = getWorkerPhone(worker);
-        console.log("📞 Call clicked — resolved phone:", phone);
+        const phone = getJobPhone(job);
         if (phone) {
-            setPhonePopup({ phone, name: worker.name || "Service Worker" });
+            setPhonePopup({ phone, name: job.subcategory || "Service Provider" });
         } else {
-            alert("Phone number not available for this worker.");
+            alert("Phone number not available for this job.");
         }
     };
 
-    const renderDummyCards = () => {
-        const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
-        return <CardComponent onViewDetails={handleView} />;
+    const handleDirectionsClick = (e: React.MouseEvent, job: HomePersonalJob) => {
+        e.stopPropagation();
+        if (job.latitude && job.longitude) {
+            window.open(
+                `https://www.google.com/maps/dir/?api=1&destination=${job.latitude},${job.longitude}`,
+                "_blank"
+            );
+        } else if (job.area || job.city) {
+            const addr = encodeURIComponent([job.area, job.city, job.state].filter(Boolean).join(", "));
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${addr}`, "_blank");
+        } else {
+            alert("Location not available for this job.");
+        }
     };
 
-    // ============================================================================
-    // WORKER CARD
-    // ============================================================================
-    const renderWorkerCard = (worker: HomePersonalWorker) => {
-        const id = worker._id || "";
-        const location = [worker.area, worker.city].filter(Boolean).join(", ") || "Location not set";
-        const imageUrls = (worker.images || []).filter(Boolean) as string[];
-        const isHovered = hoveredCard === id;
-        const phone = getWorkerPhone(worker);
+    // ── Render single JOB card ───────────────────────────────────────────────
+    const renderJobCard = (job: HomePersonalJob) => {
+        const location = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Location not set";
+        const imageUrls = (job.images || []).filter(Boolean) as string[];
+        const phone = getJobPhone(job);
 
         let distance: string | null = null;
-        if (userLocation && worker.latitude && worker.longitude) {
-            const d = calculateDistance(
-                userLocation.latitude, userLocation.longitude,
-                worker.latitude, worker.longitude
-            );
+        if (userLocation && job.latitude && job.longitude) {
+            const d = calculateDistance(userLocation.latitude, userLocation.longitude, job.latitude, job.longitude);
             distance = d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
         }
+        const apiDistance = job.distance && job.distance !== "0.00" ? `${job.distance} km` : null;
 
         return (
             <div
-                key={id}
-                className="bg-white rounded-xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
-                style={{
-                    borderWidth: "1px",
-                    borderStyle: "solid",
-                    borderColor: isHovered ? BRAND : "#f3f4f6",
-                    boxShadow: isHovered
-                        ? "0 8px 24px rgba(0,89,138,0.15)"
-                        : "0 1px 3px rgba(0,0,0,0.06)",
-                    transform: isHovered ? "translateY(-2px)" : "none",
-                }}
-                onMouseEnter={() => setHoveredCard(id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => handleView(worker)}
+                key={job._id}
+                className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer border border-gray-100 group"
+                onClick={() => handleView(job)}
             >
-                {/* ── Image ── */}
-                <div className="relative h-48 overflow-hidden">
-                    {worker.profilePic ? (
-                        <img
-                            src={worker.profilePic}
-                            alt={worker.name}
-                            className="w-full h-full object-cover transition-transform duration-300"
-                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
-                            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                        />
-                    ) : imageUrls.length > 0 ? (
+                {/* ── Image — no badges ── */}
+                <div
+                    className="relative h-48 overflow-hidden"
+                    style={{ background: `linear-gradient(to bottom right, ${BRAND}0D, ${BRAND}1A)` }}
+                >
+                    {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
-                            alt={worker.name}
-                            className="w-full h-full object-cover transition-transform duration-300"
-                            style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
+                            alt={job.subcategory || "Job"}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div
-                            className="w-full h-full flex items-center justify-center transition-colors duration-200"
-                            style={{ backgroundColor: isHovered ? "rgba(0,89,138,0.07)" : "#f3f4f6" }}
-                        >
-                            <span className="text-5xl">🏠</span>
+                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <span className="text-5xl group-hover:scale-110 transition-transform duration-300">🏠</span>
                         </div>
                     )}
-
-                    {/* Live Data badge */}
-                    <div className="absolute top-3 left-3 z-10">
-                        <span
-                            className="inline-flex items-center px-2.5 py-1 text-white text-xs font-bold rounded-md shadow-md"
-                            style={{ backgroundColor: BRAND }}
-                        >
-                            Live Data
-                        </span>
-                    </div>
-
-                    {/* Charge type badge */}
-                    <div className="absolute top-3 right-3 z-10">
-                        <span
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-md shadow-md text-white capitalize"
-                            style={{ backgroundColor: BRAND }}
-                        >
-                            <span className="w-1.5 h-1.5 rounded-full bg-white/80" />
-                            Per {worker.chargeType}
-                        </span>
-                    </div>
-
                     {imageUrls.length > 1 && (
                         <div className="absolute bottom-3 right-3 bg-black/70 text-white text-xs px-2 py-1 rounded-md">
                             1 / {imageUrls.length}
@@ -409,58 +339,44 @@ const HomePersonalServicesList: React.FC = () => {
 
                 {/* ── Body ── */}
                 <div className="p-4 flex flex-col gap-2.5">
-                    <h2
-                        className="text-lg font-semibold line-clamp-1 transition-colors duration-200"
-                        style={{ color: isHovered ? BRAND : "#111827" }}
-                    >
-                        {worker.name || "Unnamed Worker"}
+                    <h2 className="text-lg font-semibold text-gray-900 line-clamp-1 group-hover:text-[#00598a] transition-colors duration-200">
+                        {job.subcategory || "Service"}
                     </h2>
 
-                    {worker.subCategory && (
-                        <p className="text-sm font-medium text-gray-700">{worker.subCategory}</p>
-                    )}
+                    <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
 
                     <p className="text-sm text-gray-500 flex items-start gap-1.5">
                         <span className="shrink-0 mt-0.5">📍</span>
                         <span className="line-clamp-1">{location}</span>
                     </p>
 
-                    {distance && (
-                        <p
-                            className="text-sm font-semibold flex items-center gap-1"
-                            style={{ color: BRAND }}
-                        >
-                            <span>📍</span> {distance} away
+                    {(distance || apiDistance) && (
+                        <p className="text-sm font-semibold text-[#00598a] flex items-center gap-1">
+                            <span>📍</span> {distance || apiDistance} away
                         </p>
                     )}
 
-                    {/* Skill + Charge */}
-                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                        <div className="flex items-center gap-2">
-                            {worker.skill && (
-                                <span className="text-sm text-gray-600 flex items-center gap-1 line-clamp-1">
-                                    🛠️ {worker.skill}
-                                </span>
-                            )}
+                    {/* Price & Duration */}
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <div>
+                            <p className="text-xs text-gray-500">Service Charge</p>
+                            <p className="text-base font-bold text-green-600">₹{job.servicecharges}</p>
                         </div>
-                        {worker.serviceCharge && (
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase">Per {worker.chargeType}</p>
-                                <p
-                                    className="text-base font-bold"
-                                    style={{ color: BRAND }}
-                                >
-                                    ₹{worker.serviceCharge}
-                                </p>
-                            </div>
-                        )}
+                        <div className="text-right">
+                            <p className="text-xs text-gray-500">Duration</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                                {new Date(job.startDate).toLocaleDateString()} -{" "}
+                                {new Date(job.endDate).toLocaleDateString()}
+                            </p>
+                        </div>
                     </div>
 
-                    {/* Directions + Call */}
+                    {/* ── Directions + Call ── */}
                     <div className="grid grid-cols-2 gap-2 pt-3 mt-1">
+                        {/* Directions */}
                         <button
-                            onClick={e => { e.stopPropagation(); openDirections(worker); }}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            onClick={e => handleDirectionsClick(e, job)}
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg font-medium text-xs transition-all duration-200"
                             style={{ border: `2px solid ${BRAND}`, color: BRAND, backgroundColor: "transparent" }}
                             onMouseEnter={e => {
                                 (e.currentTarget as HTMLElement).style.backgroundColor = BRAND;
@@ -471,13 +387,18 @@ const HomePersonalServicesList: React.FC = () => {
                                 (e.currentTarget as HTMLElement).style.color = BRAND;
                             }}
                         >
-                            <span>📍</span> Directions
+                            {/* Navigation / directions icon */}
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                            </svg>
+                            Directions
                         </button>
 
+                        {/* Call */}
                         <button
-                            onClick={e => handleCallClick(e, worker)}
+                            onClick={e => handleCallClick(e, job)}
                             disabled={!phone}
-                            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200"
+                            className="flex items-center justify-center gap-1.5 px-2 py-2.5 rounded-lg font-medium text-xs transition-all duration-200"
                             style={
                                 phone
                                     ? { backgroundColor: BRAND, color: "#fff" }
@@ -487,7 +408,10 @@ const HomePersonalServicesList: React.FC = () => {
                             onMouseLeave={e => { if (phone) (e.currentTarget as HTMLElement).style.backgroundColor = BRAND; }}
                             title={phone ? `Call ${phone}` : "No phone number available"}
                         >
-                            <span>📞</span> Call
+                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                            </svg>
+                            Call
                         </button>
                     </div>
                 </div>
@@ -495,25 +419,32 @@ const HomePersonalServicesList: React.FC = () => {
         );
     };
 
-    // ── Nearby services section ──────────────────────────────────────────────
-    const renderNearbyServices = () => {
+    // ── Dummy cards ──────────────────────────────────────────────────────────
+    const renderDummyCards = () => {
+        const CardComponent = CARD_MAP[resolveCardKey(subcategory)];
+        return <CardComponent onViewDetails={handleView} />;
+    };
+
+    // ── API nearby jobs ──────────────────────────────────────────────────────
+    const renderNearbyJobs = () => {
         if (loading) {
             return (
                 <div className="flex items-center justify-center py-12 bg-white rounded-xl border border-gray-200">
-                    <div
-                        className="animate-spin rounded-full h-8 w-8 border-b-2"
-                        style={{ borderColor: BRAND }}
-                    />
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00598a]" />
                 </div>
             );
         }
 
-        if (nearbyWorkers.length === 0) {
+        if (nearbyJobs.length === 0) {
             return (
                 <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
                     <div className="text-5xl mb-3">🏠</div>
-                    <p className="text-gray-500 font-medium">No workers found in your area.</p>
-                    <p className="text-xs text-gray-400 mt-1">Check browser console for API debug info</p>
+                    <p className="text-gray-500 font-medium">No jobs found in your area.</p>
+                    {apiDebugInfo && (
+                        <p className="text-xs text-gray-400 mt-2 bg-gray-50 p-2 rounded">
+                            Debug: {apiDebugInfo}
+                        </p>
+                    )}
                 </div>
             );
         }
@@ -526,11 +457,11 @@ const HomePersonalServicesList: React.FC = () => {
                         className="inline-flex items-center justify-center min-w-[2rem] h-7 text-white text-sm font-bold rounded-full px-2.5"
                         style={{ backgroundColor: BRAND }}
                     >
-                        {nearbyWorkers.length}
+                        {nearbyJobs.length}
                     </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {nearbyWorkers.map(renderWorkerCard)}
+                    {nearbyJobs.map(renderJobCard)}
                 </div>
             </div>
         );
@@ -540,10 +471,8 @@ const HomePersonalServicesList: React.FC = () => {
     // MAIN RENDER
     // ============================================================================
     return (
-        <div
-            className="min-h-screen"
-            style={{ background: "linear-gradient(to bottom, rgba(0,89,138,0.04), white)" }}
-        >
+        <div className="min-h-screen bg-gradient-to-b from-[#00598a]/5 to-white">
+
             {/* ── Phone Popup ── */}
             {phonePopup && (
                 <PhonePopup
@@ -555,7 +484,7 @@ const HomePersonalServicesList: React.FC = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* Header */}
+                {/* ── Header ── */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h1 className={`${typography.heading.h3} text-gray-800 leading-tight`}>
@@ -570,21 +499,15 @@ const HomePersonalServicesList: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
-                        + Add Post
+                        + Post a Job
                     </button>
                 </div>
 
-                {/* Location status */}
+                {/* ── Location status ── */}
                 {fetchingLocation && (
-                    <div
-                        className="rounded-lg p-3 flex items-center gap-2"
-                        style={{ backgroundColor: "rgba(0,89,138,0.08)", border: "1px solid rgba(0,89,138,0.2)" }}
-                    >
-                        <div
-                            className="animate-spin h-4 w-4 border-2 border-t-transparent rounded-full"
-                            style={{ borderColor: BRAND, borderTopColor: "transparent" }}
-                        />
-                        <span className="text-sm" style={{ color: BRAND }}>Getting your location...</span>
+                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full" />
+                        <span className="text-sm text-[#00598a]">Getting your location...</span>
                     </div>
                 )}
                 {locationError && (
@@ -598,11 +521,20 @@ const HomePersonalServicesList: React.FC = () => {
                     </div>
                 )}
 
+                {/* Debug info */}
+                {apiDebugInfo && !error && (
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                        <p className="text-blue-700 text-xs">API Status: {apiDebugInfo}</p>
+                    </div>
+                )}
+
                 {/* 1. DUMMY CARDS FIRST */}
-                <div className="space-y-4">{renderDummyCards()}</div>
+                <div className="space-y-4">
+                    {renderDummyCards()}
+                </div>
 
                 {/* 2. API DATA SECOND */}
-                {userLocation && !fetchingLocation && renderNearbyServices()}
+                {userLocation && !fetchingLocation && renderNearbyJobs()}
 
             </div>
         </div>

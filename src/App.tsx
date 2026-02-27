@@ -184,26 +184,35 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
-/* ---------------- AppRoutes ---------------- */
+
 const AppRoutes: React.FC = () => {
-    const location = useLocation();
-    const background = location.state?.background;
-    useEffect(() => {
-        const unsubscribe = onMessage(messaging, (payload) => {
-            console.log("🔔 Foreground message:", payload);
+  const location = useLocation();
+  const background = location.state?.background;
 
-            const { title, body } = payload.notification || {};
+  // ✅ FCM foreground messages hook
+  useEffect(() => {
+    // Request notification permission
+    if (Notification.permission !== "granted") {
+      Notification.requestPermission().then(permission => {
+        console.log("Notification permission:", permission);
+      });
+    }
 
-            if (title) {
-                new Notification(title, {
-                    body,
-                    icon: "/logo192.png",
-                });
-            }
+    // Listen for foreground messages
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log("🔔 Foreground message:", payload);
+      const { title, body } = payload.notification || {};
+      if (title && Notification.permission === "granted") {
+        new Notification(title, {
+          body,
+          icon: "/logo192.png",
         });
+      }
+    });
 
-        return () => unsubscribe();
-    }, []);
+    return () => unsubscribe();
+  }, []);
+
 
     return (
         <>

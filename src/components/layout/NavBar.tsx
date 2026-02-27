@@ -186,25 +186,13 @@ const Navbar: React.FC = () => {
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
+
+            {/* ── Logo ── */}
             <div
               onClick={() => navigate("/")}
-              className="
-                flex items-center space-x-2 cursor-pointer
-                transition-all duration-300
-                hover:scale-105
-                group
-              "
+              className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 group"
             >
-              <div
-                className="
-                  w-10 h-10 bg-primary rounded-lg
-                  flex items-center justify-center
-                  transition-all duration-300
-                  group-hover:rotate-6
-                  group-hover:shadow-lg
-                "
-              >
+              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-all duration-300 group-hover:rotate-6 group-hover:shadow-lg">
                 <span className="text-white text-xl">⚡</span>
               </div>
               <h1
@@ -217,19 +205,14 @@ const Navbar: React.FC = () => {
               </h1>
             </div>
 
-            {/* Right Section */}
-            <div className="flex items-center space-x-3">
-              <div
-                className="
-                  transition-all duration-200
-                  hover:scale-110
-                  hover:text-primary
-                "
-              >
-                <LanguageSelector />
-              </div>
+            {/* ── Right Section ── */}
+            <div className="flex items-center space-x-2 sm:space-x-3">
 
-              {/* Desktop Menu */}
+           <div>
+  <LanguageSelector />
+</div>
+
+              {/* ── Desktop-only nav links ── */}
               <div className="hidden lg:flex items-center space-x-1">
                 {accountType === "user" ? (
                   <>
@@ -245,16 +228,10 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* Notification Bell with live count */}
+              {/* ── Notification Bell — all screen sizes ── */}
               <button
                 onClick={handleNotificationClick}
-                className="
-                  relative p-1 text-gray-700
-                  transition-all duration-300
-                  hover:text-primary
-                  hover:scale-110
-                  hover:drop-shadow-lg
-                "
+                className="relative p-1 text-gray-700 transition-all duration-300 hover:text-primary hover:scale-110 hover:drop-shadow-lg"
               >
                 <Bell className="w-6 h-6 hover:animate-pulse" />
                 {unreadCount > 0 && (
@@ -266,23 +243,14 @@ const Navbar: React.FC = () => {
                 )}
               </button>
 
-              {/* Account Toggle Desktop */}
+              {/* ── Account Toggle — desktop only ── */}
               {isAuthenticated && (
                 <div className="hidden lg:flex items-center">
-                  <div
-                    className="
-                      relative flex items-center
-                      bg-gray-100 rounded-full p-1 h-10 w-36
-                      transition-all duration-300
-                      hover:shadow-lg
-                      hover:ring-2 hover:ring-primary/30
-                    "
-                  >
+                  <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/30">
                     <div
-                      className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)]
-                        bg-primary
-                        rounded-full transition-transform duration-300
-                        ${accountType === "user" ? "translate-x-0" : "translate-x-full"}`}
+                      className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${
+                        accountType === "user" ? "translate-x-0" : "translate-x-full"
+                      }`}
                     />
                     <button
                       onClick={() => handleSwitchAccount("user")}
@@ -294,11 +262,7 @@ const Navbar: React.FC = () => {
                     </button>
                     <button
                       onClick={() => handleSwitchAccount("worker")}
-                      className="
-                        relative z-10 w-1/2 text-xs font-semibold
-                        transition-colors duration-200
-                        hover:text-white
-                      "
+                      className="relative z-10 w-1/2 text-xs font-semibold transition-colors duration-200 hover:text-white"
                     >
                       Worker
                     </button>
@@ -306,29 +270,24 @@ const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* Auth / Profile — always shows image or initial letter circle */}
-              {!isAuthenticated ? (
+              {/* ── Login button (unauthenticated) ──
+                  FIX: was "hidden lg:block" — now visible on ALL screen sizes.
+                  On mobile it shows next to the hamburger. ── */}
+              {!isAuthenticated && (
                 <Button
                   variant="gradient-blue"
                   size="md"
-                  className="hidden lg:block"
                   onClick={() => setShowWelcomeModal(true)}
                 >
                   Login
                 </Button>
-              ) : (
+              )}
+
+              {/* ── Profile avatar — desktop only when authenticated ── */}
+              {isAuthenticated && (
                 <button
                   onClick={handleProfileClick}
-                  className="
-                    hidden lg:flex items-center justify-center
-                    w-10 h-10 rounded-full overflow-hidden
-                    border-2 border-transparent
-                    transition-all duration-300
-                    hover:border-primary
-                    hover:scale-110
-                    hover:shadow-xl
-                    flex-shrink-0
-                  "
+                  className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:scale-110 hover:shadow-xl flex-shrink-0"
                   title={userName}
                 >
                   {profilePic ? (
@@ -349,13 +308,20 @@ const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* Mobile Menu Toggle */}
+              {/* ── Hamburger toggle — mobile only ──
+                  FIX: was "lg:hidden" but the right-section flex was hiding
+                  everything. Button is now explicitly block on mobile. ── */}
               <button
-                className="lg:hidden text-gray-700"
+                className="flex lg:hidden items-center justify-center text-gray-700 p-1"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                aria-label="Toggle menu"
               >
-                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                {isMobileMenuOpen
+                  ? <X className="w-6 h-6" />
+                  : <Menu className="w-6 h-6" />
+                }
               </button>
+
             </div>
           </div>
         </div>
@@ -363,6 +329,37 @@ const Navbar: React.FC = () => {
         {/* ================= MOBILE MENU ================= */}
         {isMobileMenuOpen && (
           <div className="lg:hidden bg-white border-t shadow-md">
+
+            {/* ── Account type toggle — mobile ── */}
+            {isAuthenticated && (
+              <div className="px-4 py-3 border-b border-gray-100">
+                <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-full max-w-xs mx-auto">
+                  <div
+                    className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${
+                      accountType === "user" ? "translate-x-0" : "translate-x-full"
+                    }`}
+                  />
+                  <button
+                    onClick={() => handleSwitchAccount("user")}
+                    className={`relative z-10 w-1/2 text-sm font-semibold ${
+                      accountType === "user" ? "text-white" : "text-primary"
+                    }`}
+                  >
+                    Customer
+                  </button>
+                  <button
+                    onClick={() => handleSwitchAccount("worker")}
+                    className={`relative z-10 w-1/2 text-sm font-semibold ${
+                      accountType === "worker" ? "text-white" : "text-primary"
+                    }`}
+                  >
+                    Worker
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Nav links ── */}
             {accountType === "user" ? (
               <>
                 <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
@@ -376,16 +373,11 @@ const Navbar: React.FC = () => {
               </>
             )}
 
-            {/* Mobile profile row */}
+            {/* ── Mobile profile row (authenticated) ── */}
             {isAuthenticated && (
               <button
                 onClick={handleProfileClick}
-                className="
-                  group w-full text-left px-4 py-3
-                  flex items-center gap-3
-                  text-gray-700 hover:bg-gray-100 hover:text-primary
-                  transition-all duration-200
-                "
+                className="group w-full text-left px-4 py-3 flex items-center gap-3 text-gray-700 hover:bg-gray-100 hover:text-primary transition-all duration-200"
               >
                 <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
                   {profilePic ? (
@@ -410,18 +402,14 @@ const Navbar: React.FC = () => {
               </button>
             )}
 
-            {/* Mobile notification item with count */}
+            {/* ── Mobile notification item with count ── */}
             <button
               onClick={handleNotificationClick}
-              className={`
-                group w-full text-left px-4 py-3
-                flex items-center gap-3
-                transition-all duration-200
-                ${location.pathname === "/notifications"
+              className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${
+                location.pathname === "/notifications"
                   ? "bg-primary/10 text-primary font-semibold"
                   : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                }
-              `}
+              }`}
             >
               <div className="relative">
                 <Bell className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
@@ -440,6 +428,24 @@ const Navbar: React.FC = () => {
                 </span>
               )}
             </button>
+
+            {/* ── Mobile login button (unauthenticated) ── */}
+            {!isAuthenticated && (
+              <div className="px-4 py-3 border-t border-gray-100">
+                <Button
+                  variant="gradient-blue"
+                  size="md"
+                  className="w-full"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setShowWelcomeModal(true);
+                  }}
+                >
+                  Login
+                </Button>
+              </div>
+            )}
+
           </div>
         )}
       </header>
@@ -513,16 +519,11 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onCl
   return (
     <button
       onClick={onClick}
-      className={`
-        group flex items-center gap-2
-        px-3 py-1.5 rounded-xl
-        text-sm font-medium
-        transition-all duration-300
-        ${isActive
+      className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ${
+        isActive
           ? "bg-[#00598a]/15 text-[#00598a] shadow-sm"
           : "text-gray-700 hover:bg-[#00598a]/10"
-        }
-      `}
+      }`}
     >
       {imgSrc ? (
         <img
@@ -547,15 +548,11 @@ const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path
   return (
     <button
       onClick={onClick}
-      className={`
-        group w-full text-left px-4 py-3
-        flex items-center gap-3
-        transition-all duration-200
-        ${isActive
+      className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${
+        isActive
           ? "bg-primary/10 text-primary font-semibold"
           : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-        }
-      `}
+      }`}
     >
       {imgSrc ? (
         <img

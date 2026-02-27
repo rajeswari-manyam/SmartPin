@@ -79,39 +79,39 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
     };
 
     // ============================================================================
-    // CARD — matches HospitalUserService card layout
+    // CARD — matches WeddingUserService hover style
     // ============================================================================
     const renderCard = (service: SportsWorker) => {
-        const id = service._id || "";
-        const imageUrls = (service.images || []).filter(Boolean) as string[];
-        const location = [service.area, service.city, service.state]
-            .filter(Boolean).join(", ") || "Location not specified";
+        const id          = service._id || "";
+        const imageUrls   = (service.images || []).filter(Boolean) as string[];
+        const location    = [service.area, service.city, service.state].filter(Boolean).join(", ") || "Location not specified";
         const servicesList = service.services || [];
-        const icon = getServiceIcon(service.subCategory);
-        const isActive = service.availability !== false;
-        const phone = (service as any).phone || (service as any).contactNumber || (service as any).phoneNumber;
+        const icon        = getServiceIcon(service.subCategory);
+        const isActive    = service.availability !== false;
+        const phone       = (service as any).phone || (service as any).contactNumber || (service as any).phoneNumber;
 
         return (
             <div
                 key={id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group
+                           hover:shadow-lg hover:border-[#00598a]/30 transition-all duration-200 cursor-pointer"
             >
                 {/* ── Image ── */}
-                <div className="relative h-52 bg-gray-100">
+                <div className="relative h-52 bg-gray-100 overflow-hidden">
                     {imageUrls.length > 0 ? (
                         <img
                             src={imageUrls[0]}
                             alt={service.serviceName || "Service"}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-blue-600/5">
+                        <div className="w-full h-full flex items-center justify-center bg-[#00598a]/5 group-hover:bg-[#00598a]/8 transition-colors duration-200">
                             <span className="text-6xl">{icon}</span>
                         </div>
                     )}
 
-                    {/* SubCategory badge — bottom left over image */}
+                    {/* SubCategory badge — bottom left */}
                     <div className="absolute bottom-3 left-3">
                         <span className="bg-black/60 text-white text-xs font-semibold px-3 py-1.5 rounded-lg backdrop-blur-sm">
                             {service.subCategory || "Sports"}
@@ -119,7 +119,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                     </div>
 
                     {/* Action menu — top right */}
-                    <div className="absolute top-3 right-3">
+                    <div className="absolute top-3 right-3" onClick={e => e.stopPropagation()}>
                         {deletingId === id ? (
                             <div className="bg-white rounded-lg p-2 shadow-lg">
                                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-600" />
@@ -137,19 +137,23 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                 <div className="p-4">
 
                     {/* Name */}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate">
+                    <h3 className="text-lg font-bold text-gray-900 mb-1 truncate group-hover:text-[#00598a] transition-colors duration-200">
                         {service.serviceName || "Unnamed Service"}
                     </h3>
 
                     {/* Location */}
                     <div className="flex items-center gap-1.5 mb-3">
-                        <span className="text-red-500 text-sm">📍</span>
+                        <span className="text-sm">📍</span>
                         <p className="text-sm text-gray-500 line-clamp-1">{location}</p>
                     </div>
 
-                    {/* SubCategory pill + Available status — side by side */}
+                    {/* SubCategory pill + Available status */}
                     <div className="flex items-center gap-2 mb-3">
-                        <span className="flex-1 text-center text-sm font-medium text-blue-600 bg-blue-600/8 border border-blue-600/20 px-3 py-1.5 rounded-full truncate">
+                        <span
+                            className="flex-1 text-center text-sm font-medium px-3 py-1.5 rounded-full truncate border transition-colors duration-200
+                                       text-[#00598a] border-[#00598a]/20 group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]"
+                            style={{ backgroundColor: "rgba(0,89,138,0.06)" }}
+                        >
                             {service.subCategory || "Sports & Fitness"}
                         </span>
                         <span className={`flex items-center gap-1.5 text-sm font-semibold px-3 py-1.5 rounded-full border ${
@@ -171,7 +175,10 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                     {!service.description && servicesList.length > 0 && (
                         <div className="flex flex-wrap gap-1 mb-3">
                             {servicesList.slice(0, 3).map((s, idx) => (
-                                <span key={idx} className="text-xs bg-blue-600/5 text-blue-700 px-2 py-0.5 rounded-full">
+                                <span key={idx}
+                                    className="text-xs px-2 py-0.5 rounded-full border transition-colors duration-200
+                                               bg-[#00598a]/6 text-[#00598a] border-[#00598a]/20
+                                               group-hover:bg-[#00598a] group-hover:text-white group-hover:border-[#00598a]">
                                     {s}
                                 </span>
                             ))}
@@ -197,7 +204,7 @@ const SportsUserService: React.FC<SportsUserServiceProps> = ({
                                 🏅 {service.experience} yrs exp
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full">
+                            <span className="inline-flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 text-yellow-700 text-sm font-semibold px-3 py-1 rounded-full">
                                 🏃 {service.subCategory || "Sports"}
                             </span>
                         )}

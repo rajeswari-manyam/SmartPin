@@ -20,7 +20,7 @@ interface SubCategoryGroup {
 }
 interface FormData {
   title: string;
-  category: string;
+  category: string;       // stores category id for UI filtering
   subcategory: string;
   jobType: "FULL_TIME" | "PART_TIME";
   servicecharges: string;
@@ -118,6 +118,10 @@ const PostJob: React.FC = () => {
     return group?.items || [];
   };
   const filteredSubcategories = getFilteredSubcategories();
+
+  // ── Helper: resolve category id → name ───────────────────────────────────
+  const getCategoryName = (categoryId: string): string =>
+    categories.find(c => c.id === categoryId)?.name || categoryId;
 
   useEffect(() => {
     const prefillDataStr = localStorage.getItem("jobPrefillData");
@@ -248,19 +252,25 @@ const PostJob: React.FC = () => {
     if (!formData.area || !formData.city || !formData.state || !formData.pincode) { setError("Please fill in all location fields"); return; }
     if (!formData.latitude || !formData.longitude) { setError("Location coordinates not detected. Please check your address or use Auto Detect."); return; }
     if (!user?._id) { setError("User not logged in. Please log in first."); return; }
+
     try {
       setIsSubmitting(true);
+
+      // ✅ Resolve category id → name before sending to backend
+      const categoryName = getCategoryName(formData.category);
+
       const jobData: CreateJobPayload = {
         userId: user._id,
         name: localStorage.getItem("userName") || "",
         title: formData.title.trim(),
         description: formData.description.trim(),
-        category: formData.category.trim(),
+        category: categoryName,          // ✅ Send "Carpenters" not "3"
         subcategory: formData.subcategory.trim() || undefined,
         jobType: formData.jobType,
         servicecharges: formData.servicecharges,
         startDate: formData.startDate,
         endDate: formData.endDate,
+        phone: localStorage.getItem("userPhone") || "",
         area: formData.area.trim(),
         city: formData.city.trim(),
         state: formData.state.trim(),
@@ -269,6 +279,7 @@ const PostJob: React.FC = () => {
         longitude: formData.longitude!,
         images: formData.images,
       };
+
       const response = await createJob(jobData);
       if (response.success || response.data?._id) {
         setSuccessMessage("Job posted successfully!");
@@ -369,6 +380,12 @@ const PostJob: React.FC = () => {
                 options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
                 onChange={(val) => setFormData(prev => ({ ...prev, category: val, subcategory: "" }))}
               />
+              {/* Preview resolved name so user can verify */}
+              {formData.category && (
+                <p className="mt-1 text-xs text-gray-400">
+                  Will save as: <span className="font-semibold text-gray-600">{getCategoryName(formData.category)}</span>
+                </p>
+              )}
             </div>
             <div>
               <FieldLabel>Subcategory</FieldLabel>
@@ -476,7 +493,6 @@ const PostJob: React.FC = () => {
             </div>
           </div>
 
-          {/* Tip */}
           {!formData.latitude && !formData.longitude && (
             <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
               <p className={`${typography.body.small} text-amber-800`}>

@@ -7,23 +7,54 @@ import { useAccount } from "../context/AccountContext";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 
-// ── Property type options with icon keys matching SUBCATEGORY_ICONS ──────────
+// ── Options ──────────────────────────────────────────────────────────────────
+const categoryOptions = [
+    { name: 'Residential',  icon: SUBCATEGORY_ICONS['Property Dealers']         },
+    { name: 'Commercial',   icon: SUBCATEGORY_ICONS['Builders Developers']       },
+    { name: 'Industrial',   icon: SUBCATEGORY_ICONS['Construction Contractors']  },
+    { name: 'Agricultural', icon: SUBCATEGORY_ICONS['Interior Designers']        },
+];
+
+const subCategoryMap: Record<string, { name: string; icon: any }[]> = {
+    Residential: [
+        { name: 'Apartment',          icon: SUBCATEGORY_ICONS['Property Dealers']        },
+        { name: 'Villa',              icon: SUBCATEGORY_ICONS['Rent Lease Listings']      },
+        { name: 'Independent House',  icon: SUBCATEGORY_ICONS['Builders Developers']      },
+        { name: 'Plot',               icon: SUBCATEGORY_ICONS['Construction Contractors'] },
+        { name: 'Studio',             icon: SUBCATEGORY_ICONS['Interior Designers']       },
+    ],
+    Commercial: [
+        { name: 'Office Space', icon: SUBCATEGORY_ICONS['Property Dealers']        },
+        { name: 'Retail Shop',  icon: SUBCATEGORY_ICONS['Rent Lease Listings']      },
+        { name: 'Warehouse',    icon: SUBCATEGORY_ICONS['Builders Developers']      },
+        { name: 'Showroom',     icon: SUBCATEGORY_ICONS['Construction Contractors'] },
+    ],
+    Industrial: [
+        { name: 'Factory',        icon: SUBCATEGORY_ICONS['Property Dealers']   },
+        { name: 'Industrial Plot', icon: SUBCATEGORY_ICONS['Builders Developers'] },
+    ],
+    Agricultural: [
+        { name: 'Farmland',   icon: SUBCATEGORY_ICONS['Property Dealers']      },
+        { name: 'Farm House', icon: SUBCATEGORY_ICONS['Rent Lease Listings']   },
+    ],
+};
+
 const propertyTypeOptions = [
-    { name: 'Apartment',         icon: SUBCATEGORY_ICONS['Property Dealers']         },
-    { name: 'Villa',             icon: SUBCATEGORY_ICONS['Rent Lease Listings']       },
-    { name: 'Independent House', icon: SUBCATEGORY_ICONS['Builders Developers']       },
-    { name: 'Plot',              icon: SUBCATEGORY_ICONS['Construction Contractors']  },
-    { name: 'Commercial',        icon: SUBCATEGORY_ICONS['Interior Designers']        },
-    { name: 'Office Space',      icon: SUBCATEGORY_ICONS['Interior Designers']        },
+    { name: 'Apartment',         icon: SUBCATEGORY_ICONS['Property Dealers']        },
+    { name: 'Villa',             icon: SUBCATEGORY_ICONS['Rent Lease Listings']      },
+    { name: 'Independent House', icon: SUBCATEGORY_ICONS['Builders Developers']      },
+    { name: 'Plot',              icon: SUBCATEGORY_ICONS['Construction Contractors'] },
+    { name: 'Commercial',        icon: SUBCATEGORY_ICONS['Interior Designers']       },
+    { name: 'Office Space',      icon: SUBCATEGORY_ICONS['Interior Designers']       },
 ];
 
 const listingTypeOptions = [
-    { name: 'Rent',  icon: SUBCATEGORY_ICONS['Rent Lease Listings']  },
-    { name: 'Sale',  icon: SUBCATEGORY_ICONS['Property Dealers']     },
-    { name: 'Lease', icon: SUBCATEGORY_ICONS['Builders Developers']  },
+    { name: 'Rent',  icon: SUBCATEGORY_ICONS['Rent Lease Listings'] },
+    { name: 'Sale',  icon: SUBCATEGORY_ICONS['Property Dealers']    },
+    { name: 'Lease', icon: SUBCATEGORY_ICONS['Builders Developers'] },
 ];
 
-const furnishingStatusOptions = ['Fully-Furnished', 'Semi-Furnished', 'Unfurnished'];
+const furnishingStatusOptions  = ['Fully-Furnished', 'Semi-Furnished', 'Unfurnished'];
 const availabilityStatusOptions = ['Available', 'Sold', 'Rented', 'Under Construction'];
 
 // ============================================================================
@@ -119,6 +150,8 @@ const RealEstateForm = () => {
 
     const [formData, setFormData] = useState({
         userId: resolveUserId(),
+        category: categoryOptions[0].name,
+        subCategory: subCategoryMap[categoryOptions[0].name][0].name,
         name: '',
         propertyType: propertyTypeOptions[0].name,
         listingType: listingTypeOptions[0].name,
@@ -147,6 +180,9 @@ const RealEstateForm = () => {
     const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
     const isGPSDetected = useRef(false);
 
+    // Derived sub-category options based on selected category
+    const currentSubCategoryOptions = subCategoryMap[formData.category] || [];
+
     // ── Fetch for edit ───────────────────────────────────────────────────────
     useEffect(() => {
         if (!editId) return;
@@ -157,9 +193,12 @@ const RealEstateForm = () => {
                 if (!response.success || !response.data) throw new Error('Service not found');
                 const data = Array.isArray(response.data) ? response.data[0] : response.data;
                 if (!data) throw new Error('Service not found');
+                const cat = data.category || categoryOptions[0].name;
                 setFormData(prev => ({
                     ...prev,
                     userId: data.userId || prev.userId,
+                    category: cat,
+                    subCategory: data.subCategory || (subCategoryMap[cat]?.[0]?.name ?? ''),
                     name: data.name || '',
                     propertyType: data.propertyType || propertyTypeOptions[0].name,
                     listingType: data.listingType || listingTypeOptions[0].name,
@@ -204,6 +243,12 @@ const RealEstateForm = () => {
         const t = setTimeout(detect, 1000);
         return () => clearTimeout(t);
     }, [formData.address, formData.area, formData.city, formData.state, formData.pincode]);
+
+    // ── When category changes, reset subCategory to first option ────────────
+    const handleCategoryChange = (val: string) => {
+        const firstSub = subCategoryMap[val]?.[0]?.name ?? '';
+        setFormData(prev => ({ ...prev, category: val, subCategory: firstSub }));
+    };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -295,6 +340,8 @@ const RealEstateForm = () => {
 
             const fd = new FormData();
             fd.append('userId', uid);
+            fd.append('category', formData.category);
+            fd.append('subCategory', formData.subCategory);
             fd.append('name', formData.name);
             fd.append('propertyType', formData.propertyType);
             fd.append('listingType', formData.listingType);
@@ -410,17 +457,43 @@ const RealEstateForm = () => {
                 )}
 
                 {/* ─── 1. BASIC INFO ─── */}
-                <SectionCard>
+                <SectionCard title="Basic Information">
+                    {/* Row 1: Owner Name */}
+                    <div>
+                        <FieldLabel required>Owner / Agent Name</FieldLabel>
+                        <input
+                            type="text" name="name" value={formData.name}
+                            onChange={handleInputChange} placeholder="Enter name"
+                            className={inputBase}
+                        />
+                    </div>
+
+                    {/* Row 2: Category + Sub-Category */}
                     <TwoCol>
                         <div>
-                            <FieldLabel required>Owner / Agent Name</FieldLabel>
-                            <input type="text" name="name" value={formData.name}
-                                onChange={handleInputChange} placeholder="Enter name" className={inputBase} />
+                            <FieldLabel required>Category</FieldLabel>
+                            <IconSelect
+                                label="Category"
+                                value={formData.category}
+                                placeholder="Select category"
+                                options={categoryOptions}
+                                onChange={handleCategoryChange}
+                            />
                         </div>
-                        <div />
+                        <div>
+                            <FieldLabel required>Sub-Category</FieldLabel>
+                            <IconSelect
+                                label="Sub-Category"
+                                value={formData.subCategory}
+                                placeholder="Select sub-category"
+                                options={currentSubCategoryOptions}
+                                onChange={(val) => setFormData(prev => ({ ...prev, subCategory: val }))}
+                            />
+                        </div>
                     </TwoCol>
+
+                    {/* Row 3: Property Type + Listing Type */}
                     <TwoCol>
-                        {/* ── Property Type — IconSelect ── */}
                         <div>
                             <FieldLabel required>Property Type</FieldLabel>
                             <IconSelect
@@ -431,8 +504,6 @@ const RealEstateForm = () => {
                                 onChange={(val) => setFormData(prev => ({ ...prev, propertyType: val }))}
                             />
                         </div>
-
-                        {/* ── Listing Type — IconSelect ── */}
                         <div>
                             <FieldLabel required>Listing Type</FieldLabel>
                             <IconSelect
@@ -519,16 +590,13 @@ const RealEstateForm = () => {
 
                 {/* ─── 4. DESCRIPTION ─── */}
                 <SectionCard title="Property Description">
-                    <TwoCol>
-                        <div>
-                            <FieldLabel>Description</FieldLabel>
-                            <textarea name="description" value={formData.description}
-                                onChange={handleInputChange} rows={4}
-                                placeholder="2BHK flat near metro station, prime location..."
-                                className={inputBase + ' resize-none'} />
-                        </div>
-                        <div />
-                    </TwoCol>
+                    <div>
+                        <FieldLabel>Description</FieldLabel>
+                        <textarea name="description" value={formData.description}
+                            onChange={handleInputChange} rows={4}
+                            placeholder="2BHK flat near metro station, prime location..."
+                            className={inputBase + ' resize-none'} />
+                    </div>
                 </SectionCard>
 
                 {/* ─── 5. LOCATION ─── */}
