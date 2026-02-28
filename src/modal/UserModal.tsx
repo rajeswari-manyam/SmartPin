@@ -4,8 +4,9 @@ import Button from "../components/ui/Buttons";
 import { API_BASE_URL } from "../services/api.service";
 
 interface UserModalProps {
-    phoneNumber: string;
+    phoneNumber: string;   // kept for compatibility — pass "" for email-based login
     userId: string;
+    email?: string;        // pass email here for email-based login
     onComplete: (userName: string) => void;
     onSkip?: () => void;
 }
@@ -13,6 +14,7 @@ interface UserModalProps {
 const UserModal: React.FC<UserModalProps> = ({
     phoneNumber,
     userId,
+    email,
     onComplete,
     onSkip
 }) => {
@@ -22,6 +24,10 @@ const UserModal: React.FC<UserModalProps> = ({
     const [latitude, setLatitude] = React.useState<number | null>(null);
     const [longitude, setLongitude] = React.useState<number | null>(null);
     const [locationError, setLocationError] = React.useState<string | null>(null);
+
+    // Show email if available, otherwise phone
+    const contactLabel = email ? "Registered Email" : "Registered Phone";
+    const contactValue = email || phoneNumber || "";
 
     React.useEffect(() => {
         if (navigator.geolocation) {
@@ -61,13 +67,12 @@ const UserModal: React.FC<UserModalProps> = ({
             setIsSubmitting(true);
             setError(null);
 
-            const updateData: Record<string, string> = {
-                name: name.trim(),
-            };
+            const formData = new FormData();
+            formData.append("name", name.trim());
 
             if (latitude !== null && longitude !== null) {
-                updateData.latitude = latitude.toString();
-                updateData.longitude = longitude.toString();
+                formData.append("latitude", latitude.toString());
+                formData.append("longitude", longitude.toString());
                 console.log("📍 Including location in update:", { latitude, longitude });
             } else {
                 console.log("⚠️ No location available, updating name only");
@@ -75,10 +80,7 @@ const UserModal: React.FC<UserModalProps> = ({
 
             const response = await fetch(`${API_BASE_URL}/updateUserById/${userId}`, {
                 method: "PUT",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: new URLSearchParams(updateData),
+                body: formData,
             });
 
             const result = await response.json();
@@ -89,12 +91,16 @@ const UserModal: React.FC<UserModalProps> = ({
 
                 const existingUserData = localStorage.getItem("userData");
                 if (existingUserData) {
-                    const userData = JSON.parse(existingUserData);
-                    userData.name = name.trim();
-                    localStorage.setItem("userData", JSON.stringify(userData));
+                    try {
+                        const userData = JSON.parse(existingUserData);
+                        userData.name = name.trim();
+                        localStorage.setItem("userData", JSON.stringify(userData));
+                    } catch {
+                        // ignore parse errors
+                    }
                 }
 
-                console.log("✅ Name updated successfully:", result);
+                console.log("✅ Name updated successfully:", result.data);
                 onComplete(name.trim());
             } else {
                 setError(result.message || "Failed to update name");
@@ -117,9 +123,9 @@ const UserModal: React.FC<UserModalProps> = ({
     };
 
     return (
-        // ✅ Removed backdrop overlay (no bg-black/50 or backdrop-blur-sm)
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden animate-scale-in">
+                {/* Header */}
                 <div className="bg-[#00598a] px-6 py-8 text-center">
                     <div className="mx-auto w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mb-4">
                         <span className="text-4xl">😊</span>
@@ -132,6 +138,7 @@ const UserModal: React.FC<UserModalProps> = ({
                     </p>
                 </div>
 
+                {/* Form */}
                 <form onSubmit={handleSubmit} className="p-6">
                     <div className="mb-6">
                         <label
@@ -158,32 +165,33 @@ const UserModal: React.FC<UserModalProps> = ({
                         )}
                     </div>
 
-                    <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
-                        <p className="text-xs text-gray-500 mb-1">Registered Phone</p>
-                        {/* ✅ Removed "+91" prefix */}
-                        <p className="text-sm font-semibold text-gray-900">
-                            {phoneNumber}
-                        </p>
+                    {/* Contact info — shows email or phone */}
+                    {contactValue && (
+                        <div className="mb-6 p-3 bg-[#F0F0F0] rounded-lg">
+                            <p className="text-xs text-gray-500 mb-1">{contactLabel}</p>
+                            <p className="text-sm font-semibold text-gray-900 break-all">
+                                {contactValue}
+                            </p>
 
-                        {latitude && longitude ? (
-                            <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                                <span>📍</span>
-                                Location detected
-                            </p>
-                        ) : locationError ? (
-                            <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
-                                <span>⚠️</span>
-                                {locationError}
-                            </p>
-                        ) : (
-                            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <span>📍</span>
-                                Detecting location...
-                            </p>
-                        )}
-                    </div>
+                            {latitude && longitude ? (
+                                <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                                    <span>📍</span>
+                                    Location detected
+                                </p>
+                            ) : locationError ? (
+                                <p className="text-xs text-amber-600 mt-2 flex items-center gap-1">
+                                    <span>⚠️</span>
+                                    {locationError}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                                    <span>📍</span>
+                                    Detecting location...
+                                </p>
+                            )}
+                        </div>
+                    )}
 
-                    {/* ✅ Removed "Skip for now" button */}
                     <Button
                         type="submit"
                         disabled={isSubmitting || !name.trim()}
@@ -193,6 +201,7 @@ const UserModal: React.FC<UserModalProps> = ({
                     </Button>
                 </form>
 
+                {/* Skip / Close button */}
                 <Button
                     onClick={handleSkip}
                     disabled={isSubmitting}

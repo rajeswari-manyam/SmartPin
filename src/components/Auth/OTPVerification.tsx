@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import VoiceService from "../../services/voiceService";
@@ -10,20 +9,21 @@ import { extractDigits } from "../../utils/OTPUtils";
 import { verifyOtp, resendOtp, getUserById } from "../../services/api.service";
 import { getFcmToken } from "../../lib/fcm";
 
-interface VoiceRecognitionResult {
-    transcript: string;
-    confidence: number;
-    isFinal: boolean;
-}
-
+// ✅ Match exactly the User type defined in AuthContext
 interface User {
     id?: string;
-    _id?: string;
-    email?: string;
+    _id: string;        // required to match AuthContext User
+    email: string;      // required to match AuthContext User
     phone?: string;
     name?: string;
     token?: string;
     fcmToken?: string;
+    isVerified: boolean;
+    role?: "USER" | "WORKER" | "user" | "worker"; // ✅ typed role
+    latitude?: string;
+    longitude?: string;
+    workerId?: string;
+    hasWorkerProfile?: boolean;
 }
 
 interface OTPVerificationProps {
@@ -38,7 +38,14 @@ interface OTPVerifyResponse {
     success: boolean;
     message?: string;
     userId?: string;
-    user?: User;
+    user?: {
+        id?: string;
+        _id?: string;
+        email?: string;
+        name?: string;
+        token?: string;
+        role?: string;
+    };
     token?: string;
     data?: any;
 }
@@ -59,20 +66,30 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
     const [userId, setUserId] = useState<string>("");
 
-    const [fcmToken, setFcmToken] = useState<string>("");
-
     const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const voiceService = VoiceService.getInstance();
     const navigate = useNavigate();
     const { login } = useAuth();
+    const fcmFetchedRef = useRef(false);
 
-    // ------------------- GET FCM TOKEN (ONCE) -------------------
+    // ✅ Ref guard prevents triple-firing (state updates are async, refs are sync)
+    const isVerifyingRef = useRef(false);
+
+    // ✅ Always returns a non-undefined role string safe for both User type and localStorage
+    const normalizeRole = (role?: string | null): "USER" | "WORKER" => {
+        if (!role) return "USER";
+        return role.toUpperCase() === "WORKER" ? "WORKER" : "USER";
+    };
+
+    // ------------------- FCM TOKEN FETCH -------------------
     useEffect(() => {
+        if (fcmFetchedRef.current) return;
+        fcmFetchedRef.current = true;
+
         const fetchFcm = async () => {
             try {
                 const token = await getFcmToken();
                 if (token) {
-                    setFcmToken(token);
                     localStorage.setItem("fcmToken", token);
                     console.log("🔥 FCM Token:", token);
                 }
@@ -87,7 +104,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     // ------------------- AUTO VERIFY OTP -------------------
     useEffect(() => {
         const otpString = otp.join("");
-        if (otpString.length === 6 && !isVerifying) {
+        if (otpString.length === 6 && !isVerifyingRef.current) {
             handleVerifyOTP(otpString);
         }
     }, [otp]);
@@ -122,8 +139,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         }
     }, [timer, showSuccess, showFirstTimeModal]);
 
-    const isValidMongoId = (id: string) =>
-        /^[a-f\d]{24}$/i.test(id);
+    const isValidMongoId = (id: string) => /^[a-f\d]{24}$/i.test(id);
 
     const extractUserId = (res: OTPVerifyResponse): string => {
         const ids = [
@@ -141,42 +157,45 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     // ------------------- VERIFY OTP -------------------
     const handleVerifyOTP = async (otpString: string) => {
-        if (isVerifying) return;
+        if (isVerifyingRef.current) return;
+        isVerifyingRef.current = true;
+        setIsVerifying(true);
 
         try {
-            setIsVerifying(true);
+            const fcmToken = localStorage.getItem("fcmToken") || "";
 
-            const response = await verifyOtp({
+            console.log("📤 Sending verify-otp:", {
                 email,
                 otp: otpString,
-                fcmToken: fcmToken || localStorage.getItem("fcmToken") || "",
+                fcmToken: fcmToken ? "present" : "skipped",
             });
 
+            const response = await verifyOtp({ email, otp: otpString, fcmToken });
+
             if (!response.success) {
-                throw new Error(response.message);
+                throw new Error(response.message || "OTP verification failed");
             }
 
             const extractedId = extractUserId(response);
-            if (!extractedId) throw new Error("Invalid user");
+            if (!extractedId) throw new Error("Invalid user ID in response");
 
             setUserId(extractedId);
             localStorage.setItem("userId", extractedId);
             localStorage.setItem("userEmail", email);
+            localStorage.setItem("role", "USER");
 
-            const token =
-                response.token ||
-                response.user?.token ||
-                response.data?.token;
-
+            const token = response.token || response.user?.token || response.data?.token;
             if (token) localStorage.setItem("token", token);
 
             await checkUserProfileAndProceed(extractedId);
 
-        } catch (err) {
-            alert("Invalid OTP. Try again.");
+        } catch (err: any) {
+            console.error("❌ OTP verification failed:", err);
+            alert(err?.message || "Invalid OTP. Try again.");
             setOtp(["", "", "", "", "", ""]);
             inputRefs.current[0]?.focus();
         } finally {
+            isVerifyingRef.current = false;
             setIsVerifying(false);
         }
     };
@@ -187,27 +206,72 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             const res = await getUserById(uid);
             const userData = res?.data;
 
-            const user = {
+            // Treat missing name or default "User" placeholder as first-time user
+            const hasName =
+                userData?.name &&
+                userData.name.trim().length > 0 &&
+                userData.name.trim() !== "User";
+
+            if (!hasName) {
+                console.log("🆕 First-time user, showing modal");
+                setShowFirstTimeModal(true);
+                return;
+            }
+
+            // ✅ Cast to any since api.service.ts User type doesn't include role,
+            // but the API response may still return it
+            const rawRole = (userData as any)?.role as string | undefined;
+            const role = normalizeRole(rawRole || localStorage.getItem("role"));
+            localStorage.setItem("role", role);
+
+            const user: User = {
                 _id: uid,
                 id: uid,
-                phone: email,
-                name: userData?.name || "User",
+                email,
+                name: userData.name,
                 isVerified: true,
+                role,                       // ✅ correctly typed
                 latitude: userData?.latitude,
                 longitude: userData?.longitude,
             };
 
+            console.log("✅ Returning user logged in:", user);
             login(user);
             setShowSuccess(true);
-        } catch {
+        } catch (err) {
+            console.warn("⚠️ Profile not found, treating as first-time login", err);
             setShowFirstTimeModal(true);
         }
+    };
+
+    // ------------------- FIRST-TIME USER MODAL COMPLETE -------------------
+    const handleComplete = async (userName: string) => {
+        console.log("✅ First-time user setup complete:", userName);
+
+        // ✅ normalizeRole casts safely to the union type
+        const role = normalizeRole(localStorage.getItem("role"));
+
+        const user: User = {
+            _id: userId,
+            id: userId,
+            email,
+            name: userName,
+            isVerified: true,
+            role, // ✅ correctly typed
+        };
+
+        console.log("✅ First-time user logged in:", user);
+        login(user);
+        setShowFirstTimeModal(false);
+        setShowSuccess(true);
     };
 
     // ------------------- RESEND OTP -------------------
     const handleResend = async () => {
         setTimer(60);
         setOtp(["", "", "", "", "", ""]);
+        isVerifyingRef.current = false;
+        setIsVerifying(false);
         inputRefs.current[0]?.focus();
         await resendOtp(email);
         onResend?.();
@@ -265,9 +329,10 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                     onVoiceInput={handleVoiceInput}
                 />
                 <UserModal
-                    phoneNumber={email}
                     userId={userId}
-                    onComplete={() => setShowSuccess(true)}
+                    phoneNumber=""
+                    email={email}
+                    onComplete={handleComplete}
                 />
             </>
         );

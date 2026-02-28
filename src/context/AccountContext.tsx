@@ -10,6 +10,7 @@ interface AccountContextType {
     setHasWorkerProfile: (has: boolean) => void;
     workerProfileId: string | null;
     setWorkerProfileId: (id: string) => void;
+    role: string; // ✅ expose role directly
 }
 
 const AccountContext = createContext<AccountContextType | undefined>(undefined);
@@ -17,13 +18,22 @@ const AccountContext = createContext<AccountContextType | undefined>(undefined);
 export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user } = useAuth();
 
-    // Initialize from localStorage or user role
+    // ✅ Normalize role helper (handles both "USER"/"user" and "WORKER"/"worker")
+    const normalizeRole = (role?: string): AccountType => {
+        if (!role) return 'user';
+        return role.toLowerCase() === 'worker' ? 'worker' : 'user';
+    };
+
+    // Initialize accountType from localStorage or user role
     const [accountType, setAccountTypeState] = useState<AccountType>(() => {
         const stored = localStorage.getItem('accountType');
         if (stored === 'user' || stored === 'worker') {
             return stored;
         }
-        return user?.role || 'user';
+        // ✅ Fallback: check role from localStorage directly
+        const storedRole = localStorage.getItem('role');
+        if (storedRole) return normalizeRole(storedRole);
+        return normalizeRole(user?.role);
     });
 
     // Track worker profile status
@@ -39,6 +49,9 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [workerProfileId, setWorkerProfileIdState] = useState<string | null>(() => {
         return localStorage.getItem('workerId') || localStorage.getItem('@worker_id') || null;
     });
+
+    // ✅ Expose current role (always in sync with accountType + user)
+    const role = user?.role || localStorage.getItem('role') || accountType.toUpperCase();
 
     // Sync account type with localStorage
     const setAccountType = (type: AccountType) => {
@@ -60,16 +73,21 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setHasWorkerProfile(true);
     };
 
-    // Update account type when user changes (login/logout)
+    // ✅ Update accountType and profile info when user changes (login/logout)
     useEffect(() => {
         if (user?.role) {
+            const normalized = normalizeRole(user.role);
             const stored = localStorage.getItem('accountType');
-            // Only update if no stored preference or if user just logged in
+
+            // Only update if no stored preference exists
             if (!stored) {
-                setAccountType(user.role);
+                setAccountType(normalized);
             }
+
+            // ✅ Always sync role to localStorage from user
+            localStorage.setItem('role', user.role);
         }
-        
+
         // Update profile status and ID from user object
         if (user?.hasWorkerProfile) {
             setHasWorkerProfile(true);
@@ -77,16 +95,24 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (user?.workerId) {
             setWorkerProfileId(user.workerId);
         }
+
+        // ✅ On logout (user becomes null), reset to defaults
+        if (!user) {
+            setAccountTypeState('user');
+            setHasWorkerProfileState(false);
+            setWorkerProfileIdState(null);
+        }
     }, [user]);
 
     return (
-        <AccountContext.Provider value={{ 
-            accountType, 
-            setAccountType, 
-            hasWorkerProfile, 
+        <AccountContext.Provider value={{
+            accountType,
+            setAccountType,
+            hasWorkerProfile,
             setHasWorkerProfile,
             workerProfileId,
-            setWorkerProfileId 
+            setWorkerProfileId,
+            role, // ✅ expose role
         }}>
             {children}
         </AccountContext.Provider>

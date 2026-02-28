@@ -10,7 +10,7 @@ const TimesIcon = FaTimes as any;
 interface WelcomePageProps {
     isOpen: boolean;
     onClose: () => void;
-    onOpenOTP?: (phoneNumber: string) => void;
+    onOpenOTP?: (email: string) => void; // ✅ renamed from phoneNumber to email
 }
 
 type ViewState = "welcome" | "login" | "signup";
@@ -162,22 +162,21 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                                 <div className="space-y-4 pt-2">
                                     <button
                                         onClick={() => setView("signup")}
-                                        className="w-full bg-primary
-                                            text-white py-3 rounded-xl font-semibold"
+                                        className="w-full bg-primary text-white py-3 rounded-xl font-semibold"
                                     >
                                         Get Started
                                     </button>
 
                                     <button
                                         onClick={() => setView("login")}
-                                        className="w-full border-2 border-primary text-primary
-                                            py-3 rounded-xl font-semibold hover:bg-secondary"
+                                        className="w-full border-2 border-primary text-primary py-3 rounded-xl font-semibold hover:bg-secondary"
                                     >
                                         Already have an account?
                                     </button>
                                 </div>
                             </div>
                         ) : (
+                            // ✅ onOpenOTP now passes email string (not phone)
                             <LoginForm
                                 onClose={onClose}
                                 initialMode={view === "login" ? "login" : "signup"}

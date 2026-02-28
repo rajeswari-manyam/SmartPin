@@ -5,6 +5,7 @@ import {
     Route,
     Navigate,
     useLocation,
+    useParams,
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -109,15 +110,13 @@ import FoodForm from "./pages/FoodServiceForm";
 import FoodServiceList from "./pages/FoodServiceList";
 import ConfirmedWorkersPage from "./pages/ConforimedWorkerPage";
 import JobApplicantsPage from "./pages/JobApplicationPage";
-
+import Reviews from "./pages/Reviews";
 import { onMessage } from "firebase/messaging";
 import { messaging } from "./firebase";
-// ✅
 import { API_BASE_URL } from "./services/api.service";
 
-// ── Foreground toast component ───────────────────────────────────
 import NotificationToast from "./components/NotificationToast";
-
+import GoogleTranslate from "./components/GoogleTransulator";
 
 // ── Save FCM token to backend ─────────────────────────────────────
 const saveFcmTokenToBackend = async (
@@ -142,7 +141,6 @@ const saveFcmTokenToBackend = async (
         console.warn("⚠️ saveFcmToken error:", err);
     }
 };
-
 
 /* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -176,6 +174,30 @@ const MyBusinessWrapper: React.FC = () => {
     return <MyBusiness userId={user._id} />;
 };
 
+/* ---------------- Reviews Wrapper ---------------- */
+const ReviewsWrapper: React.FC = () => {
+    const { workerId } = useParams<{ workerId: string }>();
+    const { user } = useAuth();
+
+    if (!workerId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-red-600">Worker ID is missing from the URL.</p>
+            </div>
+        );
+    }
+
+    if (!user?._id) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <p className="text-red-600">Please log in to view reviews.</p>
+            </div>
+        );
+    }
+
+    return <Reviews workerId={workerId} userId={user._id} />;
+};
+
 /* ---------------- Layout ---------------- */
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="min-h-screen bg-secondary">
@@ -186,33 +208,32 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 
 const AppRoutes: React.FC = () => {
-  const location = useLocation();
-  const background = location.state?.background;
+    const location = useLocation();
+    const background = location.state?.background;
 
-  // ✅ FCM foreground messages hook
-  useEffect(() => {
-    // Request notification permission
-    if (Notification.permission !== "granted") {
-      Notification.requestPermission().then(permission => {
-        console.log("Notification permission:", permission);
-      });
-    }
+    // ✅ FCM foreground messages hook
+    useEffect(() => {
+        // Request notification permission
+        if (Notification.permission !== "granted") {
+            Notification.requestPermission().then(permission => {
+                console.log("Notification permission:", permission);
+            });
+        }
 
-    // Listen for foreground messages
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("🔔 Foreground message:", payload);
-      const { title, body } = payload.notification || {};
-      if (title && Notification.permission === "granted") {
-        new Notification(title, {
-          body,
-          icon: "/logo192.png",
+        // Listen for foreground messages
+        const unsubscribe = onMessage(messaging, (payload) => {
+            console.log("🔔 Foreground message:", payload);
+            const { title, body } = payload.notification || {};
+            if (title && Notification.permission === "granted") {
+                new Notification(title, {
+                    body,
+                    icon: "/Notification.png",
+                });
+            }
         });
-      }
-    });
 
-    return () => unsubscribe();
-  }, []);
-
+        return () => unsubscribe();
+    }, []);
 
     return (
         <>
@@ -248,6 +269,9 @@ const AppRoutes: React.FC = () => {
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
                     <Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
                     <Route path="/confirmed-workers/:jobId" element={<ConfirmedWorkersPage />} />
+
+                    {/* Reviews — workerId comes from URL, userId from auth */}
+                    <Route path="/reviews/:workerId" element={<ReviewsWrapper />} />
 
                     {/* User Settings */}
                     <Route path="/my-profile" element={<MyProfile />} />
@@ -416,6 +440,8 @@ const App: React.FC = () => {
             <AccountProvider>
                 <LocationProvider>
                     <Router>
+                        {/* ✅ Google Translate must be mounted once */}
+                        <GoogleTranslate />
                         <AppRoutes />
                     </Router>
                 </LocationProvider>

@@ -53,7 +53,7 @@ onMessage(messaging, (payload) => {
       payload.notification?.title || payload.data?.title || "Notification",
       {
         body: payload.notification?.body || payload.data?.body,
-        icon: "/logo192.png",
+        icon: "/.png",
       }
     );
   }

@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { getNearbyJobsForWorker, JobDetail, API_BASE_URL } from "../services/api.service";
 import CategoriesData from "../data/categories.json";
-import { categories } from "../components/categories/Categories";  // ← for id→name lookup
+import { categories } from "../components/categories/Categories";
 import typography from "../styles/typography";
 
 const BRAND = "#00598a";
@@ -20,14 +20,8 @@ interface AllJobsProps {
     workerId?: string;
 }
 
-// ── Resolve category value → display name ─────────────────────────────────────
-// Handles three cases:
-//   "3"           → numeric id stored by old PostJob → resolve via categories array
-//   "Carpenters"  → already a name → return as-is
-//   undefined     → fallback "—"
 const resolveCategoryName = (raw: string | undefined): string => {
     if (!raw) return "—";
-    // If it looks like a pure number, try to find the category by id
     if (/^\d+$/.test(raw.trim())) {
         const match = categories.find(c => String(c.id) === raw.trim());
         return match?.name ?? raw;
@@ -35,7 +29,6 @@ const resolveCategoryName = (raw: string | undefined): string => {
     return raw;
 };
 
-// ── resolve relative image paths ─────────────────────────────────────────────
 const resolveImageUrl = (path: string): string | null => {
     if (!path || typeof path !== "string") return null;
     const cleaned = path.trim();
@@ -49,7 +42,6 @@ const resolveImageUrl = (path: string): string | null => {
 const getImageUrls = (images?: string[]): string[] =>
     (images || []).map(resolveImageUrl).filter(Boolean) as string[];
 
-// ── Shared image carousel ─────────────────────────────────────────────────────
 const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, title }) => {
     const [idx, setIdx] = useState(0);
     const [imgError, setImgError] = useState(false);
@@ -80,31 +72,20 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
             />
             {images.length > 1 && (
                 <>
-                    <button
-                        onClick={prev}
+                    <button onClick={prev}
                         className="absolute left-2 top-1/2 -translate-y-1/2 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md"
-                        style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.75)"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,0,0,0.4)"}
-                    >
+                        style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
                         <ChevronLeft size={14} />
                     </button>
-                    <button
-                        onClick={next}
+                    <button onClick={next}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-md"
-                        style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.75)"}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,0,0,0.4)"}
-                    >
+                        style={{ backgroundColor: "rgba(0,0,0,0.4)" }}>
                         <ChevronRight size={14} />
                     </button>
                     <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                         {images.map((_, i) => (
-                            <button
-                                key={i}
-                                onClick={e => { e.stopPropagation(); setIdx(i); }}
-                                className={`h-1.5 rounded-full transition-all duration-200 ${i === idx ? "bg-white w-4" : "bg-white/55 w-1.5"}`}
-                            />
+                            <button key={i} onClick={e => { e.stopPropagation(); setIdx(i); }}
+                                className={`h-1.5 rounded-full transition-all duration-200 ${i === idx ? "bg-white w-4" : "bg-white/55 w-1.5"}`} />
                         ))}
                     </div>
                     <div className={`absolute bottom-3 right-3 bg-black/55 text-white ${typography.misc.badge} px-2 py-0.5 rounded-full`}>
@@ -116,7 +97,6 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     );
 };
 
-// ── Job Card ──────────────────────────────────────────────────────────────────
 const JobCard: React.FC<{
     job: JobDetail;
     onClick: () => void;
@@ -126,17 +106,12 @@ const JobCard: React.FC<{
     const imgs = getImageUrls(job.images || []);
 
     const distLabel = job.distance != null
-        ? job.distance >= 1000
-            ? `${(job.distance / 1000).toFixed(1)} km`
-            : `${Math.round(job.distance)} m`
+        ? job.distance >= 1000 ? `${(job.distance / 1000).toFixed(1)} km` : `${Math.round(job.distance)} m`
         : null;
 
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Nearby";
     const startDate = new Date(job.startDate);
     const endDate = new Date(job.endDate);
-    const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-
-    // ✅ Always resolve to a human-readable name
     const categoryName = resolveCategoryName(job.category);
     const subcategoryName = job.subcategory || "";
 
@@ -144,8 +119,7 @@ const JobCard: React.FC<{
         <div
             className="bg-white rounded-2xl overflow-hidden flex flex-col cursor-pointer transition-all duration-200"
             style={{
-                borderWidth: "1px",
-                borderStyle: "solid",
+                borderWidth: "1px", borderStyle: "solid",
                 borderColor: isHovered ? BRAND : "#f3f4f6",
                 boxShadow: isHovered ? "0 8px 24px rgba(0,89,138,0.15)" : "0 1px 4px rgba(0,0,0,0.06)",
                 transform: isHovered ? "translateY(-2px)" : "none",
@@ -154,16 +128,10 @@ const JobCard: React.FC<{
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
-            {/* Image carousel */}
             <div className="relative h-48 md:h-52 bg-gray-100 flex-shrink-0 overflow-hidden">
-                <div
-                    className="w-full h-full transition-transform duration-300"
-                    style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}
-                >
+                <div className="w-full h-full transition-transform duration-300" style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}>
                     <ImageCarousel images={imgs} title={job.title} />
                 </div>
-
-                {/* Distance badge */}
                 {distLabel && (
                     <div className="absolute top-3 right-3 z-10">
                         <span className={`inline-flex items-center gap-1 bg-white/95 text-gray-700 ${typography.misc.badge} px-2 py-1 rounded-full shadow`}>
@@ -173,18 +141,10 @@ const JobCard: React.FC<{
                 )}
             </div>
 
-            {/* Card body */}
             <div className="flex flex-col flex-1 px-3 md:px-4 pt-3 pb-4">
-
-                {/* ✅ Category + subcategory badges — always shows resolved name */}
                 <div className="flex flex-wrap gap-1.5 mb-2">
-                    <span
-                        className={`${typography.misc.badge} px-2 py-0.5 rounded-full border transition-colors duration-200`}
-                        style={isHovered
-                            ? { backgroundColor: "rgba(0,89,138,0.12)", color: BRAND, borderColor: "rgba(0,89,138,0.3)" }
-                            : { backgroundColor: "rgba(0,89,138,0.08)", color: BRAND, borderColor: "rgba(0,89,138,0.2)" }
-                        }
-                    >
+                    <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full border`}
+                        style={{ backgroundColor: "rgba(0,89,138,0.08)", color: BRAND, borderColor: "rgba(0,89,138,0.2)" }}>
                         {categoryName}
                     </span>
                     {subcategoryName && (
@@ -194,26 +154,15 @@ const JobCard: React.FC<{
                     )}
                 </div>
 
-                {/* Title */}
-                <h3
-                    className={`${typography.card.title} line-clamp-2 leading-snug mb-1.5 transition-colors duration-200`}
-                    style={{ color: isHovered ? BRAND : "#111827" }}
-                >
+                <h3 className={`${typography.card.title} line-clamp-2 leading-snug mb-1.5`}
+                    style={{ color: isHovered ? BRAND : "#111827" }}>
                     {job.title}
                 </h3>
-
-                {/* Description */}
-                <p className={`${typography.card.description} text-gray-600 mb-2 line-clamp-2`}>
-                    {job.description}
-                </p>
-
-                {/* Location */}
+                <p className={`${typography.card.description} text-gray-600 mb-2 line-clamp-2`}>{job.description}</p>
                 <div className={`flex items-center gap-1.5 mb-1.5 ${typography.body.xs} text-gray-500`}>
                     <MapPin size={12} className="flex-shrink-0 text-gray-400" />
                     <span className="line-clamp-1">{locationStr}</span>
                 </div>
-
-                {/* Date range */}
                 <div className={`flex items-center gap-1.5 mb-3 ${typography.body.xs} text-gray-500`}>
                     <Calendar size={12} className="flex-shrink-0 text-gray-400" />
                     <span>
@@ -224,28 +173,18 @@ const JobCard: React.FC<{
                 </div>
 
                 <div className="flex-1" />
-
-                {/* Footer: charges + view button */}
-                <div
-                    className="flex items-center justify-between pt-3 border-t transition-colors duration-200"
-                    style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}
-                >
+                <div className="flex items-center justify-between pt-3 border-t"
+                    style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}>
                     <div>
-                        <p className="uppercase tracking-wide text-gray-400 mb-0.5" style={{ fontSize: "10px" }}>
-                            Service Charges
-                        </p>
+                        <p className="uppercase tracking-wide text-gray-400 mb-0.5" style={{ fontSize: "10px" }}>Service Charges</p>
                         <p className={`${typography.heading.h6} text-green-600 flex items-center gap-0.5 leading-none`}>
                             <IndianRupee size={15} className="mt-0.5" />
                             {parseFloat(job.servicecharges).toLocaleString("en-IN")}
                         </p>
                     </div>
-                    <button
-                        onClick={onViewClick}
+                    <button onClick={onViewClick}
                         className={`flex items-center gap-1.5 text-white ${typography.body.xs} font-bold px-3 md:px-4 py-2 rounded-xl shadow-sm transition-all duration-200 active:scale-95`}
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
-                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
-                    >
+                        style={{ backgroundColor: BRAND }}>
                         View Details <ArrowRight size={14} />
                     </button>
                 </div>
@@ -265,7 +204,6 @@ const AllJobs: React.FC<AllJobsProps> = ({
     const [jobs, setJobs] = useState<JobDetail[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string>("");
-    const [noProfile, setNoProfile] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(filterCategory || "all");
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedRadius, setSelectedRadius] = useState(10);
@@ -285,37 +223,34 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
     const fetchJobs = async () => {
         try {
-            setLoading(true); setError(""); setNoProfile(false);
+            setLoading(true);
+            setError("");
+
+            // Use prop first, then localStorage only — no backend fallback
             const workerId =
                 workerIdProp ||
                 localStorage.getItem("workerId") ||
-                localStorage.getItem("@worker_id") ||
-                localStorage.getItem("worker_id");
+                localStorage.getItem("@worker_id");
 
-            if (!workerId) { setNoProfile(true); setJobs([]); setLoading(false); return; }
+            if (!workerId) {
+                console.warn("⚠️ AllJobs: no workerId available");
+                setJobs([]);
+                setLoading(false);
+                return;
+            }
 
             const res = await getNearbyJobsForWorker(workerId);
             const data: JobDetail[] = res.jobs || [];
             setJobs(data);
             if (data.length === 0) setError("No jobs found near your location");
         } catch (err: any) {
-            const msg: string = err.message || "";
-            if (
-                msg.includes("404") ||
-                msg.toLowerCase().includes("not found") ||
-                msg.toLowerCase().includes("worker not found") ||
-                msg.toLowerCase().includes("profile not found")
-            ) {
-                setNoProfile(true); setJobs([]);
-            } else {
-                setError(msg || "Failed to fetch jobs"); setJobs([]);
-            }
+            setError(err.message || "Failed to fetch jobs");
+            setJobs([]);
         } finally {
             setLoading(false);
         }
     };
 
-    // ✅ Filter also resolves numeric category for matching
     const filtered = jobs.filter(job => {
         const sl = searchText.toLowerCase();
         const resolvedCat = resolveCategoryName(job.category);
@@ -333,70 +268,33 @@ const AllJobs: React.FC<AllJobsProps> = ({
         ? "All Categories"
         : CategoriesData.categories.find(c => c.name === selectedCategory)?.name || selectedCategory;
 
-    // ── Loading ──
     if (loading) return (
         <div className="min-h-[40vh] flex justify-center items-center">
             <Loader2 className="w-10 h-10 animate-spin" style={{ color: BRAND }} />
         </div>
     );
 
-    // ── No Worker Profile ──
-    if (noProfile) return (
-        <div
-            className="flex flex-col items-center justify-center bg-[#f0f4f8] px-6"
-            style={{ height: "calc(100vh - 160px)" }}
-        >
-            <div className="text-8xl mb-6 select-none">👷</div>
-            <h2 className={`${typography.heading.h4} text-gray-900 text-center mb-3`}>
-                Create Your Worker Profile
-            </h2>
-            <p className={`${typography.body.small} text-gray-500 text-center max-w-xs mb-10 leading-relaxed`}>
-                Set up your worker profile to get started and find nearby job opportunities.
-            </p>
-            <button
-                onClick={() => navigate("/worker-profile")}
-                className={`text-white font-bold ${typography.body.base} px-10 py-4 rounded-full shadow-lg transition-all duration-200 w-72 active:scale-95`}
-                style={{ backgroundColor: BRAND }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
-            >
-                Create Profile
-            </button>
-        </div>
-    );
-
-    // ── Generic error ──
     if (error && jobs.length === 0) return (
         <div className="min-h-[40vh] flex flex-col justify-center items-center p-6">
             <div className="text-center max-w-md">
                 <div className="text-6xl mb-4">📋</div>
                 <h2 className={`${typography.heading.h4} text-gray-800 mb-2`}>No Jobs Available</h2>
                 <p className={`${typography.body.small} text-gray-600 mb-6`}>{error}</p>
-                <button
-                    onClick={fetchJobs}
+                <button onClick={fetchJobs}
                     className={`text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${typography.body.small}`}
-                    style={{ backgroundColor: BRAND }}
-                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
-                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
-                >
+                    style={{ backgroundColor: BRAND }}>
                     Try Again
                 </button>
             </div>
         </div>
     );
 
-    // ── Main Jobs List ──
     return (
         <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
-            {/* Header + filters */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
                 <div>
-                    <h1 className={`${typography.heading.h4} text-gray-900 tracking-tight`}>
-                        Nearby Job Opportunities
-                    </h1>
-                    <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>
-                        Browse all available jobs in your area
-                    </p>
+                    <h1 className={`${typography.heading.h4} text-gray-900 tracking-tight`}>Nearby Job Opportunities</h1>
+                    <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>Browse all available jobs in your area</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -404,13 +302,8 @@ const AllJobs: React.FC<AllJobsProps> = ({
                     <div id="radius-dropdown" className="relative">
                         <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                             <span className={`${typography.body.xs} text-gray-500 font-medium`}>Within:</span>
-                            <button
-                                onClick={() => setRadiusDropdownOpen(p => !p)}
-                                className={`flex items-center gap-1 ${typography.body.xs} font-semibold text-gray-800 transition-colors duration-150`}
-                                style={{ color: radiusDropdownOpen ? BRAND : undefined }}
-                                onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = BRAND}
-                                onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = radiusDropdownOpen ? BRAND : "#1f2937"}
-                            >
+                            <button onClick={() => setRadiusDropdownOpen(p => !p)}
+                                className={`flex items-center gap-1 ${typography.body.xs} font-semibold text-gray-800`}>
                                 {selectedRadius} km
                                 <ChevronDown size={13} className={`transition-transform ${radiusDropdownOpen ? "rotate-180" : ""}`} />
                             </button>
@@ -418,17 +311,9 @@ const AllJobs: React.FC<AllJobsProps> = ({
                         {radiusDropdownOpen && (
                             <div className="absolute right-0 top-full mt-2 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1">
                                 {RADIUS_OPTIONS.map(r => (
-                                    <button
-                                        key={r}
-                                        onClick={() => { setSelectedRadius(r); setRadiusDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2 ${typography.body.xs} transition-colors duration-150`}
-                                        style={selectedRadius === r
-                                            ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
-                                            : { color: "#374151" }
-                                        }
-                                        onMouseEnter={e => { if (selectedRadius !== r) (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
-                                        onMouseLeave={e => { if (selectedRadius !== r) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                                    >
+                                    <button key={r} onClick={() => { setSelectedRadius(r); setRadiusDropdownOpen(false); }}
+                                        className={`w-full text-left px-4 py-2 ${typography.body.xs}`}
+                                        style={selectedRadius === r ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
                                         {r} km
                                     </button>
                                 ))}
@@ -438,44 +323,25 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
                     {/* Category dropdown */}
                     <div id="category-dropdown" className="relative">
-                        <button
-                            onClick={() => setDropdownOpen(p => !p)}
-                            className={`flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 ${typography.body.xs} font-medium text-gray-700 shadow-sm min-w-[130px] md:min-w-[150px] justify-between transition-colors duration-150`}
-                            style={dropdownOpen ? { borderColor: BRAND, color: BRAND } : {}}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = BRAND}
-                            onMouseLeave={e => { if (!dropdownOpen) (e.currentTarget as HTMLElement).style.borderColor = "#e5e7eb"; }}
-                        >
+                        <button onClick={() => setDropdownOpen(p => !p)}
+                            className={`flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 ${typography.body.xs} font-medium text-gray-700 shadow-sm min-w-[130px] md:min-w-[150px] justify-between`}
+                            style={dropdownOpen ? { borderColor: BRAND, color: BRAND } : {}}>
                             <span className="truncate">{categoryLabel}</span>
                             <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                         </button>
                         {dropdownOpen && (
                             <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                                 <div className="max-h-72 overflow-y-auto py-1">
-                                    <button
-                                        onClick={() => { setSelectedCategory("all"); setDropdownOpen(false); }}
-                                        className={`w-full text-left px-4 py-2.5 ${typography.body.xs} transition-colors duration-150`}
-                                        style={selectedCategory === "all"
-                                            ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
-                                            : { color: "#374151" }
-                                        }
-                                        onMouseEnter={e => { if (selectedCategory !== "all") (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
-                                        onMouseLeave={e => { if (selectedCategory !== "all") (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                                    >
+                                    <button onClick={() => { setSelectedCategory("all"); setDropdownOpen(false); }}
+                                        className={`w-full text-left px-4 py-2.5 ${typography.body.xs}`}
+                                        style={selectedCategory === "all" ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
                                         All Categories
                                     </button>
                                     <div className="border-t border-gray-100 my-1" />
                                     {CategoriesData.categories.map(cat => (
-                                        <button
-                                            key={cat.name}
-                                            onClick={() => { setSelectedCategory(cat.name); setDropdownOpen(false); }}
-                                            className={`w-full text-left px-4 py-2.5 ${typography.body.xs} transition-colors duration-150`}
-                                            style={selectedCategory === cat.name
-                                                ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
-                                                : { color: "#374151" }
-                                            }
-                                            onMouseEnter={e => { if (selectedCategory !== cat.name) (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,89,138,0.06)"; }}
-                                            onMouseLeave={e => { if (selectedCategory !== cat.name) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
-                                        >
+                                        <button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setDropdownOpen(false); }}
+                                            className={`w-full text-left px-4 py-2.5 ${typography.body.xs}`}
+                                            style={selectedCategory === cat.name ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
                                             {cat.name}
                                         </button>
                                     ))}
@@ -486,7 +352,6 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 </div>
             </div>
 
-            {/* Results count */}
             <p className={`mb-4 ${typography.body.xs} text-gray-500`}>
                 Found <span className="font-semibold text-gray-800">{filtered.length}</span>{" "}
                 job{filtered.length !== 1 ? "s" : ""}
@@ -503,13 +368,9 @@ const AllJobs: React.FC<AllJobsProps> = ({
                         {selectedCategory !== "all" ? ` in "${categoryLabel}"` : ""}
                     </p>
                     {(searchText || selectedCategory !== "all") && (
-                        <button
-                            onClick={() => setSelectedCategory("all")}
-                            className={`mt-3 font-medium ${typography.body.xs} underline underline-offset-2 transition-colors duration-150`}
-                            style={{ color: BRAND }}
-                            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = BRAND_DARK}
-                            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = BRAND}
-                        >
+                        <button onClick={() => setSelectedCategory("all")}
+                            className={`mt-3 font-medium ${typography.body.xs} underline underline-offset-2`}
+                            style={{ color: BRAND }}>
                             Clear filters
                         </button>
                     )}
@@ -517,12 +378,9 @@ const AllJobs: React.FC<AllJobsProps> = ({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     {filtered.map(job => (
-                        <JobCard
-                            key={job._id}
-                            job={job}
+                        <JobCard key={job._id} job={job}
                             onClick={() => navigate(`/job-details/${job._id}`)}
-                            onViewClick={e => { e.stopPropagation(); navigate(`/job-details/${job._id}`); }}
-                        />
+                            onViewClick={e => { e.stopPropagation(); navigate(`/job-details/${job._id}`); }} />
                     ))}
                 </div>
             )}

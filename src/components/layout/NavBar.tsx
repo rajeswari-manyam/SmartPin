@@ -90,11 +90,11 @@ const Navbar: React.FC = () => {
       }
 
       try {
-        const userId   = localStorage.getItem("userId") || "";
+        const userId = localStorage.getItem("userId") || "";
         const workerId = workerProfileId || localStorage.getItem("workerId") || "";
 
         const role = accountType === "worker" ? "Worker" : "User";
-        const id   = accountType === "worker" ? workerId : userId;
+        const id = accountType === "worker" ? workerId : userId;
 
         if (!id) return;
 
@@ -208,9 +208,9 @@ const Navbar: React.FC = () => {
             {/* ── Right Section ── */}
             <div className="flex items-center space-x-2 sm:space-x-3">
 
-           <div>
-  <LanguageSelector />
-</div>
+              <div>
+                <LanguageSelector />
+              </div>
 
               {/* ── Desktop-only nav links ── */}
               <div className="hidden lg:flex items-center space-x-1">
@@ -248,15 +248,13 @@ const Navbar: React.FC = () => {
                 <div className="hidden lg:flex items-center">
                   <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-36 transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/30">
                     <div
-                      className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${
-                        accountType === "user" ? "translate-x-0" : "translate-x-full"
-                      }`}
+                      className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${accountType === "user" ? "translate-x-0" : "translate-x-full"
+                        }`}
                     />
                     <button
                       onClick={() => handleSwitchAccount("user")}
-                      className={`relative z-10 w-1/2 text-xs font-semibold ${
-                        accountType === "user" ? "text-white" : "text-primary"
-                      }`}
+                      className={`relative z-10 w-1/2 text-xs font-semibold ${accountType === "user" ? "text-white" : "text-primary"
+                        }`}
                     >
                       Customer
                     </button>
@@ -270,9 +268,7 @@ const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Login button (unauthenticated) ──
-                  FIX: was "hidden lg:block" — now visible on ALL screen sizes.
-                  On mobile it shows next to the hamburger. ── */}
+              {/* ── Login button (unauthenticated) — all screen sizes ── */}
               {!isAuthenticated && (
                 <Button
                   variant="gradient-blue"
@@ -283,11 +279,13 @@ const Navbar: React.FC = () => {
                 </Button>
               )}
 
-              {/* ── Profile avatar — desktop only when authenticated ── */}
+              {/* ── ✅ FIXED: Profile avatar — ALL screen sizes when authenticated ──
+                  Previously was "hidden lg:flex" so it was invisible on mobile.
+                  Now shows on mobile AND desktop. ── */}
               {isAuthenticated && (
                 <button
                   onClick={handleProfileClick}
-                  className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:scale-110 hover:shadow-xl flex-shrink-0"
+                  className="flex items-center justify-center w-9 h-9 lg:w-10 lg:h-10 rounded-full overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:scale-110 hover:shadow-xl flex-shrink-0"
                   title={userName}
                 >
                   {profilePic ? (
@@ -308,9 +306,7 @@ const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* ── Hamburger toggle — mobile only ──
-                  FIX: was "lg:hidden" but the right-section flex was hiding
-                  everything. Button is now explicitly block on mobile. ── */}
+              {/* ── Hamburger toggle — mobile only ── */}
               <button
                 className="flex lg:hidden items-center justify-center text-gray-700 p-1"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -335,23 +331,20 @@ const Navbar: React.FC = () => {
               <div className="px-4 py-3 border-b border-gray-100">
                 <div className="relative flex items-center bg-gray-100 rounded-full p-1 h-10 w-full max-w-xs mx-auto">
                   <div
-                    className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${
-                      accountType === "user" ? "translate-x-0" : "translate-x-full"
-                    }`}
+                    className={`absolute top-1 left-1 h-8 w-[calc(50%-0.25rem)] bg-primary rounded-full transition-transform duration-300 ${accountType === "user" ? "translate-x-0" : "translate-x-full"
+                      }`}
                   />
                   <button
                     onClick={() => handleSwitchAccount("user")}
-                    className={`relative z-10 w-1/2 text-sm font-semibold ${
-                      accountType === "user" ? "text-white" : "text-primary"
-                    }`}
+                    className={`relative z-10 w-1/2 text-sm font-semibold ${accountType === "user" ? "text-white" : "text-primary"
+                      }`}
                   >
                     Customer
                   </button>
                   <button
                     onClick={() => handleSwitchAccount("worker")}
-                    className={`relative z-10 w-1/2 text-sm font-semibold ${
-                      accountType === "worker" ? "text-white" : "text-primary"
-                    }`}
+                    className={`relative z-10 w-1/2 text-sm font-semibold ${accountType === "worker" ? "text-white" : "text-primary"
+                      }`}
                   >
                     Worker
                   </button>
@@ -373,43 +366,13 @@ const Navbar: React.FC = () => {
               </>
             )}
 
-            {/* ── Mobile profile row (authenticated) ── */}
-            {isAuthenticated && (
-              <button
-                onClick={handleProfileClick}
-                className="group w-full text-left px-4 py-3 flex items-center gap-3 text-gray-700 hover:bg-gray-100 hover:text-primary transition-all duration-200"
-              >
-                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
-                  {profilePic ? (
-                    <img
-                      src={profilePic}
-                      alt={userName}
-                      className="w-full h-full object-cover"
-                      onError={() => setProfilePic(null)}
-                    />
-                  ) : (
-                    <div
-                      className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: "#00598a" }}
-                    >
-                      {userName.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                </div>
-                <span className="transition-all duration-200 group-hover:translate-x-1 font-medium">
-                  {userName}
-                </span>
-              </button>
-            )}
-
             {/* ── Mobile notification item with count ── */}
             <button
               onClick={handleNotificationClick}
-              className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${
-                location.pathname === "/notifications"
-                  ? "bg-primary/10 text-primary font-semibold"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-              }`}
+              className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${location.pathname === "/notifications"
+                ? "bg-primary/10 text-primary font-semibold"
+                : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+                }`}
             >
               <div className="relative">
                 <Bell className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
@@ -468,7 +431,7 @@ const Navbar: React.FC = () => {
               onBack={() => setShowOTPModal(false)}
               onClose={handleLoginSuccess}
               onContinue={handleLoginSuccess}
-              onResend={() => {}}
+              onResend={() => { }}
             />
           </div>
         </div>
@@ -519,11 +482,10 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onCl
   return (
     <button
       onClick={onClick}
-      className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ${
-        isActive
-          ? "bg-[#00598a]/15 text-[#00598a] shadow-sm"
-          : "text-gray-700 hover:bg-[#00598a]/10"
-      }`}
+      className={`group flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ${isActive
+        ? "bg-[#00598a]/15 text-[#00598a] shadow-sm"
+        : "text-gray-700 hover:bg-[#00598a]/10"
+        }`}
     >
       {imgSrc ? (
         <img
@@ -548,11 +510,10 @@ const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path
   return (
     <button
       onClick={onClick}
-      className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${
-        isActive
-          ? "bg-primary/10 text-primary font-semibold"
-          : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-      }`}
+      className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${isActive
+        ? "bg-primary/10 text-primary font-semibold"
+        : "text-gray-700 hover:bg-gray-100 hover:text-primary"
+        }`}
     >
       {imgSrc ? (
         <img

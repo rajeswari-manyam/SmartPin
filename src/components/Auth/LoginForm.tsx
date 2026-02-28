@@ -11,7 +11,7 @@ interface LoginFormProps {
     onClose: () => void;
     initialMode?: "signup" | "login";
     onBack?: () => void;
-    onOpenOTP?: (phone: string) => void;
+    onOpenOTP?: (email: string) => void;
 }
 
 type FormStep = "email" | "otp";
@@ -30,10 +30,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
     const [currentStep, setCurrentStep] = useState<FormStep>("email");
     const [isListening, setIsListening] = useState(false);
     const [voiceError, setVoiceError] = useState<string | null>(null);
+    const [isSending, setIsSending] = useState(false); // ✅ loading state
 
     const voiceService = VoiceService.getInstance();
 
-    // Get user's location on component mount
     useEffect(() => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -89,8 +89,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
         setEmail(e.target.value);
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (e?: React.FormEvent | React.MouseEvent) => {
+        e?.preventDefault();
 
         if (!isValidEmail(email)) {
             alert("Please enter a valid email address");
@@ -98,30 +98,24 @@ const LoginForm: React.FC<LoginFormProps> = ({
         }
 
         try {
+            setIsSending(true); // ✅ start loading
             console.log("Registering with email:", email);
-
-            // ✅ Store email in localStorage immediately
             localStorage.setItem("userEmail", email);
-
-            const response = await registerWithOtp({
-                email: email,
-                name: "User", // Default name
-                latitude: latitude ?? 0,
-                longitude: longitude ?? 0,
-            });
-
+const response = await registerWithOtp({
+    email,
+    name: "User",
+    role: "USER",           // ✅ keep role
+    latitude: latitude ?? 0,
+    longitude: longitude ?? 0,
+} as any);
             console.log("Registration response:", response);
 
             if (response.success) {
-                console.log("OTP sent successfully. OTP:", response.otp);
+                console.log("OTP sent to email successfully.");
 
                 if (onOpenOTP) {
-                    // Navbar OTP screen
-                    console.log("Opening OTP modal via navbar");
                     onOpenOTP(email);
                 } else {
-                    // Inline OTP
-                    console.log("Switching to inline OTP");
                     setCurrentStep("otp");
                 }
             } else {
@@ -129,32 +123,29 @@ const LoginForm: React.FC<LoginFormProps> = ({
             }
         } catch (error) {
             console.error("Registration error:", error);
-            alert("Failed to register. Please try again.");
+            alert("Failed to send OTP. Please try again.");
+        } finally {
+            setIsSending(false); // ✅ stop loading
         }
     };
 
     const handleBackToEmail = () => {
-        console.log("Going back to email input");
         setCurrentStep("email");
     };
 
-    // ✅ Handle OTP Continue - Navigate to role selection
     const handleOTPContinue = () => {
-        console.log("OTP verification successful, closing modal and navigating");
-        onClose(); // Close the modal
+        onClose();
         navigate("/role-selection", { replace: true });
     };
 
-    // Show inline OTP if onOpenOTP is NOT provided
     if (currentStep === "otp" && !onOpenOTP) {
         return (
-          <OTPVerification
-    email={email}
-    onBack={handleBackToEmail}
-    // ❌ remove: fcmToken={fcmToken}
-    onContinue={handleOTPContinue}
-    onClose={onClose}
-/>
+            <OTPVerification
+                email={email}
+                onBack={handleBackToEmail}
+                onContinue={handleOTPContinue}
+                onClose={onClose}
+            />
         );
     }
 
@@ -188,11 +179,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
             <button
                 type="button"
                 onClick={handleVoiceInput}
-                className={`w-full rounded-full py-3 px-6 text-center transition-all flex items-center justify-center gap-2 ${
-                  isListening
+                className={`w-full rounded-full py-3 px-6 text-center transition-all flex items-center justify-center gap-2 ${isListening
                     ? "bg-red-600 animate-pulse"
                     : "bg-gradient-to-r from-[#00598a] to-[#003a5c] hover:brightness-110"
-                }`}
+                    }`}
             >
                 <img src={voiceIcon} alt="Voice" className="w-5 h-5" />
                 <p className={`text-white ${typography.body.small}`}>
@@ -201,7 +191,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
             </button>
 
             {/* Email Form */}
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
                 <div>
                     <label
                         htmlFor="email"
@@ -218,16 +208,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
                             placeholder="your.email@example.com"
                             className={`w-full px-4 pr-14 py-4 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-[#00598a] transition-colors duration-200 ${typography.form.input}`}
                             required
+                            disabled={isSending}
                         />
-
                         <button
                             type="button"
                             onClick={handleVoiceInput}
-                            className={`absolute inset-y-0 right-0 flex items-center pr-4 transition-colors duration-200 ${
-                              isListening
+                            disabled={isSending}
+                            className={`absolute inset-y-0 right-0 flex items-center pr-4 transition-colors duration-200 ${isListening
                                 ? "text-red-500 animate-pulse"
                                 : "text-gray-400 hover:text-[#00598a]"
-                            }`}
+                                }`}
                             title={isListening ? "Stop listening" : "Use voice input"}
                         >
                             {isListening ? (
@@ -249,16 +239,46 @@ const LoginForm: React.FC<LoginFormProps> = ({
                     )}
                 </div>
 
-                {/* Submit Button */}
-                <Button
-                    type="submit"
-                    fullWidth
-                    size="lg"
-                    variant="gradient-blue"
-                    disabled={!isValidEmail(email)}
+                {/* ✅ Send OTP button with loading state like "Posting..." */}
+                <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={!isValidEmail(email) || isSending}
+                    className={`w-full py-4 rounded-xl font-semibold text-white text-base flex items-center justify-center gap-2 transition-all duration-200
+                        ${isSending
+                            ? "bg-gray-400 cursor-not-allowed opacity-80"
+                            : !isValidEmail(email)
+                                ? "bg-gray-300 cursor-not-allowed text-gray-500"
+                                : "bg-gradient-to-r from-[#00598a] to-[#003a5c] hover:brightness-110 cursor-pointer"
+                        }`}
                 >
-                    Send OTP
-                </Button>
+                    {isSending ? (
+                        <>
+                            {/* Spinner */}
+                            <svg
+                                className="animate-spin w-5 h-5 text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12" cy="12" r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                />
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v8z"
+                                />
+                            </svg>
+                            Sending OTP...
+                        </>
+                    ) : (
+                        "Send OTP to Email"
+                    )}
+                </button>
 
                 {/* Terms & Conditions */}
                 {!isLogin && (

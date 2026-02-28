@@ -28,7 +28,7 @@ messaging.onBackgroundMessage((payload) => {
     payload.notification?.title || "Notification",
     {
       body: payload.notification?.body,
-      icon: "/logo192.png",
+      icon: "/Notification.png",
     }
   );
 });

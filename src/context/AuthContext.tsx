@@ -6,23 +6,19 @@ import React, {
   ReactNode,
 } from "react";
 
-/* =======================
-   User Interface
-======================= */
 interface User {
   _id: string;
-  phone: string;
+  email: string;
+  phone?: string;
   name?: string;
   latitude?: string;
   longitude?: string;
   isVerified: boolean;
-  role?: 'user' | 'worker';
+  role?: "USER" | "WORKER" | "user" | "worker"; // ✅ support both cases
   workerId?: string;
   hasWorkerProfile?: boolean;
 }
-/* =======================
-   Context Interface
-======================= */
+
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -32,14 +28,8 @@ interface AuthContextType {
   setWorkerProfile: (workerId: string, hasProfile: boolean) => void;
 }
 
-/* =======================
-   Context
-======================= */
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/* =======================
-   Provider
-======================= */
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -49,11 +39,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem("user");
-
       if (storedUser) {
         const parsedUser: User = JSON.parse(storedUser);
+
+        // ✅ Restore role from localStorage if missing in stored user
+        if (!parsedUser.role) {
+          const storedRole = localStorage.getItem("role");
+          if (storedRole) {
+            parsedUser.role = storedRole as User["role"];
+          }
+        }
+
         setUser(parsedUser);
         setIsAuthenticated(true);
+
+        // ✅ Re-sync workerId from user object to localStorage on restore
+        if (parsedUser.workerId) {
+          localStorage.setItem("workerId", parsedUser.workerId);
+          localStorage.setItem("@worker_id", parsedUser.workerId);
+        }
+
+        // ✅ Re-sync role to localStorage on restore
+        if (parsedUser.role) {
+          localStorage.setItem("role", parsedUser.role);
+        }
+
         console.log("🔄 User restored:", parsedUser);
       }
     } catch (error) {
@@ -66,10 +76,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // ✅ Login
   const login = (userData: User) => {
-    setUser(userData);
+    // ✅ Merge role from localStorage if not present in userData
+    const role = userData.role || (localStorage.getItem("role") as User["role"]) || "USER";
+    const userWithRole: User = { ...userData, role };
+
+    setUser(userWithRole);
     setIsAuthenticated(true);
-    localStorage.setItem("user", JSON.stringify(userData));
-    console.log("✅ User logged in");
+
+    // ✅ Persist full user object including role
+    localStorage.setItem("user", JSON.stringify(userWithRole));
+    localStorage.setItem("userId", userWithRole._id);
+    localStorage.setItem("userEmail", userWithRole.email);
+    localStorage.setItem("role", role); // ✅ keep role in sync separately
+
+    // ✅ If user already has a workerId, persist it immediately
+    if (userWithRole.workerId) {
+      localStorage.setItem("workerId", userWithRole.workerId);
+      localStorage.setItem("@worker_id", userWithRole.workerId);
+    }
+
+    console.log("✅ User logged in:", userWithRole);
   };
 
   // ✅ Update Worker Profile Status
@@ -83,15 +109,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setUser(updatedUser);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       localStorage.setItem("workerId", workerId);
+      localStorage.setItem("@worker_id", workerId);
       console.log("✅ Worker profile updated:", workerId, hasProfile);
     }
   };
 
-  // ❌ Logout (ONLY when user clicks logout)
+  // ❌ Logout
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem("user");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("workerId");
+    localStorage.removeItem("@worker_id");
+    localStorage.removeItem("role"); // ✅ clear role on logout
+    localStorage.removeItem("fcmToken");
+    localStorage.removeItem("token");
     console.log("❌ User logged out");
   };
 
@@ -104,13 +138,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
-/* =======================
-   Hook
-======================= */
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };

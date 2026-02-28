@@ -31,16 +31,10 @@ const resolveImageUrl = (path?: string): string | null => {
 // Helper to get category name from ID or name
 const getCategoryDisplayName = (categoryValue: string): string => {
     if (!categoryValue) return "Unknown";
-    
-    // Check if it's an ID (numeric string)
     const categoryById = categories.find(c => c.id === categoryValue);
     if (categoryById) return categoryById.name;
-    
-    // Check if it's already a name
     const categoryByName = categories.find(c => c.name.toLowerCase() === categoryValue.toLowerCase());
     if (categoryByName) return categoryByName.name;
-    
-    // Return as-is if not found
     return categoryValue;
 };
 
@@ -184,19 +178,13 @@ const MyJobCard: React.FC<{
     const endDate = new Date(job.endDate);
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "—";
     const images: string[] = Array.isArray(job.images) ? job.images : [];
-    
-    // Get proper category name
     const categoryName = getCategoryDisplayName(job.category);
 
-    // Format date like screenshot: 1/10/2026 – 1/15/2026
-    const formatDate = (date: Date) => {
-        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-    };
+    const formatDate = (date: Date) =>
+        `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
     const dateRange = `${formatDate(startDate)} – ${formatDate(endDate)}`;
     const postedDate = new Date(job.createdAt || job.postedAt || Date.now()).toLocaleDateString("en-US", {
-        month: "numeric",
-        day: "numeric",
-        year: "numeric"
+        month: "numeric", day: "numeric", year: "numeric"
     });
 
     useEffect(() => {
@@ -219,8 +207,6 @@ const MyJobCard: React.FC<{
             {/* ── Image area ── */}
             <div className="relative h-40 bg-gray-100">
                 <ImageCarousel images={images} title={job.title || categoryName} />
-
-                {/* 3-Dot Dropdown - Top Right */}
                 <div className="absolute top-2 right-2 z-20">
                     <JobActionDropdown
                         onEdit={() => onEdit(job._id)}
@@ -231,49 +217,34 @@ const MyJobCard: React.FC<{
 
             {/* ── Body ── */}
             <div className="p-4">
-                {/* Title */}
                 <h3 className={`text-lg font-bold text-gray-900 mb-2 line-clamp-1 ${typography.card.title}`}>
                     {job.title || categoryName}
                 </h3>
-
-                {/* Description */}
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
                     {job.description || "Need a skilled worker for this job"}
                 </p>
-
-                {/* Location */}
                 <div className="flex items-center gap-1.5 mb-2 text-gray-600">
                     <MapPin size={14} className="text-red-500 flex-shrink-0" />
                     <span className="text-sm line-clamp-1">{locationStr}</span>
                 </div>
-
-                {/* Price and Job Type */}
                 <div className="flex items-center gap-2 mb-2">
                     <span className="text-green-600 font-bold text-base flex items-center">
                         <IndianRupee size={14} className="inline" />
                         {parseFloat(job.servicecharges || "0").toLocaleString("en-IN")}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                        job.jobType === "FULL_TIME" 
-                            ? "bg-yellow-100 text-yellow-700" 
-                            : "bg-blue-100 text-blue-700"
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${job.jobType === "FULL_TIME"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-blue-100 text-blue-700"
+                        }`}>
                         {job.jobType === "FULL_TIME" ? "FULL-TIME" : "PART-TIME"}
                     </span>
                 </div>
-
-                {/* Date Range with calendar icon */}
                 <div className="flex items-center gap-1.5 mb-1 text-gray-600">
                     <Calendar size={14} className="flex-shrink-0" />
                     <span className="text-sm">{dateRange}</span>
                 </div>
+                <p className="text-gray-400 text-xs mb-4">Posted: {postedDate}</p>
 
-                {/* Posted date */}
-                <p className="text-gray-400 text-xs mb-4">
-                    Posted: {postedDate}
-                </p>
-
-                {/* View Applicants Button */}
                 <button
                     onClick={() => onViewApplicants(job._id)}
                     className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#00598a] text-white font-medium text-sm hover:bg-[#004a73] transition-colors mb-3"
@@ -327,57 +298,100 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 px-4 py-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-                {/* ── Header ── */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <h1 className={`text-2xl font-bold text-gray-900`}>
-                            My Jobs ({myJobs.length})
+        <div className="min-h-screen bg-gray-50">
+
+            {/* ── Sticky Header ── */}
+            <div
+                className="sticky top-0 z-10 bg-white px-4 py-3.5 flex items-center justify-between"
+                style={{ borderBottom: "1px solid #e9ecef", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
+            >
+                {/* Left: icon + title + count */}
+                <div className="flex items-center gap-2.5">
+                    <img
+                        src={JobIcon}
+                        alt="Jobs"
+                        className="w-8 h-8 object-contain flex-shrink-0"
+                    />
+                    <div>
+                        <h1 className={`text-lg font-bold text-gray-900 leading-tight`}>
+                            My Jobs
                         </h1>
+                        {!loadingMyJobs && (
+                            <p className="text-xs text-gray-400 leading-none">
+                                {myJobs.length} job{myJobs.length !== 1 ? "s" : ""} posted
+                            </p>
+                        )}
                     </div>
-                    <p className="text-gray-500 text-sm">Welcome, Cherry! 👋</p>
                 </div>
 
-                {/* ── My Posted Jobs ── */}
-                <div>
-                    {loadingMyJobs ? (
-                        <div className="flex justify-center items-center py-10">
-                            <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
+                {/* Right: Post Job button */}
+                <button
+                    onClick={() => navigate("/post-job")}
+                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
+                    style={{
+                        background: `linear-gradient(135deg, ${BRAND}, #0077b6)`,
+                        boxShadow: `0 2px 10px ${BRAND}44`,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND_DARK}, #005f93)`)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND}, #0077b6)`)}
+                >
+                    <Plus size={16} />
+                    Post Job
+                </button>
+            </div>
+
+            {/* ── Content ── */}
+            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+
+                {loadingMyJobs ? (
+                    <div className="flex justify-center items-center py-16">
+                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
+                    </div>
+                ) : myJobs.length === 0 ? (
+                    /* ── Empty state ── */
+                    <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
+                        <div
+                            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                            style={{ backgroundColor: "#e8f4fb" }}
+                        >
+                            <img src={JobIcon} alt="No jobs" className="w-10 h-10 object-contain" />
                         </div>
-                    ) : myJobs.length === 0 ? (
-                        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
-                            <Briefcase size={36} className="text-gray-300 mx-auto mb-3" />
-                            <p className={`text-gray-500 mb-1 ${typography.body.small} ${fontWeight.medium}`}>No jobs posted yet</p>
-                            <p className={`text-gray-400 mb-4 ${typography.body.xs}`}>Post your first job to find workers near you</p>
-                            <button
-                                onClick={() => navigate("/post-job")}
-                                className={`inline-flex items-center gap-1.5 text-white px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${typography.body.small} ${fontWeight.bold}`}
-                                style={{ backgroundColor: BRAND }}
-                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
-                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = BRAND)}
+                        <p className={`text-gray-700 mb-1 font-semibold text-base`}>No jobs posted yet</p>
+                        <p className={`text-gray-400 mb-6 text-sm`}>
+                            Post your first job to find skilled workers near you
+                        </p>
+                        <button
+                            onClick={() => navigate("/post-job")}
+                            className="inline-flex items-center gap-2 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
+                            style={{
+                                background: `linear-gradient(135deg, ${BRAND}, #0077b6)`,
+                                boxShadow: `0 2px 12px ${BRAND}44`,
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND_DARK}, #005f93)`)}
+                            onMouseLeave={(e) => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND}, #0077b6)`)}
+                        >
+                            <Plus size={16} />
+                            Post Your First Job
+                        </button>
+                    </div>
+                ) : (
+                    /* ── Job Grid ── */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {myJobs.map((job) => (
+                            <div
+                                key={job._id}
+                                className={`transition-opacity ${deletingId === job._id ? "opacity-40 pointer-events-none" : ""}`}
                             >
-                                <Plus size={14} /> Post a Job
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {myJobs.map((job) => (
-                                <div
-                                    key={job._id}
-                                    className={`transition-opacity ${deletingId === job._id ? "opacity-40 pointer-events-none" : ""}`}
-                                >
-                                    <MyJobCard
-                                        job={job}
-                                        onViewApplicants={handleViewApplicants}
-                                        onEdit={handleEdit}
-                                        onDelete={handleDelete}
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                <MyJobCard
+                                    job={job}
+                                    onViewApplicants={handleViewApplicants}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

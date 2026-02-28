@@ -31,59 +31,33 @@ const getLocationByIP = async (): Promise<{ lat: number; lng: number; city: stri
     return null;
 };
 
-// ── Resolve workerId from ALL possible localStorage keys ──────────────────────
-const resolveWorkerId = (): string | null => {
-    // 1. Direct string keys
-    const directKeys = [
-        "workerId", "@worker_id", "worker_id", "workerid", "WorkerId", "WORKER_ID",
-    ];
-    for (const key of directKeys) {
+// ── Resolve workerId from localStorage only (set by WorkerProfile on profile creation) ──
+const resolveWorkerId = (user: any): string | null => {
+    // 1. From AuthContext user object
+    if (user?.workerId) return user.workerId;
+
+    // 2. From localStorage keys
+    for (const key of ["workerId", "@worker_id", "worker_id"]) {
         const val = localStorage.getItem(key);
-        if (val && val !== "null" && val !== "undefined") {
-            console.log(`✅ workerId found at localStorage["${key}"]="${val}"`);
-            return val;
-        }
+        if (val && val !== "null" && val !== "undefined") return val;
     }
 
-    // 2. Inside JSON objects
-    const jsonKeys = [
-        "worker", "workerData", "workerProfile",
-        "user", "userData", "currentUser", "authUser", "profile",
-    ];
-    for (const key of jsonKeys) {
-        const raw = localStorage.getItem(key);
-        if (!raw || raw === "null" || raw === "undefined") continue;
-        try {
+    // 3. Inside stored user JSON
+    try {
+        const raw = localStorage.getItem("user");
+        if (raw) {
             const parsed = JSON.parse(raw);
-            const id =
-                parsed?._id ||
-                parsed?.workerId ||
-                parsed?.worker_id ||
-                parsed?.id ||
-                parsed?.worker?._id ||
-                parsed?.worker?.id;
-            if (id && typeof id === "string") {
-                console.log(`✅ workerId found inside localStorage["${key}"] as "${id}"`);
-                return id;
-            }
-        } catch {
-            // not JSON
+            const id = parsed?.workerId || parsed?.worker?._id;
+            if (id && typeof id === "string") return id;
         }
-    }
-
-    // 3. Debug dump — helps identify the correct key
-    console.warn("❌ workerId not found. Dumping all localStorage:");
-    Object.keys(localStorage).forEach(k => {
-        const v = localStorage.getItem(k) ?? "";
-        console.log(`  ["${k}"] = ${v.substring(0, 120)}`);
-    });
+    } catch { }
 
     return null;
 };
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const { accountType } = useAccount();
 
     const [showWelcome, setShowWelcome] = useState(false);
@@ -96,10 +70,7 @@ const HomePage: React.FC = () => {
 
     const [locationDetecting, setLocationDetecting] = useState(true);
     const [locationError, setLocationError] = useState("");
-
     const [topSearchText, setTopSearchText] = useState("");
-
-    // ── Resolve workerId once on mount ───────────────────────────────────────
     const [workerId, setWorkerId] = useState<string | null>(null);
 
     const isWorker = isAuthenticated && accountType === "worker";
@@ -108,16 +79,17 @@ const HomePage: React.FC = () => {
         detectLocation();
     }, []);
 
-    // Re-resolve workerId whenever auth state changes
+    // Resolve workerId from localStorage/user object — no backend call needed
     useEffect(() => {
-        if (isWorker) {
-            const id = resolveWorkerId();
+        if (!isWorker) return;
+        const id = resolveWorkerId(user);
+        if (id) {
+            console.log("✅ workerId resolved:", id);
             setWorkerId(id);
-            if (!id) {
-                console.warn("Worker is logged in but workerId could not be found in localStorage.");
-            }
+        } else {
+            console.warn("⚠️ No workerId found in storage. User may need to complete profile.");
         }
-    }, [isWorker, isAuthenticated]);
+    }, [isWorker, user]);
 
     const saveAndSet = (city: string, lat: number, lng: number) => {
         setUserLocation({ latitude: lat, longitude: lng, city });
@@ -237,7 +209,6 @@ const HomePage: React.FC = () => {
                     </div>
 
                 ) : locationError ? (
-                    /* Location Error */
                     <div className="max-w-xl mx-auto bg-yellow-50 border border-yellow-300 p-6 rounded-xl shadow mt-10 text-center">
                         <div className="text-5xl mb-4">📍</div>
                         <h2 className="text-xl font-bold text-yellow-800 mb-2">Location Required</h2>
@@ -251,7 +222,6 @@ const HomePage: React.FC = () => {
                     </div>
 
                 ) : !userLocation.latitude || !userLocation.longitude ? (
-                    /* No Location */
                     <div className="max-w-xl mx-auto bg-gray-100 p-6 rounded-xl shadow mt-10 text-center">
                         <div className="text-5xl mb-4">🌍</div>
                         <h2 className="text-xl font-bold text-gray-800 mb-2">Location Not Available</h2>
@@ -270,7 +240,7 @@ const HomePage: React.FC = () => {
                             workerId={workerId}
                         />
                     ) : (
-                        /* Worker logged in but no workerId found */
+                        /* Worker logged in but no workerId — needs to complete profile */
                         <div className="max-w-xl mx-auto bg-orange-50 border border-orange-300 p-6 rounded-xl shadow mt-10 text-center">
                             <div className="text-5xl mb-4">⚠️</div>
                             <h2 className="text-xl font-bold text-orange-800 mb-2">Profile Incomplete</h2>
@@ -278,7 +248,7 @@ const HomePage: React.FC = () => {
                                 Your worker profile could not be found. Please complete your profile setup.
                             </p>
                             <button
-                                onClick={() => navigate("/profile-setup")}
+                                onClick={() => navigate("/worker-profile")}
                                 className="bg-orange-600 text-white px-6 py-2.5 rounded-lg hover:bg-orange-700 transition font-medium text-sm"
                             >
                                 Complete Profile

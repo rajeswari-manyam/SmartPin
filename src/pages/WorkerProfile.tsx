@@ -1,15 +1,31 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Mic, MapPin, RefreshCw, User, Phone, CheckCircle, AlertTriangle, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Mic,
+  MapPin,
+  RefreshCw,
+  User,
+  CheckCircle,
+  AlertTriangle,
+  X,
+  Mail,
+  Phone,
+} from "lucide-react";
 import ProfilePhotoUpload from "../components/WorkerProfile/ProfilePhotoUpload";
-import { createWorkerBase, CreateWorkerBasePayload } from "../services/api.service";
+import { createWorkerBase } from "../services/api.service";
 import typography from "../styles/typography";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
 const BRAND = "#00598a";
 const BRAND_LIGHT = "#e8f4fb";
 const BRAND_MID = "#cce5f4";
 
-// ── Shared input style ────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED STYLES
+// ─────────────────────────────────────────────────────────────────────────────
 const inputBase =
   `w-full px-4 py-3.5 border border-gray-200 rounded-xl ` +
   `focus:ring-1 focus:ring-[#00598a]/30 focus:border-[#00598a] ` +
@@ -20,7 +36,10 @@ const inputDisabled =
   `w-full px-4 py-3.5 border border-gray-100 rounded-xl ` +
   `bg-gray-50 text-gray-400 cursor-not-allowed`;
 
-// ── Section card ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// SUB-COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
 const Section: React.FC<{
   icon: React.ElementType;
   title: string;
@@ -59,7 +78,6 @@ const Section: React.FC<{
   </div>
 );
 
-// ── Field label ───────────────────────────────────────────────────────────────
 const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   children,
   required,
@@ -70,7 +88,6 @@ const Label: React.FC<{ children: React.ReactNode; required?: boolean }> = ({
   </label>
 );
 
-// ── Voice input row ───────────────────────────────────────────────────────────
 const VoiceInput: React.FC<{
   type?: string;
   value: string;
@@ -89,9 +106,8 @@ const VoiceInput: React.FC<{
       disabled={disabled}
       maxLength={maxLength}
       inputMode={inputMode}
-      className={`flex-1 ${typography.form.input} ${disabled ? inputDisabled : inputBase} ${
-        value && !disabled ? "border-[#00598a] ring-1 ring-[#00598a]/20" : ""
-      }`}
+      className={`flex-1 ${typography.form.input} ${disabled ? inputDisabled : inputBase} ${value && !disabled ? "border-[#00598a] ring-1 ring-[#00598a]/20" : ""
+        }`}
     />
     <button
       type="button"
@@ -104,54 +120,67 @@ const VoiceInput: React.FC<{
   </div>
 );
 
-// ============================================================================
-// COMPONENT
-// ============================================================================
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────────────────────────────────────
 const WorkerProfile: React.FC = () => {
   const navigate = useNavigate();
 
-  const [fullName, setFullName]               = useState("");
-  const [phoneNumber, setPhoneNumber]         = useState("");
-  const [address, setAddress]                 = useState("");
-  const [city, setCity]                       = useState("");
-  const [state, setState]                     = useState("");
-  const [pincode, setPincode]                 = useState("");
-  const [latitude, setLatitude]               = useState(0);
-  const [longitude, setLongitude]             = useState(0);
-  const [profilePhoto, setProfilePhoto]       = useState<string | null>(null);
+  // ── Form state ──────────────────────────────────────────────────────────────
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");   // read-only, email login
+  const [phone, setPhone] = useState("");   // manually typed by user
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [latitude, setLatitude] = useState(0);
+  const [longitude, setLongitude] = useState(0);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [profilePhotoFile, setProfilePhotoFile] = useState<File | null>(null);
-  const [loading, setLoading]                 = useState(false);
+
+  // ── UI state ────────────────────────────────────────────────────────────────
+  const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [error, setError]                     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [locationWarning, setLocationWarning] = useState("");
 
+  // ── On mount: auto-detect email only (phone is manually entered) ────────────
   React.useEffect(() => {
-    const phone =
-      localStorage.getItem("phoneNumber") ||
-      localStorage.getItem("userPhone") ||
+    // Email: required — set during email-based OTP login
+    const storedEmail =
+      localStorage.getItem("userEmail") ||
+      localStorage.getItem("email") ||
       "";
-    setPhoneNumber(phone);
+    setEmail(storedEmail);
+
+    // ✅ Phone is NOT auto-detected — user must type it manually
   }, []);
 
+  // ── Geolocation + Nominatim reverse geocode ─────────────────────────────────
   const fetchLocation = () => {
     setLocationLoading(true);
     setLocationWarning("");
+
     if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
       setLocationLoading(false);
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
         setLatitude(lat);
         setLongitude(lng);
+
         if (pos.coords.accuracy > 500) {
           setLocationWarning(
             `Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify the address fields.`
           );
         }
+
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`
@@ -163,12 +192,15 @@ const WorkerProfile: React.FC = () => {
             data.address.suburb ||
             ""
           );
-          setCity(data.address.city || data.address.town || data.address.village || "");
+          setCity(
+            data.address.city || data.address.town || data.address.village || ""
+          );
           setState(data.address.state || "");
           setPincode(data.address.postcode || "");
         } catch (err) {
           console.error("Reverse geocode error:", err);
         }
+
         setLocationLoading(false);
       },
       (err) => {
@@ -179,9 +211,13 @@ const WorkerProfile: React.FC = () => {
     );
   };
 
+  // ── Submit — calls createWorkerBase from api.service ────────────────────────
   const handleSubmit = async () => {
     const userId = localStorage.getItem("userId");
-    if (!userId) { navigate("/loginPage"); return; }
+    if (!userId) {
+      navigate("/loginPage");
+      return;
+    }
 
     if (!fullName.trim() || !city.trim()) {
       setError("Name and City are required");
@@ -193,47 +229,40 @@ const WorkerProfile: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      const formData = new FormData();
-      formData.append("userId", userId);
-      formData.append("name", fullName);
-      formData.append("area", address);
-      formData.append("city", city);
-      formData.append("state", state);
-      formData.append("pincode", pincode);
-      formData.append("latitude", String(latitude));
-      formData.append("longitude", String(longitude));
-      if (phoneNumber) formData.append("phone", phoneNumber);
-      if (profilePhotoFile) formData.append("profilePic", profilePhotoFile);
-
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
-      const response = await fetch(`${API_BASE_URL}/createworkers`, {
-        method: "POST",
-        body: formData,
-        redirect: "follow",
+      const result = await createWorkerBase({
+        userId,
+        name: fullName,
+        area: address,
+        city,
+        state,
+        pincode,
+        latitude,
+        longitude,
+        // phone is optional — only sent when user manually typed it
+        phone: phone.trim() || undefined,
+        profilePic: profilePhotoFile ?? undefined,
       });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      const res = await response.json();
-      if (!res.success) throw new Error(res.message || "Failed to create profile");
+      // Persist worker ID for next onboarding steps
+      localStorage.setItem("workerId", result.worker._id);
+      localStorage.setItem("@worker_id", result.worker._id);
 
-      localStorage.setItem("workerId", res.worker._id);
-      localStorage.setItem("@worker_id", res.worker._id);
       navigate("/add-skills");
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || "Something went wrong. Please try again.");
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoading(false);
     }
   };
 
-  // ============================================================================
+  // ─────────────────────────────────────────────────────────────────────────
   // RENDER
-  // ============================================================================
+  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#f5f7fa" }}>
 
-      {/* ── Header ── */}
+      {/* ── Sticky Header ── */}
       <div
         className="sticky top-0 z-10 bg-white px-4 py-3.5 flex items-center gap-3"
         style={{ borderBottom: "1px solid #e9ecef" }}
@@ -257,7 +286,7 @@ const WorkerProfile: React.FC = () => {
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5 pb-10">
 
-        {/* ── Error banner ── */}
+        {/* ── Error Banner ── */}
         {error && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
             <X size={16} className="text-red-500 mt-0.5 flex-shrink-0" />
@@ -270,7 +299,6 @@ const WorkerProfile: React.FC = () => {
 
         {/* ══ Personal Information ══════════════════════════════════════════ */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
           {/* Card header */}
           <div
             className="px-5 py-3.5 flex items-center gap-2.5 border-b"
@@ -292,7 +320,7 @@ const WorkerProfile: React.FC = () => {
 
           <div className="px-5 py-5 space-y-5">
 
-            {/* Profile photo — centered at top */}
+            {/* Profile Photo */}
             <div className="flex flex-col items-center gap-2">
               <ProfilePhotoUpload
                 profilePhoto={profilePhoto}
@@ -300,9 +328,9 @@ const WorkerProfile: React.FC = () => {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   setProfilePhotoFile(file);
-                  const r = new FileReader();
-                  r.onload = () => setProfilePhoto(r.result as string);
-                  r.readAsDataURL(file);
+                  const reader = new FileReader();
+                  reader.onload = () => setProfilePhoto(reader.result as string);
+                  reader.readAsDataURL(file);
                 }}
               />
               <p className={`${typography.misc.caption} text-center`}>
@@ -310,10 +338,9 @@ const WorkerProfile: React.FC = () => {
               </p>
             </div>
 
-            {/* Divider */}
             <div className="border-t border-gray-100" />
 
-            {/* Full Name — full width */}
+            {/* Full Name */}
             <div>
               <Label required>Full Name</Label>
               <VoiceInput
@@ -324,16 +351,53 @@ const WorkerProfile: React.FC = () => {
               />
             </div>
 
-            {/* Phone Number — full width */}
+            {/* Email — read-only (email-based login, auto-filled from localStorage) */}
             <div>
-              <Label>Phone Number</Label>
-              <VoiceInput
-                type="tel"
-                value={phoneNumber}
-                onChange={setPhoneNumber}
-                placeholder="Enter your phone number"
-                disabled={loading}
-              />
+              <Label>Email Address</Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <Mail size={15} className="text-gray-400" />
+                </span>
+                <input
+                  type="email"
+                  value={email}
+                  readOnly
+                  placeholder="Email from your account"
+                  className={`${inputDisabled} pl-10`}
+                  style={{ width: "100%" }}
+                />
+              </div>
+              <p className={`${typography.misc.caption} text-gray-400 mt-1`}>
+                
+              </p>
+            </div>
+
+            {/* Phone — manually typed by user, optional */}
+            <div>
+              <Label>Phone Number <span className="text-gray-400 font-normal"></span></Label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+                  <Phone size={15} className="text-gray-400" />
+                </span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 15))}
+                  placeholder=""
+                  inputMode="numeric"
+                  disabled={loading}
+                  className={[
+                    "pl-10",
+                    typography.form.input,
+                    loading ? inputDisabled : inputBase,
+                    phone && !loading ? "border-[#00598a] ring-1 ring-[#00598a]/20" : "",
+                  ].join(" ")}
+                  style={{ width: "100%" }}
+                />
+              </div>
+              <p className={`${typography.misc.caption} text-gray-400 mt-1`}>
+
+              </p>
             </div>
 
           </div>
@@ -342,7 +406,7 @@ const WorkerProfile: React.FC = () => {
         {/* ══ Location Details ══════════════════════════════════════════════ */}
         <Section icon={MapPin} title="Location Details" required tinted>
 
-          {/* Auto-detect button — full width */}
+          {/* Auto-detect button */}
           <button
             type="button"
             onClick={fetchLocation}
@@ -356,7 +420,7 @@ const WorkerProfile: React.FC = () => {
             </span>
           </button>
 
-          {/* Location status alerts */}
+          {/* Low-accuracy warning */}
           {locationWarning && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 flex items-start gap-2">
               <AlertTriangle size={15} className="text-yellow-600 mt-0.5 flex-shrink-0" />
@@ -364,8 +428,12 @@ const WorkerProfile: React.FC = () => {
             </div>
           )}
 
+          {/* Detecting… pulse */}
           {locationLoading && (
-            <div className="rounded-xl p-3 flex items-center gap-2" style={{ backgroundColor: BRAND_LIGHT }}>
+            <div
+              className="rounded-xl p-3 flex items-center gap-2"
+              style={{ backgroundColor: BRAND_LIGHT }}
+            >
               <MapPin size={15} style={{ color: BRAND }} className="animate-pulse" />
               <p className={`${typography.misc.caption}`} style={{ color: BRAND }}>
                 Detecting your location…
@@ -373,6 +441,7 @@ const WorkerProfile: React.FC = () => {
             </div>
           )}
 
+          {/* Success indicator */}
           {latitude !== 0 && longitude !== 0 && !locationLoading && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-3 flex items-center gap-2">
               <CheckCircle size={15} className="text-green-600 flex-shrink-0" />
@@ -382,7 +451,7 @@ const WorkerProfile: React.FC = () => {
             </div>
           )}
 
-          {/* Street Address — full width */}
+          {/* Street Address */}
           <div>
             <Label>Street Address</Label>
             <VoiceInput
@@ -393,7 +462,7 @@ const WorkerProfile: React.FC = () => {
             />
           </div>
 
-          {/* City — full width */}
+          {/* City */}
           <div>
             <Label required>City</Label>
             <div className="flex gap-2">
@@ -414,13 +483,14 @@ const WorkerProfile: React.FC = () => {
                 type="button"
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-white flex-shrink-0"
                 style={{ backgroundColor: BRAND }}
+                disabled={loading}
               >
                 <Mic size={15} />
               </button>
             </div>
           </div>
 
-          {/* State — full width */}
+          {/* State */}
           <div>
             <Label>State</Label>
             <input
@@ -437,7 +507,7 @@ const WorkerProfile: React.FC = () => {
             />
           </div>
 
-          {/* Pincode — full width */}
+          {/* Pincode */}
           <div>
             <Label>Pincode</Label>
             <input
@@ -463,11 +533,12 @@ const WorkerProfile: React.FC = () => {
 
         </Section>
 
-        {/* ── Required note + Save Button ── */}
+        {/* ── Required note ── */}
         <p className={`${typography.misc.caption} text-red-500 text-center`}>
           * Name and City are required fields
         </p>
 
+        {/* ── Save & Continue Button ── */}
         <button
           onClick={handleSubmit}
           disabled={loading}
