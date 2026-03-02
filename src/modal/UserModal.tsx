@@ -87,7 +87,11 @@ const UserModal: React.FC<UserModalProps> = ({
 
             if (result.success) {
                 localStorage.setItem("userName", name.trim());
-                localStorage.setItem("isFirstTimeUser", "false");
+
+                // ✅ FIX: Mark this user ID as NOT first-time, keyed by userId
+                // so returning users are never shown this modal again
+                localStorage.setItem(`isFirstTimeUser_${userId}`, "false");
+                localStorage.setItem("isFirstTimeUser", "false"); // legacy key
 
                 const existingUserData = localStorage.getItem("userData");
                 if (existingUserData) {
@@ -114,10 +118,13 @@ const UserModal: React.FC<UserModalProps> = ({
     };
 
     const handleSkip = () => {
+        // ✅ FIX: Also mark as seen when skipping so it doesn't reappear
+        localStorage.setItem(`isFirstTimeUser_${userId}`, "false");
+        localStorage.setItem("isFirstTimeUser", "false");
+
         if (onSkip) {
             onSkip();
         } else {
-            localStorage.setItem("isFirstTimeUser", "false");
             onComplete("User");
         }
     };
@@ -212,6 +219,44 @@ const UserModal: React.FC<UserModalProps> = ({
             </div>
         </div>
     );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ Helper exported so OTPVerification / AuthContext can call it BEFORE
+//    rendering UserModal, to decide whether to show it at all.
+//
+// Usage (wherever you decide to show UserModal):
+//
+//   import { shouldShowUserModal } from "./UserModal";
+//
+//   const showModal = shouldShowUserModal(userId, userName);
+//   if (showModal) { /* render <UserModal /> */ }
+//
+// ─────────────────────────────────────────────────────────────────────────────
+export const shouldShowUserModal = (userId: string, userName?: string | null): boolean => {
+    if (!userId) return false;
+
+    // 1. Per-user key takes priority — if we've already seen this user, never show again
+    const perUserKey = localStorage.getItem(`isFirstTimeUser_${userId}`);
+    if (perUserKey === "false") return false;
+
+    // 2. If the user already has a real name (not empty / "User"), don't show
+    if (userName && userName.trim() !== "" && userName.trim().toLowerCase() !== "user") {
+        // Mark them as seen so we skip this check next time
+        localStorage.setItem(`isFirstTimeUser_${userId}`, "false");
+        return false;
+    }
+
+    // 3. Legacy: if the old flag is false and the per-user key wasn't set yet, honour it
+    const legacyKey = localStorage.getItem("isFirstTimeUser");
+    if (legacyKey === "false") {
+        localStorage.setItem(`isFirstTimeUser_${userId}`, "false");
+        return false;
+    }
+
+    // 4. Only show if backend explicitly returned isFirstTimeUser: true
+    //    (caller should pass this from the login API response)
+    return true;
 };
 
 export default UserModal;

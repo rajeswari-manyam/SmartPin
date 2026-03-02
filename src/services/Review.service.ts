@@ -1,7 +1,20 @@
 // ─── Review.service.ts ────────────────────────────────────────────────────────
 // API service for all review-related operations
+import axios from "axios";
 
-const BASE_URL = "http://192.168.1.3:3001";
+export const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || "";
+
+const API_FORM = axios.create({
+    baseURL: API_BASE_URL,
+    headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+    },
+});
+
+const API_MULTIPART = axios.create({
+    baseURL: API_BASE_URL,
+});
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export interface ReviewUser {
@@ -68,7 +81,7 @@ export async function addReview({
     body.append("rating", String(rating));
     body.append("review", review);
 
-    const res = await fetch(`${BASE_URL}/addReview`, {
+    const res = await fetch(`${API_BASE_URL}/addReview`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body,
@@ -86,7 +99,7 @@ export async function getReviews(
     workerId: string
 ): Promise<{ success: boolean; count: number; data: ReviewData[] }> {
     const res = await fetch(
-        `${BASE_URL}/getReviews?workerId=${encodeURIComponent(workerId)}`,
+        `${API_BASE_URL}/getReviews?workerId=${encodeURIComponent(workerId)}`,
         { method: "GET", redirect: "follow" }
     );
 
@@ -101,7 +114,7 @@ export async function getReviewById(
     reviewId: string
 ): Promise<{ success: boolean; data: ReviewData }> {
     const res = await fetch(
-        `${BASE_URL}/getReviewById/${encodeURIComponent(reviewId)}`,
+        `${API_BASE_URL}/getReviewById/${encodeURIComponent(reviewId)}`,
         { method: "GET", redirect: "follow" }
     );
 
@@ -116,7 +129,7 @@ export async function getWorkerAverageRating(
     workerId: string
 ): Promise<{ success: boolean; data: AverageRatingData }> {
     const res = await fetch(
-        `${BASE_URL}/getWorkerAverageRating?workerId=${encodeURIComponent(workerId)}`,
+        `${API_BASE_URL}/getWorkerAverageRating?workerId=${encodeURIComponent(workerId)}`,
         { method: "GET", redirect: "follow" }
     );
 
@@ -141,7 +154,7 @@ export async function updateReview({
     body.append("review", review);
 
     const res = await fetch(
-        `${BASE_URL}/updateReview/${encodeURIComponent(reviewId)}`,
+        `${API_BASE_URL}/updateReview/${encodeURIComponent(reviewId)}`,
         {
             method: "PUT",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -161,7 +174,7 @@ export async function deleteReview(
     reviewId: string
 ): Promise<{ success: boolean; message: string }> {
     const res = await fetch(
-        `${BASE_URL}/deleteReview/${encodeURIComponent(reviewId)}`,
+        `${API_BASE_URL}/deleteReview/${encodeURIComponent(reviewId)}`,
         { method: "DELETE", redirect: "follow" }
     );
 

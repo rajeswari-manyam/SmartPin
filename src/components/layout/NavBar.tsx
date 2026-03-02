@@ -268,7 +268,9 @@ const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Login button (unauthenticated) — all screen sizes ── */}
+              {/* ── Login button (unauthenticated) ──
+                  FIX: was "hidden lg:block" — now visible on ALL screen sizes.
+                  On mobile it shows next to the hamburger. ── */}
               {!isAuthenticated && (
                 <Button
                   variant="gradient-blue"
@@ -279,13 +281,11 @@ const Navbar: React.FC = () => {
                 </Button>
               )}
 
-              {/* ── ✅ FIXED: Profile avatar — ALL screen sizes when authenticated ──
-                  Previously was "hidden lg:flex" so it was invisible on mobile.
-                  Now shows on mobile AND desktop. ── */}
+              {/* ── Profile avatar — desktop only when authenticated ── */}
               {isAuthenticated && (
                 <button
                   onClick={handleProfileClick}
-                  className="flex items-center justify-center w-9 h-9 lg:w-10 lg:h-10 rounded-full overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:scale-110 hover:shadow-xl flex-shrink-0"
+                  className="hidden lg:flex items-center justify-center w-10 h-10 rounded-full overflow-hidden border-2 border-transparent transition-all duration-300 hover:border-primary hover:scale-110 hover:shadow-xl flex-shrink-0"
                   title={userName}
                 >
                   {profilePic ? (
@@ -306,7 +306,9 @@ const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* ── Hamburger toggle — mobile only ── */}
+              {/* ── Hamburger toggle — mobile only ──
+                  FIX: was "lg:hidden" but the right-section flex was hiding
+                  everything. Button is now explicitly block on mobile. ── */}
               <button
                 className="flex lg:hidden items-center justify-center text-gray-700 p-1"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -364,6 +366,35 @@ const Navbar: React.FC = () => {
                 <MobileNavItem icon={Home} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
                 <MobileNavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
+            )}
+
+            {/* ── Mobile profile row (authenticated) ── */}
+            {isAuthenticated && (
+              <button
+                onClick={handleProfileClick}
+                className="group w-full text-left px-4 py-3 flex items-center gap-3 text-gray-700 hover:bg-gray-100 hover:text-primary transition-all duration-200"
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0">
+                  {profilePic ? (
+                    <img
+                      src={profilePic}
+                      alt={userName}
+                      className="w-full h-full object-cover"
+                      onError={() => setProfilePic(null)}
+                    />
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center text-white font-bold text-sm"
+                      style={{ backgroundColor: "#00598a" }}
+                    >
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <span className="transition-all duration-200 group-hover:translate-x-1 font-medium">
+                  {userName}
+                </span>
+              </button>
             )}
 
             {/* ── Mobile notification item with count ── */}

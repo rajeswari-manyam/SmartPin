@@ -2,13 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, CheckCircle, Circle, RefreshCw,
-    Loader2, BellOff, Trash2, Eye, EyeOff,
+    Loader2, BellOff, Trash2,
 } from 'lucide-react';
 import {
     getAllNotifications,
-    getReadNotifications,
-    getUnreadNotifications,
     getNotificationCount,
+    markNotificationAsRead,
     deleteNotification,
     Notification,
 } from '../services/api.service';
@@ -21,26 +20,26 @@ import typography from '../styles/typography';
 // ============================================================================
 const getNotificationConfig = (type: string) => {
     const configs: Record<string, { icon: string; iconBg: string; accent: string }> = {
-        NEW_JOB:       { icon: '🆕', iconBg: '#EEF2FF', accent: '#6366f1' },
-        JOB_ENQUIRY:   { icon: '📩', iconBg: '#DBEAFE', accent: '#3b82f6' },
+        NEW_JOB: { icon: '🆕', iconBg: '#EEF2FF', accent: '#6366f1' },
+        JOB_ENQUIRY: { icon: '📩', iconBg: '#DBEAFE', accent: '#3b82f6' },
         JOB_CONFIRMED: { icon: '✅', iconBg: '#D1FAE5', accent: '#10b981' },
-        PAYMENT:       { icon: '💰', iconBg: '#FEF3C7', accent: '#f59e0b' },
+        PAYMENT: { icon: '💰', iconBg: '#FEF3C7', accent: '#f59e0b' },
         JOB_COMPLETED: { icon: '🔧', iconBg: '#F3E8FF', accent: '#8b5cf6' },
-        NEW_MESSAGE:   { icon: '💬', iconBg: '#DBEAFE', accent: '#3b82f6' },
+        NEW_MESSAGE: { icon: '💬', iconBg: '#DBEAFE', accent: '#3b82f6' },
     };
     return configs[type] || { icon: '🔔', iconBg: '#F3F4F6', accent: '#6b7280' };
 };
 
 const formatRelativeTime = (dateStr: string): string => {
     try {
-        const diff  = Date.now() - new Date(dateStr).getTime();
-        const mins  = Math.floor(diff / 60000);
+        const diff = Date.now() - new Date(dateStr).getTime();
+        const mins = Math.floor(diff / 60000);
         const hours = Math.floor(diff / 3600000);
-        const days  = Math.floor(diff / 86400000);
-        if (mins  < 1)  return 'just now';
-        if (mins  < 60) return `${mins} min${mins  !== 1 ? 's' : ''} ago`;
+        const days = Math.floor(diff / 86400000);
+        if (mins < 1) return 'just now';
+        if (mins < 60) return `${mins} min${mins !== 1 ? 's' : ''} ago`;
         if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-        if (days  < 7)  return `${days} day${days  !== 1 ? 's' : ''} ago`;
+        if (days < 7) return `${days} day${days !== 1 ? 's' : ''} ago`;
         return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     } catch { return ''; }
 };
@@ -50,8 +49,8 @@ const formatRelativeTime = (dateStr: string): string => {
 // ============================================================================
 const DeleteConfirmModal: React.FC<{
     onConfirm: () => void;
-    onCancel:  () => void;
-    deleting:  boolean;
+    onCancel: () => void;
+    deleting: boolean;
 }> = ({ onConfirm, onCancel, deleting }) => (
     <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -66,12 +65,8 @@ const DeleteConfirmModal: React.FC<{
                 <Trash2 className="w-7 h-7 text-red-500" />
             </div>
             <div className="text-center">
-                <h3 className={`${typography.heading.h6} text-gray-900`}>
-                    Delete Notification?
-                </h3>
-                <p className={`${typography.body.xs} text-gray-500 mt-1`}>
-                    This action cannot be undone.
-                </p>
+                <h3 className={`${typography.heading.h6} text-gray-900`}>Delete Notification?</h3>
+                <p className={`${typography.body.xs} text-gray-500 mt-1`}>This action cannot be undone.</p>
             </div>
             <div className="grid grid-cols-2 gap-3 w-full">
                 <button
@@ -105,12 +100,14 @@ const DeleteConfirmModal: React.FC<{
 // ============================================================================
 const NotificationCard: React.FC<{
     notification: Notification;
-    onMarkRead:   (id: string) => void;
-    onDelete:     (id: string) => void;
-    onClick:      () => void;
-}> = ({ notification, onMarkRead, onDelete, onClick }) => {
-    const config   = getNotificationConfig(notification.type);
+    markingReadId: string | null;
+    onMarkRead: (id: string) => void;
+    onDelete: (id: string) => void;
+    onClick: () => void;
+}> = ({ notification, markingReadId, onMarkRead, onDelete, onClick }) => {
+    const config = getNotificationConfig(notification.type);
     const isUnread = !notification.isRead;
+    const isMarking = markingReadId === notification._id;
 
     return (
         <div
@@ -130,7 +127,7 @@ const NotificationCard: React.FC<{
 
             <div className="flex items-start gap-3 p-4 pl-5">
                 <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typography.icon.lg}`}
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typography.icon?.lg ?? 'text-xl'}`}
                     style={{ backgroundColor: config.iconBg }}
                 >
                     {config.icon}
@@ -160,11 +157,10 @@ const NotificationCard: React.FC<{
                         >
                             {notification.type.replace(/_/g, ' ')}
                         </span>
-                        <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full ${
-                            isUnread
-                                ? 'bg-orange-50 text-orange-500 border border-orange-100'
-                                : 'bg-green-50 text-green-600 border border-green-100'
-                        }`}>
+                        <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full ${isUnread
+                            ? 'bg-orange-50 text-orange-500 border border-orange-100'
+                            : 'bg-green-50 text-green-600 border border-green-100'
+                            }`}>
                             {isUnread ? 'Unread' : 'Read'}
                         </span>
                     </div>
@@ -172,13 +168,16 @@ const NotificationCard: React.FC<{
 
                 <div className="flex flex-col items-center gap-1.5 flex-shrink-0 mt-0.5">
                     <button
-                        onClick={e => { e.stopPropagation(); onMarkRead(notification._id); }}
-                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+                        onClick={e => { e.stopPropagation(); if (isUnread) onMarkRead(notification._id); }}
+                        disabled={isMarking || !isUnread}
+                        className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
                         title={isUnread ? 'Mark as read' : 'Already read'}
                     >
-                        {isUnread
-                            ? <Circle      className="w-5 h-5 text-gray-300" />
-                            : <CheckCircle className="w-5 h-5 text-green-400" />
+                        {isMarking
+                            ? <Loader2 className="w-5 h-5 text-blue-400 animate-spin" />
+                            : isUnread
+                                ? <Circle className="w-5 h-5 text-gray-300" />
+                                : <CheckCircle className="w-5 h-5 text-green-400" />
                         }
                     </button>
                     <button
@@ -210,9 +209,8 @@ const RoleTab: React.FC<{
     >
         {label}
         {count != null && count > 0 && (
-            <span className={`${typography.fontSize.xs} font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                active ? 'bg-white/25 text-white' : 'bg-gray-300 text-gray-600'
-            }`}>
+            <span className={`${typography.fontSize.xs} font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${active ? 'bg-white/25 text-white' : 'bg-gray-300 text-gray-600'
+                }`}>
                 {count}
             </span>
         )}
@@ -227,10 +225,10 @@ const NotificationsPage: React.FC = () => {
     const { accountType, setAccountType, workerProfileId } = useAccount();
     const { user } = useAuth();
 
-    const userId   = user?._id || localStorage.getItem('userId') || '';
+    const userId = user?._id || localStorage.getItem('userId') || '';
     const workerId = workerProfileId || localStorage.getItem('workerId') || '';
 
-    const currentId   = accountType === 'worker' ? workerId : userId;
+    const currentId = accountType === 'worker' ? workerId : userId;
     const currentRole = accountType === 'worker' ? 'Worker' : 'User';
 
     // ── Notification list ─────────────────────────────────────────────────────
@@ -238,17 +236,18 @@ const NotificationsPage: React.FC = () => {
 
     // ── Counts ────────────────────────────────────────────────────────────────
     const [liveUnreadCount, setLiveUnreadCount] = useState(0);
-    const [userUnread,      setUserUnread]      = useState(0);
-    const [workerUnread,    setWorkerUnread]    = useState(0);
+    const [userUnread, setUserUnread] = useState(0);
+    const [workerUnread, setWorkerUnread] = useState(0);
 
     // ── UI state ──────────────────────────────────────────────────────────────
-    const [loading,    setLoading]    = useState(true);
+    const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
-    const [error,      setError]      = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [markingReadId, setMarkingReadId] = useState<string | null>(null);
 
     // ── Delete modal ──────────────────────────────────────────────────────────
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-    const [deleting,        setDeleting]        = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     // ============================================================================
     // FETCH
@@ -276,10 +275,11 @@ const NotificationsPage: React.FC = () => {
                 setAllNotifications(sorted);
                 const unread = sorted.filter(n => !n.isRead).length;
                 if (currentRole === 'User') setUserUnread(unread);
-                else                        setWorkerUnread(unread);
+                else setWorkerUnread(unread);
             }
 
             if (countRes.status === 'fulfilled') {
+                // Backend returns { success, unreadCount } — already handled in api.service
                 setLiveUnreadCount(countRes.value.count ?? 0);
             }
 
@@ -294,30 +294,62 @@ const NotificationsPage: React.FC = () => {
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
     // ============================================================================
-    // MARK READ
+    // MARK READ  ← FIX: now actually calls PUT /read/:id
     // ============================================================================
-    const handleMarkRead = (id: string) => {
-        setAllNotifications(prev =>
-            prev.map(n => n._id === id ? { ...n, isRead: true } : n)
-        );
+    const handleMarkRead = useCallback(async (id: string) => {
+        // Find the notification; skip if already read
+        const target = allNotifications.find(n => n._id === id);
+        if (!target || target.isRead) return;
+
+        // Optimistic update so the UI feels instant
+        setAllNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         setLiveUnreadCount(c => Math.max(0, c - 1));
         if (currentRole === 'User') setUserUnread(c => Math.max(0, c - 1));
-        else                        setWorkerUnread(c => Math.max(0, c - 1));
-    };
+        else setWorkerUnread(c => Math.max(0, c - 1));
 
-    const handleMarkAllRead = () => {
-        const unread = allNotifications.filter(n => !n.isRead).length;
+        // Show spinner on that card's button while the request is in-flight
+        setMarkingReadId(id);
+        try {
+            await markNotificationAsRead(id);  // PUT /read/:id
+        } catch (err) {
+            console.error('❌ markNotificationAsRead failed, reverting:', err);
+            // Rollback optimistic update on failure
+            setAllNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: false } : n));
+            setLiveUnreadCount(c => c + 1);
+            if (currentRole === 'User') setUserUnread(c => c + 1);
+            else setWorkerUnread(c => c + 1);
+        } finally {
+            setMarkingReadId(null);
+        }
+    }, [allNotifications, currentRole]);
+
+    // ============================================================================
+    // MARK ALL READ  ← calls API for every unread notification in parallel
+    // ============================================================================
+    const handleMarkAllRead = useCallback(async () => {
+        const unreadIds = allNotifications.filter(n => !n.isRead).map(n => n._id);
+        if (unreadIds.length === 0) return;
+
+        // Optimistic update
         setAllNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setLiveUnreadCount(0);
-        if (currentRole === 'User') setUserUnread(c => Math.max(0, c - unread));
-        else                        setWorkerUnread(c => Math.max(0, c - unread));
-    };
+        if (currentRole === 'User') setUserUnread(0);
+        else setWorkerUnread(0);
+
+        // Fire all requests in parallel; log individual failures but don't revert all
+        const results = await Promise.allSettled(unreadIds.map(id => markNotificationAsRead(id)));
+        results.forEach((r, i) => {
+            if (r.status === 'rejected') {
+                console.error(`❌ Failed to mark ${unreadIds[i]} as read:`, r.reason);
+            }
+        });
+    }, [allNotifications, currentRole]);
 
     // ============================================================================
     // DELETE
     // ============================================================================
-    const handleDeleteRequest  = (id: string) => setPendingDeleteId(id);
-    const handleDeleteCancel   = () => { if (!deleting) setPendingDeleteId(null); };
+    const handleDeleteRequest = (id: string) => setPendingDeleteId(id);
+    const handleDeleteCancel = () => { if (!deleting) setPendingDeleteId(null); };
 
     const handleDeleteConfirm = async () => {
         if (!pendingDeleteId) return;
@@ -329,7 +361,7 @@ const NotificationsPage: React.FC = () => {
             if (wasUnread) {
                 setLiveUnreadCount(c => Math.max(0, c - 1));
                 if (currentRole === 'User') setUserUnread(c => Math.max(0, c - 1));
-                else                        setWorkerUnread(c => Math.max(0, c - 1));
+                else setWorkerUnread(c => Math.max(0, c - 1));
             }
         } catch (err) {
             console.error('❌ Delete error:', err);
@@ -343,10 +375,10 @@ const NotificationsPage: React.FC = () => {
     // CARD CLICK
     // ============================================================================
     const handleCardClick = (n: Notification) => {
-        if (!n.isRead) handleMarkRead(n._id);
-        if (!n.jobId)  return;
+        if (!n.isRead) handleMarkRead(n._id);   // marks read via API
+        if (!n.jobId) return;
         if (currentRole === 'Worker') navigate(`/job-details/${n.jobId}`);
-        else                          navigate(`/job-applicants/${n.jobId}`);
+        else navigate(`/job-applicants/${n.jobId}`);
     };
 
     // ── Loading screen ────────────────────────────────────────────────────────
@@ -379,9 +411,7 @@ const NotificationsPage: React.FC = () => {
                                 <ArrowLeft className="w-5 h-5 text-gray-700" />
                             </button>
                             <div>
-                                <h1 className={`${typography.heading.h5} text-gray-900`}>
-                                    Notifications
-                                </h1>
+                                <h1 className={`${typography.heading.h5} text-gray-900`}>Notifications</h1>
                                 <p className={`${typography.misc.caption} flex items-center gap-1.5`}>
                                     {liveUnreadCount > 0 ? (
                                         <>
@@ -495,6 +525,7 @@ const NotificationsPage: React.FC = () => {
                             <NotificationCard
                                 key={n._id}
                                 notification={n}
+                                markingReadId={markingReadId}
                                 onMarkRead={handleMarkRead}
                                 onDelete={handleDeleteRequest}
                                 onClick={() => handleCardClick(n)}
@@ -509,9 +540,7 @@ const NotificationsPage: React.FC = () => {
                         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-5">
                             <BellOff className="w-9 h-9 text-gray-300" />
                         </div>
-                        <h2 className={`${typography.heading.h5} text-gray-800 mb-2`}>
-                            No Notifications
-                        </h2>
+                        <h2 className={`${typography.heading.h5} text-gray-800 mb-2`}>No Notifications</h2>
                         <p className={`${typography.body.small} text-gray-500 max-w-xs leading-relaxed`}>
                             {currentRole === 'Worker'
                                 ? "You'll be notified when new jobs matching your skills are posted nearby."

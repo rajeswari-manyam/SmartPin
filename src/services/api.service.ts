@@ -381,96 +381,76 @@ export const getWorkerById = async (workerId: string): Promise<{ success: boolea
 //             latitude, longitude, phone (optional), profilePic (optional File)
 //   Response: { success, message, worker: { _id, userId, name, phone, ... } }
 // ─────────────────────────────────────────────────────────────────────────────
-
 export interface CreateWorkerBasePayload {
     userId: string;
     name: string;
-    area: string;
+    area?: string;
     city: string;
-    state: string;
-    pincode: string;
-    latitude: number | string;
-    longitude: number | string;
-    /** Optional — worker's phone number (not used for login; auto-detected) */
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
     phone?: string;
     profilePic?: File;
 }
 
-export interface CreateWorkerBaseResponse {
+export interface WorkerResponse {
     success: boolean;
     message: string;
     worker: {
         _id: string;
         userId: string;
         name: string;
-        /** Present when phone was supplied */
         phone?: string;
-        category: string[];
-        subCategories: string[];
-        skills: string[];
-        serviceCharge: number;
-        chargeType: string;
         profilePic?: string;
-        images: string[];
-        area: string;
         city: string;
-        state: string;
-        pincode: string;
-        latitude: number;
-        longitude: number;
-        isActive: boolean;
-        createdAt: string;
-        updatedAt: string;
-        __v: number;
+        state?: string;
+        pincode?: string;
+        latitude?: number;
+        longitude?: number;
     };
 }
 
+/* ─────────────────────────────────────────────
+   CREATE WORKER PROFILE
+   POST /createworkers
+   ───────────────────────────────────────────── */
 export const createWorkerBase = async (
     payload: CreateWorkerBasePayload
-): Promise<CreateWorkerBaseResponse> => {
+): Promise<WorkerResponse> => {
     try {
         const formData = new FormData();
+
         formData.append("userId", payload.userId);
         formData.append("name", payload.name);
-        formData.append("area", payload.area);
         formData.append("city", payload.city);
-        formData.append("state", payload.state);
-        formData.append("pincode", payload.pincode);
-        formData.append("latitude", String(payload.latitude));
-        formData.append("longitude", String(payload.longitude));
 
-        // phone is optional — only appended when provided
+        if (payload.area) formData.append("area", payload.area);
+        if (payload.state) formData.append("state", payload.state);
+        if (payload.pincode) formData.append("pincode", payload.pincode);
         if (payload.phone) formData.append("phone", payload.phone);
+        if (payload.latitude)
+            formData.append("latitude", String(payload.latitude));
+        if (payload.longitude)
+            formData.append("longitude", String(payload.longitude));
+        if (payload.profilePic)
+            formData.append("profilePic", payload.profilePic);
 
-        // profile picture file — only appended when provided
-        if (payload.profilePic) formData.append("profilePic", payload.profilePic);
+       const res = await API_MULTIPART.post("/createworkers", formData, {
+    headers: {
+        "Content-Type": "multipart/form-data",
+    },
+});
+        return res.data;
+    } catch (err: any) {
+        const message =
+            err?.response?.data?.message ||
+            err?.message ||
+            "Failed to create worker profile";
 
-        const response = await fetch(`${API_BASE_URL}/createworkers`, {
-            method: "POST",
-            body: formData,
-            redirect: "follow",
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("createWorkerBase API error:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data: CreateWorkerBaseResponse = await response.json();
-
-        if (!data.success) {
-            throw new Error(data.message || "Failed to create worker profile");
-        }
-
-        console.log("✅ createWorkerBase response:", data);
-        return data;
-    } catch (error) {
-        console.error("❌ createWorkerBase error:", error);
-        throw error;
+        throw new Error(message);
     }
 };
-
 // ─────────────────────────────────────────────────────────────────────────────
 // ADD WORKER SKILL — Step 2  POST /addworkerSkill
 // ─────────────────────────────────────────────────────────────────────────────
@@ -570,8 +550,8 @@ export interface CreateWorkerCompletePayload {
     city: string;
     state: string;
     pincode: string;
-    latitude: number | string;
-    longitude: number | string;
+   latitude?: number;
+longitude?: number;
     images?: File[];
     profilePic?: File;
 }
@@ -581,7 +561,7 @@ export const createWorkerComplete = async (
 ): Promise<{
     success: boolean;
     message: string;
-    baseWorker: CreateWorkerBaseResponse;
+   baseWorker: WorkerResponse;
     skillWorker: AddWorkerSkillResponse;
 }> => {
     try {
@@ -628,7 +608,24 @@ export const createWorkerComplete = async (
         throw error;
     }
 };
+// 🔹 Get worker using userId (used on WorkerProfile page)
+export const getWorkerByUserId = async (userId: string) => {
+  const res = await fetch(
+    `${API_BASE_URL}/getWorkerByUserId/${userId}`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }
+  );
 
+  if (!res.ok) {
+    throw new Error("Worker not found");
+  }
+
+  return res.json();
+};
 // ─────────────────────────────────────────────────────────────────────────────
 // GET WORKER WITH SKILLS
 // ─────────────────────────────────────────────────────────────────────────────
