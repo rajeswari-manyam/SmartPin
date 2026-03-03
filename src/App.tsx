@@ -27,7 +27,7 @@ import Help from "./pages/Help";
 import ProfilePage from "./pages/ProfilePage";
 import WorkerProfileScreen from "./pages/WorkerProfile";
 import JobDetails from "./pages/JobDetails";
-import UserProfile from "./pages/UserProfile";
+import UserProfile from "./pages/CustomerProfile";
 import WorkerProfile from "./pages/WorkerProfile";
 import CallingScreen from "./pages/Call";
 import ServiceEnquiryForm from "./pages/ServiceEnquiryForm";
@@ -240,7 +240,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
                     <Route path="/confirmed-workers/:jobId" element={<ConfirmedWorkersPage />} />
 
-                                       {/* ── User Settings ── */}
+                    {/* ── User Settings ── */}
                     <Route path="/my-profile" element={<MyProfile />} />
                     <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
                     <Route path="/about-us" element={<AboutUs />} />
@@ -338,8 +338,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/home-personal" element={<HomePersonalServiceList />} />
                     <Route path="/food/:subcategory" element={<FoodServiceList />} />
                     <Route path="/food" element={<FoodServiceList />} />
- {/* Reviews route */}
-                <Route path="/reviews/:workerId" element={<Reviews />} />
+                    {/* Reviews route */}
+                    <Route path="/reviews/:workerId" element={<Reviews />} />
                     {/* ── Worker-only routes ── */}
                     <Route
                         path="/add-skills"

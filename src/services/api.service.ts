@@ -348,6 +348,7 @@ export interface Worker {
     userId: string;
     name: string;
     email?: string;
+     phone?: string;          // ✅ ADD THIS LINE
     category: string | string[];
     subCategories?: string[];
     skills?: string[];
@@ -429,18 +430,18 @@ export const createWorkerBase = async (
         if (payload.state) formData.append("state", payload.state);
         if (payload.pincode) formData.append("pincode", payload.pincode);
         if (payload.phone) formData.append("phone", payload.phone);
-        if (payload.latitude)
+        if (payload.latitude !== undefined)
             formData.append("latitude", String(payload.latitude));
-        if (payload.longitude)
+        if (payload.longitude !== undefined)
             formData.append("longitude", String(payload.longitude));
         if (payload.profilePic)
             formData.append("profilePic", payload.profilePic);
 
-       const res = await API_MULTIPART.post("/createworkers", formData, {
-    headers: {
-        "Content-Type": "multipart/form-data",
-    },
-});
+        const res = await API_MULTIPART.post("/createworkers", formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
         return res.data;
     } catch (err: any) {
         const message =
@@ -550,8 +551,8 @@ export interface CreateWorkerCompletePayload {
     city: string;
     state: string;
     pincode: string;
-   latitude?: number;
-longitude?: number;
+    latitude?: number;
+    longitude?: number;
     images?: File[];
     profilePic?: File;
 }
@@ -561,7 +562,7 @@ export const createWorkerComplete = async (
 ): Promise<{
     success: boolean;
     message: string;
-   baseWorker: WorkerResponse;
+    baseWorker: WorkerResponse;
     skillWorker: AddWorkerSkillResponse;
 }> => {
     try {
@@ -610,21 +611,21 @@ export const createWorkerComplete = async (
 };
 // 🔹 Get worker using userId (used on WorkerProfile page)
 export const getWorkerByUserId = async (userId: string) => {
-  const res = await fetch(
-    `${API_BASE_URL}/getWorkerByUserId/${userId}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
+    const res = await fetch(
+        `${API_BASE_URL}/getWorkerByUserId/${userId}`,
+        {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+            },
+        }
+    );
+
+    if (!res.ok) {
+        throw new Error("Worker not found");
     }
-  );
 
-  if (!res.ok) {
-    throw new Error("Worker not found");
-  }
-
-  return res.json();
+    return res.json();
 };
 // ─────────────────────────────────────────────────────────────────────────────
 // GET WORKER WITH SKILLS
@@ -682,12 +683,10 @@ export const getWorkerWithSkills = async (
     workerId: string
 ): Promise<WorkerWithSkillsResponse> => {
     try {
-        const response = await fetch(
-            `${API_BASE_URL}/getWorkerWithSkills?workerId=${workerId}`,
-            { method: "GET", headers: { "Content-Type": "application/json" } }
-        );
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return await response.json();
+        const response = await API_MULTIPART.get(`/getWorkerWithSkills`, {
+            params: { workerId }
+        });
+        return response.data;
     } catch (error) {
         console.error("❌ getWorkerWithSkills error:", error);
         throw error;
@@ -1449,4 +1448,95 @@ export const notifyMatchingWorkers = async (
         console.error("❌ notifyMatchingWorkers error:", error);
         throw error;
     }
+};
+// ─────────────────────────────────────────────
+// REVIEWS
+// ─────────────────────────────────────────────
+// Get reviews (query string, not path param)
+export interface ReviewData {
+    _id: string;
+    user: string | { _id: string; name: string };
+    worker: string;
+    rating: number;
+    review: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const getReviews = async (
+    workerId: string
+): Promise<{ success: boolean; data: ReviewData[] }> => {
+    const res = await fetch(
+        `${API_BASE_URL}/getReviews?workerId=${workerId}`
+    );
+
+    if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
+    return res.json();
+};
+export const addReview = async (
+  userId: string,
+  workerId: string,
+  rating: number,
+  review: string
+): Promise<{ success: boolean; message: string; data?: any }> => {
+  const formData = new URLSearchParams();
+  formData.append("userId", userId);
+  formData.append("workerId", workerId);
+  formData.append("rating", String(rating));
+  formData.append("review", review);
+
+  const res = await fetch(`${API_BASE_URL}/addReview`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData,
+  });
+
+  const json = await res.json();
+
+  if (!res.ok) {
+    throw new Error(json?.message || `HTTP error! status: ${res.status}`);
+  }
+
+  return json;
+};
+// Update review
+export const updateReview = async (
+  reviewId: string,
+  rating: number,
+  review: string
+) => {
+  const formData = new URLSearchParams();
+  formData.append("rating", String(rating));
+  formData.append("review", review);
+
+  const res = await fetch(`${API_BASE_URL}/updateReview/${reviewId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return res.json();
+};
+
+// Delete review
+export const deleteReview = async (reviewId: string) => {
+  const res = await fetch(`${API_BASE_URL}/deleteReview/${reviewId}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return res.json();
+};
+
+// Worker average rating
+export const getWorkerAverageRating = async (workerId: string) => {
+  const res = await fetch(`${API_BASE_URL}/getWorkerAverageRating?workerId=${workerId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+  return res.json();
 };

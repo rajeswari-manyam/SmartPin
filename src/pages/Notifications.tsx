@@ -2,14 +2,16 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     ArrowLeft, CheckCircle, Circle, RefreshCw,
-    Loader2, BellOff, Trash2,
+    Loader2, BellOff, Trash2, Star,
 } from 'lucide-react';
 import {
     getAllNotifications,
     getNotificationCount,
     markNotificationAsRead,
     deleteNotification,
+    getReviews,          // ← imported to fetch real review data
     Notification,
+    ReviewData,          // ← imported for typing
 } from '../services/api.service';
 import { useAccount } from '../context/AccountContext';
 import { useAuth } from '../context/AuthContext';
@@ -26,6 +28,7 @@ const getNotificationConfig = (type: string) => {
         PAYMENT: { icon: '💰', iconBg: '#FEF3C7', accent: '#f59e0b' },
         JOB_COMPLETED: { icon: '🔧', iconBg: '#F3E8FF', accent: '#8b5cf6' },
         NEW_MESSAGE: { icon: '💬', iconBg: '#DBEAFE', accent: '#3b82f6' },
+        NEW_REVIEW: { icon: '⭐', iconBg: '#FFFBEB', accent: '#f59e0b' },
     };
     return configs[type] || { icon: '🔔', iconBg: '#F3F4F6', accent: '#6b7280' };
 };
@@ -43,6 +46,23 @@ const formatRelativeTime = (dateStr: string): string => {
         return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
     } catch { return ''; }
 };
+
+// ============================================================================
+// STAR ROW (read-only)
+// ============================================================================
+const StarRow: React.FC<{ value: number }> = ({ value }) => (
+    <div className="flex gap-0.5">
+        {[1, 2, 3, 4, 5].map(s => (
+            <Star
+                key={s}
+                className={`w-3.5 h-3.5 ${s <= value
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-gray-200 fill-gray-200'
+                    }`}
+            />
+        ))}
+    </div>
+);
 
 // ============================================================================
 // DELETE CONFIRM MODAL
@@ -96,15 +116,188 @@ const DeleteConfirmModal: React.FC<{
 );
 
 // ============================================================================
-// NOTIFICATION CARD
+// REVIEW NOTIFICATION CARD
+// Calls getReviews(workerId) on mount and renders the latest real review inline
 // ============================================================================
-const NotificationCard: React.FC<{
+const ReviewNotificationCard: React.FC<{
     notification: Notification;
+    workerId: string;
     markingReadId: string | null;
     onMarkRead: (id: string) => void;
     onDelete: (id: string) => void;
     onClick: () => void;
-}> = ({ notification, markingReadId, onMarkRead, onDelete, onClick }) => {
+}> = ({ notification, workerId, markingReadId, onMarkRead, onDelete, onClick }) => {
+
+    const [reviews, setReviews] = useState<ReviewData[]>([]);
+    const [fetching, setFetching] = useState(true);
+
+    // ── fetch the worker's actual reviews via getReviews ──
+    useEffect(() => {
+        if (!workerId) { setFetching(false); return; }
+        getReviews(workerId)
+            .then(res => setReviews(res.data || []))
+            .catch(() => setReviews([]))
+            .finally(() => setFetching(false));
+    }, [workerId]);
+
+    // Pick the most-recently posted review to preview
+    const latestReview: ReviewData | null = reviews.length
+        ? [...reviews].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        )[0]
+        : null;
+
+    const reviewerName = latestReview
+        ? typeof latestReview.user === 'object'
+            ? latestReview.user?.name || 'Customer'
+            : 'Customer'
+        : 'Customer';
+
+    const isUnread = !notification.isRead;
+    const isMarking = markingReadId === notification._id;
+
+    return (
+        <div
+            onClick={onClick}
+            className={`
+                relative bg-white rounded-2xl border transition-all duration-200
+                hover:shadow-md cursor-pointer overflow-hidden
+                ${isUnread
+                    ? 'border-yellow-200 shadow-sm shadow-yellow-50'
+                    : 'border-gray-100 shadow-sm'}
+            `}
+        >
+            {/* yellow accent bar on left */}
+            {isUnread && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-2xl bg-yellow-400" />
+            )}
+
+            <div className="p-4 pl-5">
+
+                {/* ── top row: icon + title + action buttons ── */}
+                <div className="flex items-start gap-3">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-xl bg-yellow-50 border border-yellow-100">
+                        ⭐
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-0.5">
+                            <h3 className={`${typography.fontSize.sm} font-bold truncate ${isUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                                {notification.title}
+                            </h3>
+                            {isUnread && (
+                                <span className="w-2 h-2 rounded-full flex-shrink-0 bg-yellow-400" />
+                            )}
+                        </div>
+
+                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-1">
+                            {notification.message}
+                        </p>
+
+                        <div className="flex items-center gap-2 flex-wrap mt-1.5">
+                            <span className="text-xs text-gray-400">
+                                {formatRelativeTime(notification.createdAt)}
+                            </span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200">
+                                New Review
+                            </span>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${isUnread
+                                ? 'bg-orange-50 text-orange-500 border border-orange-100'
+                                : 'bg-green-50 text-green-600 border border-green-100'
+                                }`}>
+                                {isUnread ? 'Unread' : 'Read'}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* mark-read + delete buttons */}
+                    <div className="flex flex-col items-center gap-1.5 flex-shrink-0 mt-0.5">
+                        <button
+                            onClick={e => { e.stopPropagation(); if (isUnread) onMarkRead(notification._id); }}
+                            disabled={isMarking || !isUnread}
+                            className="p-1.5 rounded-full hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            title={isUnread ? 'Mark as read' : 'Already read'}
+                        >
+                            {isMarking
+                                ? <Loader2 className="w-5 h-5 text-yellow-400 animate-spin" />
+                                : isUnread
+                                    ? <Circle className="w-5 h-5 text-gray-300" />
+                                    : <CheckCircle className="w-5 h-5 text-green-400" />
+                            }
+                        </button>
+                        <button
+                            onClick={e => { e.stopPropagation(); onDelete(notification._id); }}
+                            className="p-1.5 rounded-full hover:bg-red-50 transition-colors"
+                            title="Delete notification"
+                        >
+                            <Trash2 className="w-4 h-4 text-red-400 hover:text-red-600 transition-colors" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* ── review preview fetched via getReviews ── */}
+                <div className="mt-3 pt-3 border-t border-yellow-100">
+                    {fetching ? (
+                        <div className="flex items-center gap-2 text-gray-400">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="text-xs">Loading review…</span>
+                        </div>
+                    ) : latestReview ? (
+                        <div className="bg-yellow-50 rounded-xl p-3 border border-yellow-100">
+                            {/* reviewer avatar + name + stars */}
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                        {reviewerName[0]?.toUpperCase() ?? 'C'}
+                                    </div>
+                                    <span className="text-xs font-semibold text-gray-800">{reviewerName}</span>
+                                </div>
+                                <StarRow value={latestReview.rating} />
+                            </div>
+                            {/* review text */}
+                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-2 italic">
+                                "{latestReview.review}"
+                            </p>
+                        </div>
+                    ) : (
+                        <p className="text-xs text-gray-400">Could not load review details.</p>
+                    )}
+
+                    <p className="text-xs font-semibold text-yellow-600 mt-2">
+                        Tap to see all your reviews →
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// GENERIC NOTIFICATION CARD
+// ============================================================================
+const NotificationCard: React.FC<{
+    notification: Notification;
+    workerId: string;
+    markingReadId: string | null;
+    onMarkRead: (id: string) => void;
+    onDelete: (id: string) => void;
+    onClick: () => void;
+}> = ({ notification, workerId, markingReadId, onMarkRead, onDelete, onClick }) => {
+
+    // Route NEW_REVIEW type to the dedicated card that uses getReviews
+    if (notification.type === 'NEW_REVIEW') {
+        return (
+            <ReviewNotificationCard
+                notification={notification}
+                workerId={workerId}
+                markingReadId={markingReadId}
+                onMarkRead={onMarkRead}
+                onDelete={onDelete}
+                onClick={onClick}
+            />
+        );
+    }
+
     const config = getNotificationConfig(notification.type);
     const isUnread = !notification.isRead;
     const isMarking = markingReadId === notification._id;
@@ -127,7 +320,7 @@ const NotificationCard: React.FC<{
 
             <div className="flex items-start gap-3 p-4 pl-5">
                 <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${typography.icon?.lg ?? 'text-xl'}`}
+                    className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
                     style={{ backgroundColor: config.iconBg }}
                 >
                     {config.icon}
@@ -231,27 +424,20 @@ const NotificationsPage: React.FC = () => {
     const currentId = accountType === 'worker' ? workerId : userId;
     const currentRole = accountType === 'worker' ? 'Worker' : 'User';
 
-    // ── Notification list ─────────────────────────────────────────────────────
     const [allNotifications, setAllNotifications] = useState<Notification[]>([]);
-
-    // ── Counts ────────────────────────────────────────────────────────────────
     const [liveUnreadCount, setLiveUnreadCount] = useState(0);
     const [userUnread, setUserUnread] = useState(0);
     const [workerUnread, setWorkerUnread] = useState(0);
 
-    // ── UI state ──────────────────────────────────────────────────────────────
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [markingReadId, setMarkingReadId] = useState<string | null>(null);
 
-    // ── Delete modal ──────────────────────────────────────────────────────────
     const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    // ============================================================================
-    // FETCH
-    // ============================================================================
+    // ── Fetch notifications ──────────────────────────────────────────────────
     const fetchAll = useCallback(async (isRefresh = false) => {
         if (!currentId) {
             setError(`No ${currentRole} ID found. Please log in again.`);
@@ -279,10 +465,8 @@ const NotificationsPage: React.FC = () => {
             }
 
             if (countRes.status === 'fulfilled') {
-                // Backend returns { success, unreadCount } — already handled in api.service
                 setLiveUnreadCount(countRes.value.count ?? 0);
             }
-
         } catch (err: any) {
             setError(err.message || 'Failed to load notifications');
         } finally {
@@ -293,27 +477,21 @@ const NotificationsPage: React.FC = () => {
 
     useEffect(() => { fetchAll(); }, [fetchAll]);
 
-    // ============================================================================
-    // MARK READ  ← FIX: now actually calls PUT /read/:id
-    // ============================================================================
+    // ── Mark read ────────────────────────────────────────────────────────────
     const handleMarkRead = useCallback(async (id: string) => {
-        // Find the notification; skip if already read
         const target = allNotifications.find(n => n._id === id);
         if (!target || target.isRead) return;
 
-        // Optimistic update so the UI feels instant
         setAllNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         setLiveUnreadCount(c => Math.max(0, c - 1));
         if (currentRole === 'User') setUserUnread(c => Math.max(0, c - 1));
         else setWorkerUnread(c => Math.max(0, c - 1));
 
-        // Show spinner on that card's button while the request is in-flight
         setMarkingReadId(id);
         try {
-            await markNotificationAsRead(id);  // PUT /read/:id
+            await markNotificationAsRead(id);
         } catch (err) {
             console.error('❌ markNotificationAsRead failed, reverting:', err);
-            // Rollback optimistic update on failure
             setAllNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: false } : n));
             setLiveUnreadCount(c => c + 1);
             if (currentRole === 'User') setUserUnread(c => c + 1);
@@ -323,31 +501,23 @@ const NotificationsPage: React.FC = () => {
         }
     }, [allNotifications, currentRole]);
 
-    // ============================================================================
-    // MARK ALL READ  ← calls API for every unread notification in parallel
-    // ============================================================================
+    // ── Mark all read ────────────────────────────────────────────────────────
     const handleMarkAllRead = useCallback(async () => {
         const unreadIds = allNotifications.filter(n => !n.isRead).map(n => n._id);
         if (unreadIds.length === 0) return;
 
-        // Optimistic update
         setAllNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         setLiveUnreadCount(0);
         if (currentRole === 'User') setUserUnread(0);
         else setWorkerUnread(0);
 
-        // Fire all requests in parallel; log individual failures but don't revert all
         const results = await Promise.allSettled(unreadIds.map(id => markNotificationAsRead(id)));
         results.forEach((r, i) => {
-            if (r.status === 'rejected') {
-                console.error(`❌ Failed to mark ${unreadIds[i]} as read:`, r.reason);
-            }
+            if (r.status === 'rejected') console.error(`❌ Failed to mark ${unreadIds[i]}:`, r.reason);
         });
     }, [allNotifications, currentRole]);
 
-    // ============================================================================
-    // DELETE
-    // ============================================================================
+    // ── Delete ────────────────────────────────────────────────────────────────
     const handleDeleteRequest = (id: string) => setPendingDeleteId(id);
     const handleDeleteCancel = () => { if (!deleting) setPendingDeleteId(null); };
 
@@ -371,11 +541,16 @@ const NotificationsPage: React.FC = () => {
         }
     };
 
-    // ============================================================================
-    // CARD CLICK
-    // ============================================================================
+    // ── Card click ────────────────────────────────────────────────────────────
     const handleCardClick = (n: Notification) => {
-        if (!n.isRead) handleMarkRead(n._id);   // marks read via API
+        if (!n.isRead) handleMarkRead(n._id);
+
+        // NEW_REVIEW in worker mode → go to their own reviews page
+        if (n.type === 'NEW_REVIEW' && currentRole === 'Worker') {
+            navigate(`/reviews/${workerId}`);
+            return;
+        }
+
         if (!n.jobId) return;
         if (currentRole === 'Worker') navigate(`/job-details/${n.jobId}`);
         else navigate(`/job-applicants/${n.jobId}`);
@@ -393,13 +568,15 @@ const NotificationsPage: React.FC = () => {
         );
     }
 
+    const reviewCount = allNotifications.filter(n => n.type === 'NEW_REVIEW').length;
+
     // ============================================================================
     // RENDER
     // ============================================================================
     return (
         <div className="min-h-screen bg-gray-50">
 
-            {/* ── Sticky Header ─────────────────────────────────────────────── */}
+            {/* ── Sticky Header ── */}
             <div className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-10">
                 <div className="max-w-2xl mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
@@ -467,10 +644,10 @@ const NotificationsPage: React.FC = () => {
                 </div>
             </div>
 
-            {/* ── Content ───────────────────────────────────────────────────── */}
+            {/* ── Content ── */}
             <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
 
-                {/* Context + live count badges */}
+                {/* Context badges */}
                 <div className="flex items-center gap-2 flex-wrap">
                     <span className={`
                         ${typography.misc.badge} px-3 py-1.5 rounded-full
@@ -481,12 +658,16 @@ const NotificationsPage: React.FC = () => {
                     `}>
                         {currentRole === 'User'
                             ? '📋 Showing job enquiries from workers'
-                            : '🔍 Showing new job matches near you'
-                        }
+                            : '🔍 Showing job matches & reviews'}
                     </span>
                     {liveUnreadCount > 0 && (
                         <span className={`${typography.misc.badge} px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100`}>
                             🔴 {liveUnreadCount} unread
+                        </span>
+                    )}
+                    {currentRole === 'Worker' && reviewCount > 0 && (
+                        <span className={`${typography.misc.badge} px-3 py-1.5 rounded-full bg-yellow-50 text-yellow-700 border border-yellow-200`}>
+                            ⭐ {reviewCount} review{reviewCount !== 1 ? 's' : ''}
                         </span>
                     )}
                 </div>
@@ -500,6 +681,21 @@ const NotificationsPage: React.FC = () => {
                         <p className={`${typography.body.xs} text-blue-700`}>
                             You have {liveUnreadCount} unread notification{liveUnreadCount !== 1 ? 's' : ''}
                         </p>
+                    </div>
+                )}
+
+                {/* Review highlight banner — worker mode only */}
+                {currentRole === 'Worker' && allNotifications.some(n => n.type === 'NEW_REVIEW' && !n.isRead) && (
+                    <div className="flex items-center gap-3 bg-yellow-50 border border-yellow-200 rounded-2xl px-4 py-3">
+                        <span className="text-2xl">⭐</span>
+                        <div>
+                            <p className={`${typography.body.xs} font-bold text-yellow-800`}>
+                                You received a new customer review!
+                            </p>
+                            <p className={`${typography.fontSize.xs} text-yellow-600 mt-0.5`}>
+                                Tap the card below to see the full details.
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -518,13 +714,14 @@ const NotificationsPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Notification list */}
+                {/* Notification list — workerId passed down so ReviewNotificationCard can call getReviews */}
                 {!error && allNotifications.length > 0 && (
                     <div className="space-y-3">
                         {allNotifications.map(n => (
                             <NotificationCard
                                 key={n._id}
                                 notification={n}
+                                workerId={workerId}
                                 markingReadId={markingReadId}
                                 onMarkRead={handleMarkRead}
                                 onDelete={handleDeleteRequest}
@@ -543,7 +740,7 @@ const NotificationsPage: React.FC = () => {
                         <h2 className={`${typography.heading.h5} text-gray-800 mb-2`}>No Notifications</h2>
                         <p className={`${typography.body.small} text-gray-500 max-w-xs leading-relaxed`}>
                             {currentRole === 'Worker'
-                                ? "You'll be notified when new jobs matching your skills are posted nearby."
+                                ? "You'll be notified when new jobs match your skills or customers leave reviews."
                                 : "You'll be notified when workers enquire about your jobs."
                             }
                         </p>
@@ -551,7 +748,7 @@ const NotificationsPage: React.FC = () => {
                 )}
             </div>
 
-            {/* ── Delete Confirm Modal ───────────────────────────────────────── */}
+            {/* ── Delete Modal ── */}
             {pendingDeleteId && (
                 <DeleteConfirmModal
                     onConfirm={handleDeleteConfirm}

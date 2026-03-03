@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Menu, X, Bell, Home } from "lucide-react";
 
@@ -22,7 +22,7 @@ import {
 } from "../../services/api.service";
 
 const Navbar: React.FC = () => {
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
   const { accountType, setAccountType, workerProfileId } = useAccount();
 
   const navigate = useNavigate();
@@ -33,25 +33,32 @@ const Navbar: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showProfileSidebar, setShowProfileSidebar] = useState(false);
-  const [userName, setUserName] = useState(localStorage.getItem("userName") || "User");
+
+  // ✅ Always start from API data, not stale localStorage
+  const [userName, setUserName] = useState("User");
   const [profilePic, setProfilePic] = useState<string | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
 
-  // ── Real unread notification count ──────────────────────────────────────
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ── Shared fetch profile helper ──────────────────────────────────────────
-  const fetchUserProfile = async () => {
+  // ── Fetch profile from API (source of truth) ─────────────────────────────
+  const fetchUserProfile = useCallback(async () => {
     if (!isAuthenticated) return;
-    const userId = localStorage.getItem("userId");
+
+    // ✅ Prefer user._id from AuthContext (always fresh after login)
+    const userId = user?._id || localStorage.getItem("userId");
     if (!userId) return;
+
     try {
       setIsLoadingProfile(true);
       const response = await getUserById(userId);
+
       if (response.success && response.data) {
-        const name = response.data.name || "User";
-        setUserName(name);
-        localStorage.setItem("userName", name);
+        const freshName = response.data.name?.trim() || "User";
+
+        // ✅ Update both state AND localStorage so they stay in sync
+        setUserName(freshName);
+        localStorage.setItem("userName", freshName);
 
         if (response.data.profilePic) {
           const picUrl = response.data.profilePic.startsWith("http")
@@ -64,22 +71,34 @@ const Navbar: React.FC = () => {
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
+      // Fallback: use AuthContext user name (set during login in OTPVerification)
+      if (user?.name && user.name !== "User") {
+        setUserName(user.name);
+        localStorage.setItem("userName", user.name);
+      }
     } finally {
       setIsLoadingProfile(false);
     }
-  };
+  }, [isAuthenticated, user?._id, user?.name]);
 
-  // Fetch on mount / auth change
+  // ✅ Re-fetch whenever auth state OR user._id changes
+  // This fires on first login, logout+re-login, and page refresh
   useEffect(() => {
-    fetchUserProfile();
-  }, [isAuthenticated]);
+    if (isAuthenticated && user?._id) {
+      fetchUserProfile();
+    } else if (!isAuthenticated) {
+      // Clear on logout
+      setUserName("User");
+      setProfilePic(null);
+    }
+  }, [isAuthenticated, user?._id]);
 
   // ── Re-fetch when MyProfile dispatches "profileUpdated" ─────────────────
   useEffect(() => {
     const handleProfileUpdated = () => fetchUserProfile();
     window.addEventListener("profileUpdated", handleProfileUpdated);
     return () => window.removeEventListener("profileUpdated", handleProfileUpdated);
-  }, [isAuthenticated]);
+  }, [fetchUserProfile]);
 
   // ── Fetch real unread notification count ──────────────────────────────────
   useEffect(() => {
@@ -90,7 +109,7 @@ const Navbar: React.FC = () => {
       }
 
       try {
-        const userId = localStorage.getItem("userId") || "";
+        const userId = user?._id || localStorage.getItem("userId") || "";
         const workerId = workerProfileId || localStorage.getItem("workerId") || "";
 
         const role = accountType === "worker" ? "Worker" : "User";
@@ -108,17 +127,7 @@ const Navbar: React.FC = () => {
     fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 60_000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, accountType, workerProfileId]);
-
-  // Sync name on localStorage change
-  useEffect(() => {
-    const syncUserData = () => {
-      const name = localStorage.getItem("userName") || "User";
-      setUserName(name);
-    };
-    window.addEventListener("storage", syncUserData);
-    return () => window.removeEventListener("storage", syncUserData);
-  }, []);
+  }, [isAuthenticated, accountType, workerProfileId, user?._id]);
 
   // Handle body overflow when modals are open
   useEffect(() => {
@@ -228,7 +237,7 @@ const Navbar: React.FC = () => {
                 )}
               </div>
 
-              {/* ── Notification Bell — all screen sizes ── */}
+              {/* ── Notification Bell ── */}
               <button
                 onClick={handleNotificationClick}
                 className="relative p-1 text-gray-700 transition-all duration-300 hover:text-primary hover:scale-110 hover:drop-shadow-lg"
@@ -268,9 +277,7 @@ const Navbar: React.FC = () => {
                 </div>
               )}
 
-              {/* ── Login button (unauthenticated) ──
-                  FIX: was "hidden lg:block" — now visible on ALL screen sizes.
-                  On mobile it shows next to the hamburger. ── */}
+              {/* ── Login button (unauthenticated) ── */}
               {!isAuthenticated && (
                 <Button
                   variant="gradient-blue"
@@ -306,9 +313,7 @@ const Navbar: React.FC = () => {
                 </button>
               )}
 
-              {/* ── Hamburger toggle — mobile only ──
-                  FIX: was "lg:hidden" but the right-section flex was hiding
-                  everything. Button is now explicitly block on mobile. ── */}
+              {/* ── Hamburger toggle — mobile only ── */}
               <button
                 className="flex lg:hidden items-center justify-center text-gray-700 p-1"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -476,6 +481,7 @@ const Navbar: React.FC = () => {
             onClick={() => setShowProfileSidebar(false)}
           />
           <div className="relative w-80 h-full bg-white shadow-xl transform transition-transform duration-300 translate-x-0 z-10">
+            {/* ✅ Pass the fresh userName from API, not stale localStorage */}
             <ProfileSidebar
               user={{ name: userName }}
               profilePic={profilePic}
@@ -486,6 +492,7 @@ const Navbar: React.FC = () => {
               onLogout={() => {
                 logout();
                 setProfilePic(null);
+                setUserName("User");
                 setShowProfileSidebar(false);
                 setUnreadCount(0);
               }}

@@ -18,7 +18,3 @@ export async function getFcmToken() {
         return null;
     }
 }
-
-
-
-
