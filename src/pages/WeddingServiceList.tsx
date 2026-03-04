@@ -401,7 +401,7 @@ const WeddingServicesList: React.FC = () => {
                         <div style={{ backgroundColor: "#00598a" }} className="rounded-lg w-full sm:w-auto">
                             <Button variant="primary" size="md" onClick={handleAddPost}
                                 className="w-full sm:w-auto justify-center !bg-transparent text-white">
-                                + Add Post
+                                + Attach Wedding & Event Service
                             </Button>
                         </div>
                     </div>

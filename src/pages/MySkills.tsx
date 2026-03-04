@@ -61,7 +61,6 @@ const DeleteConfirmModal: React.FC<{
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
-                {/* Icon header */}
                 <div className="flex flex-col items-center pt-7 pb-4 px-6">
                     <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center mb-4">
                         <Trash2 size={26} className="text-red-500" />
@@ -75,18 +74,13 @@ const DeleteConfirmModal: React.FC<{
                         This action cannot be undone.
                     </p>
                 </div>
-
-                {/* Divider */}
                 <div className="border-t border-gray-100" />
-
-                {/* Buttons */}
                 <div className="flex">
                     <button
                         onClick={onCancel}
                         disabled={loading}
                         className={`flex-1 py-4 ${typography.body.small} font-semibold text-gray-500
-                            hover:bg-gray-50 transition-colors border-r border-gray-100
-                            disabled:opacity-50`}
+                            hover:bg-gray-50 transition-colors border-r border-gray-100 disabled:opacity-50`}
                     >
                         Cancel
                     </button>
@@ -157,7 +151,7 @@ const ImageCarousel: React.FC<{ images: string[]; altBase: string }> = ({ images
 
     if (images.length === 0) {
         return (
-            <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+            <div className="w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center flex-shrink-0">
                 <ImageIcon size={40} className="text-gray-300" />
             </div>
         );
@@ -167,8 +161,12 @@ const ImageCarousel: React.FC<{ images: string[]; altBase: string }> = ({ images
     const next = (e: React.MouseEvent) => { e.stopPropagation(); setIdx(i => (i + 1) % images.length); };
 
     return (
-        <div className="relative w-full h-48 overflow-hidden bg-gray-100 group">
-            <img src={images[idx]} alt={`${altBase} ${idx + 1}`} className="w-full h-full object-cover transition-opacity duration-200" />
+        <div className="relative w-full h-48 overflow-hidden bg-gray-100 group flex-shrink-0">
+            <img
+                src={images[idx]}
+                alt={`${altBase} ${idx + 1}`}
+                className="w-full h-full object-cover transition-opacity duration-200"
+            />
             {images.length > 1 && (
                 <>
                     <button onClick={prev}
@@ -207,7 +205,6 @@ const CardDropdown: React.FC<{
 
     return (
         <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
-            {/* Trigger */}
             <button
                 onClick={onToggle}
                 className="w-9 h-9 rounded-full flex items-center justify-center transition-all duration-150 shadow-md"
@@ -218,13 +215,11 @@ const CardDropdown: React.FC<{
                 <MoreVertical size={17} className="text-white" />
             </button>
 
-            {/* Dropdown panel */}
             {isOpen && (
                 <div
                     className="absolute right-0 top-11 w-40 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20"
                     style={{ boxShadow: "0 8px 32px rgba(0,0,0,0.14)" }}
                 >
-                    {/* Edit */}
                     <button
                         onClick={onEdit}
                         className={`w-full flex items-center gap-3 px-4 py-3 ${typography.body.xs} font-semibold text-gray-700
@@ -233,11 +228,7 @@ const CardDropdown: React.FC<{
                         <Edit size={15} className="text-[#00598a]" />
                         Edit Skill
                     </button>
-
-                    {/* Divider */}
                     <div className="border-t border-gray-100" />
-
-                    {/* Delete */}
                     <button
                         onClick={onDelete}
                         className={`w-full flex items-center gap-3 px-4 py-3 ${typography.body.xs} font-semibold text-red-600
@@ -263,6 +254,9 @@ const SkillCard: React.FC<{
     const [isHovered, setIsHovered] = useState(false);
     const allImages = (skill.images || []).filter(img => img && img.trim() !== "");
 
+    // ✅ skill.skill holds the description text entered in the form
+    const skillDescription = skill.skill && skill.skill !== "General" ? skill.skill : (skill.description || "");
+
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         onToggleDropdown(dropdownOpen ? null : skill._id);
@@ -282,7 +276,7 @@ const SkillCard: React.FC<{
 
     return (
         <div
-            className="bg-white rounded-2xl shadow-md overflow-hidden relative transition-all duration-200"
+            className="bg-white rounded-2xl shadow-md overflow-hidden relative transition-all duration-200 flex flex-col"
             style={{
                 borderWidth: "1px",
                 borderStyle: "solid",
@@ -293,7 +287,7 @@ const SkillCard: React.FC<{
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
-            {/* ── 3-dot menu — top-right over image ── */}
+            {/* 3-dot menu */}
             <div className="absolute top-3 right-3 z-10">
                 <CardDropdown
                     isOpen={dropdownOpen}
@@ -307,10 +301,11 @@ const SkillCard: React.FC<{
             <ImageCarousel images={allImages} altBase={skill.subCategory} />
 
             {/* Card Body */}
-            <div className="p-4">
+            <div className="p-4 flex flex-col min-w-0">
+
                 {/* Category Badge */}
                 <div
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 transition-colors duration-200"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-3 transition-colors duration-200 self-start flex-shrink-0"
                     style={{ backgroundColor: isHovered ? "rgba(0,89,138,0.1)" : "#eff6ff" }}
                 >
                     <span
@@ -321,22 +316,40 @@ const SkillCard: React.FC<{
                     </span>
                 </div>
 
-                {/* Title */}
+                {/* Subcategory Title */}
                 <h3
-                    className={`${typography.card.title} mb-3 transition-colors duration-200`}
+                    className="font-bold text-lg mb-3 transition-colors duration-200 truncate flex-shrink-0"
                     style={{ color: isHovered ? BRAND : "#111827" }}
                 >
                     {skill.subCategory}
                 </h3>
 
+                {/* ✅ Skill Description — shown below title, 2 lines max */}
+                {skillDescription && (
+                    <p
+                        className={`${typography.body.xs} text-gray-500 mb-3 flex-shrink-0`}
+                        style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            wordBreak: "break-word",
+                            overflowWrap: "break-word",
+                            whiteSpace: "normal",
+                        }}
+                    >
+                        {skillDescription}
+                    </p>
+                )}
+
                 {/* Divider */}
                 <div
-                    className="border-t my-3 transition-colors duration-200"
+                    className="border-t my-3 transition-colors duration-200 flex-shrink-0"
                     style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}
                 />
 
                 {/* Service Rate Row */}
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between flex-shrink-0">
                     <div>
                         <p className={`${typography.body.xs} text-gray-400 uppercase tracking-wider mb-1`}>
                             Service Rate
@@ -350,21 +363,11 @@ const SkillCard: React.FC<{
                             </span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full border border-green-100 flex-shrink-0">
                         <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" />
                         <span className={`${typography.body.xs} font-semibold text-green-700`}>Active</span>
                     </div>
                 </div>
-
-                {/* Description */}
-                {skill.description && (
-                    <div className="flex items-start gap-2 text-gray-500">
-                        <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                            <span className="text-xs text-gray-400">i</span>
-                        </div>
-                        <p className={`${typography.body.xs} line-clamp-2`}>{skill.description}</p>
-                    </div>
-                )}
             </div>
         </div>
     );
@@ -405,12 +408,10 @@ const WorkerList: React.FC = () => {
     const [openDropdown, setOpenDropdown] = useState<string | null>(null);
     const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
-    // Delete confirm modal state
     const [deleteModal, setDeleteModal] = useState<{
         open: boolean; skillId: string; skillName: string; loading: boolean;
     }>({ open: false, skillId: "", skillName: "", loading: false });
 
-    // ── Fetch ──
     useEffect(() => {
         const fetchSkills = async () => {
             if (!workerId) { setProfileExists(false); setLoading(false); return; }
@@ -433,7 +434,6 @@ const WorkerList: React.FC = () => {
         fetchSkills();
     }, [workerId]);
 
-    // Close dropdown on outside click
     useEffect(() => {
         const handler = () => setOpenDropdown(null);
         document.addEventListener("click", handler);
@@ -445,7 +445,6 @@ const WorkerList: React.FC = () => {
         else navigate("/add-skills");
     };
 
-    // ── Delete flow ──
     const requestDelete = (skill: WorkerSkill) => {
         setDeleteModal({ open: true, skillId: skill._id, skillName: skill.subCategory, loading: false });
     };
@@ -467,7 +466,6 @@ const WorkerList: React.FC = () => {
         }
     };
 
-    // ── Loading ──
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-white">
@@ -480,7 +478,6 @@ const WorkerList: React.FC = () => {
         );
     }
 
-    // ── Empty / no profile ──
     if (!profileExists && skills.length === 0) {
         return (
             <div className="min-h-screen bg-white">
@@ -498,14 +495,16 @@ const WorkerList: React.FC = () => {
                     </button>
                 </div>
                 <EmptyState onAddSkill={handleAddFirstSkill} />
-                <CreateProfileModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)}
-                    onCreateProfile={() => { setShowCreateModal(false); navigate("/worker-profile"); }} />
+                <CreateProfileModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onCreateProfile={() => { setShowCreateModal(false); navigate("/worker-profile"); }}
+                />
                 {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
             </div>
         );
     }
 
-    // ── Skills list ──
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
 
@@ -545,7 +544,6 @@ const WorkerList: React.FC = () => {
                 </div>
             </div>
 
-            {/* Delete confirm modal */}
             <DeleteConfirmModal
                 isOpen={deleteModal.open}
                 skillName={deleteModal.skillName}

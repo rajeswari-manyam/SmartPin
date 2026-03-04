@@ -599,7 +599,7 @@ const BeautyServicesList: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
-                        + Add Post
+                        + Attach Beauty & Wellness Service
                     </button>
                 </div>
 

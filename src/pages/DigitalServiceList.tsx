@@ -456,7 +456,7 @@ const DigitalServicesList: React.FC = () => {
                             onClick={handleAddPost}
                             className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#004a73] text-white"
                         >
-                            + Add Post
+                            + Attach Tech & Digital Service
                         </Button>
                     </div>
 

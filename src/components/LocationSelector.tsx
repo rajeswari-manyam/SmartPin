@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
+import LocationIcon from "../assets/icons/Location.png";
+import { SearchIcon } from "lucide-react";
 
-// Props
 type Props = {
     initialLat?: number;
     initialLng?: number;
@@ -9,43 +10,29 @@ type Props = {
     autoDetect?: boolean;
 };
 
-// Google Maps API Key
 const GOOGLE_MAPS_API_KEY = "AIzaSyA6myHzS10YXdcazAFalmXvDkrYCp5cLc8";
-
-// Theme colors
 const BG_COLOR = "#F0F0F0";
 const PRIMARY_COLOR = "#00598a";
 
-// ─── IP-based location fallback (works on HTTP + any origin) ───────────────
 const getLocationByIP = async (): Promise<{ lat: number; lng: number; city: string } | null> => {
     try {
         const res = await fetch("https://ipapi.co/json/");
         const data = await res.json();
-        if (data && data.latitude && data.longitude) {
-            return {
-                lat: data.latitude,
-                lng: data.longitude,
-                city: data.city || data.region || "Unknown",
-            };
+        if (data?.latitude && data?.longitude) {
+            return { lat: data.latitude, lng: data.longitude, city: data.city || data.region || "Unknown" };
         }
     } catch (e) {
-        console.warn("ipapi.co failed, trying fallback...", e);
+        console.warn("ipapi.co failed", e);
     }
-
     try {
         const res = await fetch("http://ip-api.com/json/");
         const data = await res.json();
-        if (data && data.status === "success") {
-            return {
-                lat: data.lat,
-                lng: data.lon,
-                city: data.city || data.regionName || "Unknown",
-            };
+        if (data?.status === "success") {
+            return { lat: data.lat, lng: data.lon, city: data.city || data.regionName || "Unknown" };
         }
     } catch (e) {
-        console.warn("ip-api.com also failed", e);
+        console.warn("ip-api.com failed", e);
     }
-
     return null;
 };
 
@@ -69,14 +56,10 @@ export default function LocationSelector({
     const [isLoading, setIsLoading] = useState(false);
     const [autoDetected, setAutoDetected] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [locationMethod, setLocationMethod] = useState<"gps" | "ip" | "manual" | null>(null);
 
-    /* ---------------- LOAD GOOGLE MAPS ---------------- */
     useEffect(() => {
-        if (window.google?.maps) {
-            setGoogleMaps(window.google);
-            return;
-        }
-
+        if (window.google?.maps) { setGoogleMaps(window.google); return; }
         const script = document.createElement("script");
         script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
         script.async = true;
@@ -85,21 +68,16 @@ export default function LocationSelector({
         document.head.appendChild(script);
     }, []);
 
-    /* ---------------- AUTOCOMPLETE ---------------- */
     useEffect(() => {
         if (!googleMaps || !inputRef.current) return;
-
         const auto = new googleMaps.maps.places.Autocomplete(inputRef.current, {
             fields: ["geometry", "formatted_address", "address_components"],
         });
-
         auto.addListener("place_changed", () => {
             const place = auto.getPlace();
             if (!place.geometry?.location) return;
-
             const latitude = place.geometry.location.lat();
             const longitude = place.geometry.location.lng();
-
             setLat(latitude);
             setLng(longitude);
             setAddress(place.formatted_address || "");
@@ -110,12 +88,10 @@ export default function LocationSelector({
         });
     }, [googleMaps]);
 
-    /* ---------------- AUTO-DETECT ON MOUNT ---------------- */
     useEffect(() => {
         const savedCity = localStorage.getItem("userCity");
         const savedLat = localStorage.getItem("userLatitude");
         const savedLng = localStorage.getItem("userLongitude");
-
         if (savedCity && savedLat && savedLng) {
             setCity(savedCity);
             setLat(parseFloat(savedLat));
@@ -126,33 +102,24 @@ export default function LocationSelector({
             onSaveLocation?.(savedCity, parseFloat(savedLat), parseFloat(savedLng));
             return;
         }
-
         if (autoDetect && !autoDetected && !initialLat && !initialLng) {
             setAutoDetected(true);
             handleUseCurrent();
         }
     }, [autoDetect, autoDetected, initialLat, initialLng]);
 
-    /* ---------------- CITY EXTRACTION ---------------- */
     const extractCity = (components: google.maps.GeocoderAddressComponent[]) => {
         const result =
             components.find((c) => c.types.includes("locality")) ||
             components.find((c) => c.types.includes("administrative_area_level_2")) ||
             components.find((c) => c.types.includes("administrative_area_level_1")) ||
             components.find((c) => c.types.includes("country"));
-
         setCity(result?.long_name || "");
         return result?.long_name || "";
     };
 
-    /* ---------------------------------------------------------------
-       CLICK ON INPUT:
-       - If already saved → clear and enter edit mode so user can type
-       - If not saved → just show buttons
-    --------------------------------------------------------------- */
     const handleInputClick = () => {
         if (isSaved && !isEditing) {
-            // Enter edit mode — clear everything, let user type fresh
             setIsSaved(false);
             setIsEditing(true);
             setQuery("");
@@ -168,31 +135,21 @@ export default function LocationSelector({
         }
     };
 
-    const [locationMethod, setLocationMethod] = useState<"gps" | "ip" | "manual" | null>(null);
-
-    /* ---------------- REVERSE GEOCODE ------------------------------- */
     const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
         if (googleMaps) {
             return new Promise((resolve) => {
                 const geocoder = new googleMaps.maps.Geocoder();
-                geocoder.geocode(
-                    { location: { lat: latitude, lng: longitude } },
-                    (results, status) => {
-                        if (status === "OK" && results?.[0]) {
-                            const formattedAddress = results[0].formatted_address || "";
-                            setAddress(formattedAddress);
-                            setQuery(formattedAddress);
-                            const extractedCity = extractCity(results[0].address_components || []);
-                            resolve(extractedCity);
-                        } else {
-                            resolve("");
-                        }
-                    }
-                );
+                geocoder.geocode({ location: { lat: latitude, lng: longitude } }, (results, status) => {
+                    if (status === "OK" && results?.[0]) {
+                        const formattedAddress = results[0].formatted_address || "";
+                        setAddress(formattedAddress);
+                        setQuery(formattedAddress);
+                        const extractedCity = extractCity(results[0].address_components || []);
+                        resolve(extractedCity);
+                    } else resolve("");
+                });
             });
         }
-
-        // Nominatim fallback
         try {
             const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
@@ -200,29 +157,21 @@ export default function LocationSelector({
             );
             const data = await res.json();
             if (data?.address) {
-                const cityName =
-                    data.address.city ||
-                    data.address.town ||
-                    data.address.village ||
-                    data.address.state || "";
+                const cityName = data.address.city || data.address.town || data.address.village || data.address.state || "";
                 const fullAddress = data.display_name || cityName;
                 setAddress(fullAddress);
                 setQuery(fullAddress);
                 setCity(cityName);
                 return cityName;
             }
-        } catch (e) {
-            console.warn("Nominatim failed", e);
-        }
+        } catch (e) { console.warn("Nominatim failed", e); }
         return "";
     };
 
-    /* ---------------- GPS + IP DETECTION ---------------------------- */
     const handleUseCurrent = async () => {
         setIsLoading(true);
         setShowButtons(false);
         setIsEditing(false);
-
         const isSecureContext =
             window.isSecureContext ||
             window.location.protocol === "https:" ||
@@ -238,18 +187,14 @@ export default function LocationSelector({
                         setLat(latitude);
                         setLng(longitude);
                         setLocationMethod("gps");
-
                         const extractedCity = await reverseGeocode(latitude, longitude);
-
                         if (extractedCity) {
                             localStorage.setItem("userCity", extractedCity);
                             localStorage.setItem("userLatitude", latitude.toString());
                             localStorage.setItem("userLongitude", longitude.toString());
                             onSaveLocation?.(extractedCity, latitude, longitude);
                             setIsSaved(true);
-                        } else {
-                            setShowButtons(true);
-                        }
+                        } else setShowButtons(true);
                         setIsLoading(false);
                         resolve();
                     },
@@ -269,7 +214,6 @@ export default function LocationSelector({
     const tryIPLocation = async () => {
         setIsLoading(true);
         const ipData = await getLocationByIP();
-
         if (ipData) {
             setLat(ipData.lat);
             setLng(ipData.lng);
@@ -282,29 +226,22 @@ export default function LocationSelector({
             localStorage.setItem("userLongitude", ipData.lng.toString());
             onSaveLocation?.(ipData.city, ipData.lat, ipData.lng);
             setIsSaved(true);
-        } else {
-            setShowButtons(true);
-        }
+        } else setShowButtons(true);
         setIsLoading(false);
     };
 
-    /* ---------------- SAVE (after manual search) -------------------- */
     const handleSave = () => {
         if (!city || lat === null || lng === null) return;
-
         localStorage.setItem("userCity", city);
         localStorage.setItem("userLatitude", lat.toString());
         localStorage.setItem("userLongitude", lng.toString());
-
         onSaveLocation?.(city, lat, lng);
         setIsSaved(true);
         setIsEditing(false);
         setShowButtons(false);
-
         setTimeout(() => onNavigate?.(), 800);
     };
 
-    /* ---------------- CLEAR (X while typing) ------------------------ */
     const handleClear = () => {
         setQuery("");
         setCity("");
@@ -318,31 +255,30 @@ export default function LocationSelector({
         setTimeout(() => inputRef.current?.focus(), 50);
     };
 
-    /* ---------------- RENDER ---------------------------------------- */
     return (
-        <div className="w-full max-w-2xl mx-auto space-y-3">
+        <div className="w-full max-w-2xl mx-auto space-y-3 px-4 sm:px-0">
 
             {/* LOADING */}
             {isLoading && (
-                <div className="text-center py-2">
+                <div className="flex flex-col items-center justify-center py-4 gap-2">
                     <div
-                        className="inline-block animate-spin rounded-full h-6 w-6 border-b-2"
-                        style={{ borderColor: PRIMARY_COLOR }}
-                    ></div>
-                    <p className="mt-2 text-xs" style={{ color: PRIMARY_COLOR }}>
-                        Detecting location...
+                        className="w-7 h-7 rounded-full border-2 border-t-transparent animate-spin"
+                        style={{ borderColor: PRIMARY_COLOR, borderTopColor: "transparent" }}
+                    />
+                    <p className="text-sm font-medium" style={{ color: PRIMARY_COLOR }}>
+                        Detecting your location…
                     </p>
                 </div>
             )}
 
-            {/* INPUT — always editable on click, no "Change" button */}
-            <div
-                className="rounded-2xl border-2 shadow-md"
-                style={{ backgroundColor: BG_COLOR, borderColor: PRIMARY_COLOR }}
-            >
-                <div className="flex items-center">
-                    <div className="pl-4">
-                        <span style={{ color: PRIMARY_COLOR }}>📍</span>
+            {/* INPUT */}
+            {!isLoading && (
+                <div
+                    className="flex items-center rounded-2xl border-2 shadow-sm overflow-hidden"
+                    style={{ backgroundColor: BG_COLOR, borderColor: PRIMARY_COLOR }}
+                >
+                    <div className="pl-4 shrink-0">
+                        <img src={LocationIcon} className="w-5 h-5" alt="Location" />
                     </div>
 
                     <input
@@ -351,49 +287,38 @@ export default function LocationSelector({
                         onChange={(e) => setQuery(e.target.value)}
                         onClick={handleInputClick}
                         disabled={isLoading}
-                        className="flex-1 px-4 py-4 outline-none text-sm md:text-base"
-                        style={{
-                            backgroundColor: BG_COLOR,
-                            color: PRIMARY_COLOR,
-                            cursor: "text",
-                        }}
-                        placeholder={isLoading ? "Detecting..." : "Enter your location"}
+                        className="flex-1 min-w-0 px-3 py-4 text-sm sm:text-base outline-none bg-transparent"
+                        style={{ color: PRIMARY_COLOR }}
+                        placeholder="Enter your location"
                     />
 
-                    {/* X — only while typing (not saved) */}
                     {query && !isSaved && !isLoading && (
                         <button
                             onClick={handleClear}
-                            className="pr-4 text-lg"
+                            className="pr-4 shrink-0 text-xl leading-none"
                             style={{ color: PRIMARY_COLOR }}
+                            aria-label="Clear"
                         >
                             ✕
                         </button>
                     )}
                 </div>
-            </div>
+            )}
 
-            {/* SELECTED LOCATION PREVIEW (before saving, from manual search) */}
+            {/* SELECTED LOCATION PREVIEW */}
             {address && !isSaved && !isLoading && isEditing && (
                 <div
                     className="p-4 rounded-xl border"
                     style={{ backgroundColor: BG_COLOR, borderColor: PRIMARY_COLOR }}
                 >
-                    <p
-                        className="text-xs font-semibold uppercase mb-1"
-                        style={{ color: PRIMARY_COLOR }}
-                    >
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: PRIMARY_COLOR }}>
                         Selected Location
                     </p>
-                    <p className="text-sm text-gray-700">{address}</p>
+                    <p className="text-sm text-gray-700 leading-snug">{address}</p>
                     {city && (
                         <span
-                            className="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold"
-                            style={{
-                                backgroundColor: BG_COLOR,
-                                border: `1px solid ${PRIMARY_COLOR}`,
-                                color: PRIMARY_COLOR,
-                            }}
+                            className="inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold"
+                            style={{ border: `1px solid ${PRIMARY_COLOR}`, color: PRIMARY_COLOR }}
                         >
                             {city}
                         </span>
@@ -401,25 +326,25 @@ export default function LocationSelector({
                 </div>
             )}
 
-            {/* BUTTONS — Use Current / Save */}
+            {/* BUTTONS — stacked on mobile, side by side on sm+ */}
             {showButtons && !isSaved && !isLoading && (
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                     <button
                         onClick={handleUseCurrent}
-                        className="flex-1 py-3 rounded-xl font-semibold border-2"
+                        className="w-full sm:flex-1 py-4 rounded-2xl text-sm sm:text-base font-semibold border-2 transition-opacity active:opacity-70"
                         style={{
                             backgroundColor: BG_COLOR,
                             borderColor: PRIMARY_COLOR,
                             color: PRIMARY_COLOR,
                         }}
                     >
-                        Use Current Location
+                     <SearchIcon className="w-4 h-4" /> Use Current Location
                     </button>
 
                     <button
                         onClick={handleSave}
                         disabled={!city || !lat || !lng}
-                        className="flex-1 py-3 rounded-xl font-semibold text-white disabled:opacity-50"
+                        className="w-full sm:flex-1 py-4 rounded-2xl text-sm sm:text-base font-semibold text-white transition-opacity active:opacity-70 disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{ backgroundColor: PRIMARY_COLOR }}
                     >
                         Save & Continue
@@ -429,9 +354,20 @@ export default function LocationSelector({
 
             {/* HELPER TEXT */}
             {!isSaved && !isLoading && !address && !showButtons && (
-                <p className="text-xs text-center text-gray-500">
-                    Start typing to search or click "Use Current Location"
+                <p className="text-xs sm:text-sm text-center text-gray-500 px-2">
+                    Start typing to search, or tap "Use Current Location"
                 </p>
+            )}
+
+            {/* SAVED CONFIRMATION */}
+            {isSaved && !isLoading && (
+                <div
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium"
+                    style={{ backgroundColor: "#e6f2f8", color: PRIMARY_COLOR }}
+                >
+                    <span>✅</span>
+                    <span>Location saved: <strong>{city}</strong></span>
+                </div>
             )}
         </div>
     );

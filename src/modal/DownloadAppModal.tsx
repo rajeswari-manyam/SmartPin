@@ -1,6 +1,6 @@
 import React from "react";
-import QRCode from "react-qr-code";
 import MobileIcon from "../assets/icons/mobile.jpeg";
+import { typography } from "../styles/typography";
 
 interface Props {
   isOpen: boolean;
@@ -11,48 +11,46 @@ const DownloadAppModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 relative">
-        {/* Close */}
+    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center px-4">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 relative text-center shadow-xl">
+
+        {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-gray-500 text-xl"
+          className={`absolute top-3 right-4 text-gray-500 hover:text-gray-700 ${typography.icon.sm}`}
         >
           ✕
         </button>
 
-        <h2 className="text-lg font-semibold text-center mb-4">
-          Scan QR code and get the app instantly
+        {/* App Icon */}
+        <div className="flex justify-center mb-4">
+          <img src={MobileIcon} alt="App Icon" className="h-14 w-14 rounded-xl" />
+        </div>
+
+        {/* Title */}
+        <h2 className={`${typography.heading.h5} mb-2`}>
+          App Coming Soon 🚀
         </h2>
 
-        {/* QR */}
-        <div className="flex justify-center mb-4">
-          <QRCode
-            value="https://play.google.com/store/apps/details?id=com.yourapp"
-            size={160}
-          />
-        </div>
-
-        <p className="text-center text-sm text-gray-500 mb-4">
-          OR
+        {/* Description */}
+        <p className={`${typography.body.xs} text-gray-600 mb-5`}>
+          We are working hard to launch our mobile app.
+          Stay tuned — it will be available soon!
         </p>
 
-        {/* Mobile input */}
-        <div className="flex gap-2">
-          <input
-            type="tel"
-            placeholder="Enter mobile number"
-            className="flex-1 border rounded-lg px-3 py-2 outline-none"
-          />
-          <button className="bg-blue-600 text-white px-4 rounded-lg font-medium">
-            Send
-          </button>
+        {/* Disabled Info Box */}
+        <div className={`bg-gray-100 text-gray-400 ${typography.misc.caption} rounded-lg py-2 mb-5`}>
+          App download will be enabled after launch
         </div>
 
-        {/* Store buttons */}
-        <div className="flex justify-center gap-3 mt-5">
-          <img src={MobileIcon} alt="Play Store" className="h-8" />
-        </div>
+        {/* Action Button */}
+        <button
+          onClick={onClose}
+          className={`${typography.nav.button} text-white px-6 py-2 rounded-lg transition-opacity hover:opacity-90 active:opacity-80`}
+          style={{ backgroundColor: "#00598a" }}
+        >
+          Okay
+        </button>
       </div>
     </div>
   );

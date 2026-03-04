@@ -528,7 +528,7 @@ const HotelServicesList: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
                     >
-                        + Add Post
+                        + Attach Hotels & Travel Service
                     </button>
                 </div>
 

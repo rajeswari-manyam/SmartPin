@@ -538,7 +538,7 @@ const BusinessServicesList: React.FC = () => {
                             onClick={handleAddPost}
                             className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00446a] text-white"
                         >
-                            + Create Business Service
+                            + Attach Business & Professional Service
                         </Button>
                     </div>
 

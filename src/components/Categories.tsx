@@ -77,44 +77,44 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
 
     return (
         <div
-            className="w-full py-12"
+            className="w-full py-6 md:py-12"
             style={{ backgroundColor: PAGE_BG_COLOR }}
         >
-            <div className="max-w-7xl mx-auto px-6">
+            <div className="max-w-7xl mx-auto px-3 md:px-6">
 
                 {/* Header */}
-                <div className="mb-10 text-center">
+                <div className="mb-6 md:mb-10 text-center">
                     <h2 className={`${fontSize["3xl"]} ${fontWeight.bold}`}>
                         Available Categories
                     </h2>
-                    <p className="mt-2 text-gray-600">
+                    <p className="mt-2 text-gray-600 text-sm md:text-base">
                         Explore our wide range of services
                     </p>
                 </div>
 
                 {/* Categories Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6">
                     {categories.map((category) => (
                         <button
                             key={category.id}
                             onClick={() => handleCategoryClick(category.id)}
                             className="
-                                group rounded-3xl p-6 bg-white
+                                group rounded-2xl md:rounded-3xl p-3 md:p-6 bg-white
                                 border-2 border-[#00598a]
                                 transition-all duration-300 ease-out
                                 hover:-translate-y-1 hover:shadow-xl hover:bg-[#00598a]
-                                cursor-pointer
+                                cursor-pointer w-full
                             "
                             style={{
-                                minHeight: "160px",
+                                minHeight: "110px",
                             }}
                         >
-                            <div className="flex flex-col items-center justify-center h-full space-y-4">
+                            <div className="flex flex-col items-center justify-center h-full space-y-2 md:space-y-4">
 
                                 {/* Icon Container */}
                                 <div
                                     className="
-                                        w-20 h-20 rounded-full flex items-center justify-center
+                                        w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center
                                         bg-[#00598a] border-2 border-[#00598a]
                                         transition-all duration-300
                                         group-hover:bg-white
@@ -124,7 +124,7 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
                                         src={iconMap[category.id]}
                                         alt={category.name}
                                         className="
-                                            w-10 h-10 object-contain
+                                            w-6 h-6 md:w-10 md:h-10 object-contain
                                             transition-all duration-300
                                             brightness-0 invert
                                             group-hover:brightness-100 group-hover:invert-0
@@ -135,7 +135,7 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
                                 {/* Text */}
                                 <p
                                     className="
-                                        text-sm text-center font-semibold
+                                        text-xs md:text-sm text-center font-semibold leading-tight
                                         text-[#00598a]
                                         transition-colors duration-300
                                         group-hover:text-white

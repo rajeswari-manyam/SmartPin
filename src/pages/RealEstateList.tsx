@@ -445,7 +445,7 @@ const RealEstateList: React.FC = () => {
                         onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#004a73"; }}
                         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#00598a"; }}
                     >
-                        + Add Listing
+                        + Attach Real Estate Service
                     </button>
                 </div>
 

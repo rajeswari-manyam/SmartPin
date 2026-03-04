@@ -11,7 +11,6 @@ import { getUserJobs, getConfirmedWorkersCount, deleteJob, API_BASE_URL } from "
 import typography from "../styles/typography";
 import { categories } from "../components/categories/Categories";
 
-// ── Brand Color ───────────────────────────────────────────────────────────────
 const BRAND = "#00598a";
 const BRAND_DARK = "#004a75";
 
@@ -171,7 +170,6 @@ const MyJobCard: React.FC<{
     const images: string[] = Array.isArray(job.images) ? job.images : [];
     const categoryName = getCategoryDisplayName(job.category);
 
-    // ✅ Subcategory — handle string or array, multiple field name variants
     const subCategoryRaw = job.subCategory || job.subcategory || job.subCategories || job.subcategories || "";
     const subCategoryList: string[] = Array.isArray(subCategoryRaw)
         ? subCategoryRaw.filter(Boolean)
@@ -183,6 +181,10 @@ const MyJobCard: React.FC<{
         month: "numeric", day: "numeric", year: "numeric",
     });
 
+    // Truncate description to max 100 chars as a hard fallback
+    const rawDesc = job.description || "Need a skilled worker for this job";
+    const description = rawDesc.length > 100 ? rawDesc.slice(0, 100) + "…" : rawDesc;
+
     useEffect(() => {
         if (job._id) {
             getConfirmedWorkersCount(job._id).then(setApplicantCount).catch(() => setApplicantCount(0));
@@ -193,15 +195,15 @@ const MyJobCard: React.FC<{
         <div
             onMouseEnter={() => setCardHovered(true)}
             onMouseLeave={() => setCardHovered(false)}
-            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 ease-in-out"
+            className="bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-300 ease-in-out flex flex-col"
             style={{
                 borderColor: cardHovered ? BRAND : "#e5e7eb",
                 boxShadow: cardHovered ? "0 4px 20px rgba(0,89,138,0.15)" : "0 1px 3px rgba(0,0,0,0.08)",
                 transform: cardHovered ? "translateY(-2px)" : "translateY(0)",
             }}
         >
-            {/* ── Image area (clean — no overlays) ── */}
-            <div className="relative h-40 bg-gray-100">
+            {/* ── Image area ── */}
+            <div className="relative h-40 bg-gray-100 flex-shrink-0">
                 <ImageCarousel images={images} title={job.title || categoryName} />
                 <div className="absolute top-2 right-2 z-20">
                     <JobActionDropdown onEdit={() => onEdit(job._id)} onDelete={() => onDelete(job._id)} />
@@ -209,47 +211,61 @@ const MyJobCard: React.FC<{
             </div>
 
             {/* ── Card Body ── */}
-            <div className="p-4">
+            <div className="p-4 flex flex-col flex-1 min-w-0">
 
                 {/* Title */}
-                <h3 className={`text-lg font-bold text-gray-900 mb-1 line-clamp-1 ${typography.card?.title ?? ""}`}>
+                <h3 className="text-lg font-bold text-gray-900 mb-1 truncate flex-shrink-0">
                     {job.title || categoryName}
                 </h3>
 
-                {/* ✅ Category + Subcategory badges — in the body */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#e8f4fb] text-[#00598a] border border-[#00598a]/20">
+                {/* Badges */}
+                <div className="flex flex-wrap gap-1.5 mb-3 flex-shrink-0">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#e8f4fb] text-[#00598a] border border-[#00598a]/20 whitespace-nowrap">
                         <Briefcase size={10} />
                         {categoryName}
                     </span>
-                    {subCategoryList.slice(0, 3).map((sub, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-600 border border-purple-200">
+                    {subCategoryList.slice(0, 2).map((sub, i) => (
+                        <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-600 border border-purple-200 whitespace-nowrap">
                             <Layers size={10} />
                             {sub}
                         </span>
                     ))}
-                    {subCategoryList.length > 3 && (
-                        <span className="inline-flex items-center text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-500">
-                            +{subCategoryList.length - 3} more
+                    {subCategoryList.length > 2 && (
+                        <span className="inline-flex items-center text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">
+                            +{subCategoryList.length - 2}
                         </span>
                     )}
                 </div>
 
-                {/* Description */}
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                    {job.description || "Need a skilled worker for this job"}
-                </p>
+                {/* ── Description — hard clamped, always 2 lines, word-break ── */}
+                <div className="flex-shrink-0 mb-3" style={{ minHeight: "2.5rem" }}>
+                    <p
+                        className="text-gray-600 text-sm leading-5 w-full"
+                        style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            wordBreak: "break-all",
+                            overflowWrap: "break-word",
+                            whiteSpace: "normal",
+                            maxHeight: "2.5rem",
+                        }}
+                    >
+                        {description}
+                    </p>
+                </div>
 
                 {/* Location */}
-                <div className="flex items-center gap-1.5 mb-2 text-gray-600">
+                <div className="flex items-center gap-1.5 mb-2 text-gray-600 flex-shrink-0 min-w-0">
                     <MapPin size={14} className="text-red-500 flex-shrink-0" />
-                    <span className="text-sm line-clamp-1">{locationStr}</span>
+                    <span className="text-sm truncate">{locationStr}</span>
                 </div>
 
                 {/* Price + Job type */}
-                <div className="flex items-center gap-2 mb-2">
-                    <span className="text-green-600 font-bold text-base flex items-center">
-                        <IndianRupee size={14} className="inline" />
+                <div className="flex items-center gap-2 mb-2 flex-shrink-0">
+                    <span className="text-green-600 font-bold text-base flex items-center gap-0.5">
+                        <IndianRupee size={14} />
                         {parseFloat(job.servicecharges || "0").toLocaleString("en-IN")}
                     </span>
                     <span className={`px-2 py-0.5 rounded text-xs font-medium ${job.jobType === "FULL_TIME" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
@@ -259,20 +275,25 @@ const MyJobCard: React.FC<{
                 </div>
 
                 {/* Date range */}
-                <div className="flex items-center gap-1.5 mb-1 text-gray-600">
+                <div className="flex items-center gap-1.5 mb-1 text-gray-600 flex-shrink-0">
                     <Calendar size={14} className="flex-shrink-0" />
                     <span className="text-sm">{dateRange}</span>
                 </div>
-                <p className="text-gray-400 text-xs mb-4">Posted: {postedDate}</p>
+                <p className="text-gray-400 text-xs mb-4 flex-shrink-0">Posted: {postedDate}</p>
 
-                {/* View Applicants button */}
-                <button
-                    onClick={() => onViewApplicants(job._id)}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#00598a] text-white font-medium text-sm hover:bg-[#004a73] transition-colors"
-                >
-                    <Eye size={16} />
-                    View Applicants {applicantCount !== null && `(${applicantCount})`}
-                </button>
+                {/* Button pinned to bottom */}
+                <div className="mt-auto">
+                    <button
+                        onClick={() => onViewApplicants(job._id)}
+                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-medium text-sm transition-colors"
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = BRAND)}
+                    >
+                        <Eye size={16} />
+                        View Applicants {applicantCount !== null && `(${applicantCount})`}
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -351,7 +372,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
             </div>
 
             {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+            <div className="max-w-7xl mx-auto px-4 py-6">
                 {loadingMyJobs ? (
                     <div className="flex justify-center items-center py-16">
                         <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
@@ -375,7 +396,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
                         {myJobs.map(job => (
                             <div key={job._id} className={`transition-opacity ${deletingId === job._id ? "opacity-40 pointer-events-none" : ""}`}>
                                 <MyJobCard

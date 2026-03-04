@@ -466,7 +466,7 @@ const PetServicesList: React.FC = () => {
                         onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
                         onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                     >
-                        + Add Post
+                        + Attach Pet Service
                     </button>
                 </div>
 

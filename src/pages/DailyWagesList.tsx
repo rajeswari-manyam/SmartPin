@@ -473,7 +473,7 @@ const DailyWagesList: React.FC = () => {
                             onClick={handleAddPost}
                             className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#e08a0f] text-white"
                         >
-                            + Add Worker
+                            + Attach Daily Wage Labour Hiring Service
                         </Button>
                     </div>
 

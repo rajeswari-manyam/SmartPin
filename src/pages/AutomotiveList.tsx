@@ -499,7 +499,7 @@ border border-gray-100 hover:border-[#00598a]
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#00598a] text-white"
                     >
-                        + Create Automotive Service
+                        + Attach Automotive Service
                     </Button>
                 </div>
 

@@ -311,7 +311,7 @@ const ArtServicesList: React.FC = () => {
                         onClick={handleAddPost}
                         className="w-full sm:w-auto px-5 py-2.5 rounded-lg font-semibold text-white text-sm transition-opacity hover:opacity-90"
                         style={{ backgroundColor: BRAND }}>
-                        + Add Listing
+                        + Attach Creative & Art Service
                     </button>
                 </div>
 

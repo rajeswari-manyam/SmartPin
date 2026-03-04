@@ -4,8 +4,10 @@ import { ArrowLeft, MapPin, Loader2, ImageOff } from "lucide-react";
 import { API_BASE_URL, getJobById } from "../services/api.service";
 import Button from "../components/ui/Buttons";
 import typography from "../styles/typography";
-import categoriesData from "../data/categories.json";
-import subcategoriesData from "../data/subcategories.json";
+import SubCategoriesData from "../data/subcategories.json";
+import IconSelect from "../components/common/IconDropDown";
+import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
+import { categories } from "../components/categories/Categories";
 
 interface JobData {
     _id: string;
@@ -26,6 +28,17 @@ interface JobData {
     images?: string[];
 }
 
+interface SubCategory {
+    name: string;
+    icon: string;
+}
+interface SubCategoryGroup {
+    categoryId: number;
+    items: SubCategory[];
+}
+
+const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories || [];
+
 // ── Resolve any image path to a full URL ─────────────────────────────────────
 const resolveImageUrl = (path?: string): string => {
     if (!path || typeof path !== "string") return "";
@@ -35,25 +48,24 @@ const resolveImageUrl = (path?: string): string => {
     return `${base}${cleaned.startsWith("/") ? cleaned : "/" + cleaned}`;
 };
 
-// ── Map category value (could be id, name, or number) to display name ────────
-const resolveCategoryName = (categoryValue: string | number): string => {
-    if (!categoryValue) return String(categoryValue);
+// ── Resolve category name (from DB) → category id (for UI) ───────────────────
+const resolveCategoryId = (categoryValue: string | number): string => {
+    if (!categoryValue) return "";
     const str = String(categoryValue);
-
-    // If it's already a name that matches, return it
-    const byName = categoriesData.categories.find(
+    // Try match by name
+    const byName = categories.find(
         (c) => c.name.toLowerCase() === str.toLowerCase()
     );
-    if (byName) return byName.name;
-
-    // If it's a numeric id
-    const byId = categoriesData.categories.find(
-        (c) => String(c.id) === str
-    );
-    if (byId) return byId.name;
-
-    return str; // fallback
+    if (byName) return byName.id;
+    // Try match by id directly
+    const byId = categories.find((c) => c.id === str);
+    if (byId) return byId.id;
+    return "";
 };
+
+// ── Resolve category id → display name ───────────────────────────────────────
+const getCategoryName = (categoryId: string): string =>
+    categories.find((c) => c.id === categoryId)?.name || categoryId;
 
 const UpdateJob: React.FC = () => {
     const navigate = useNavigate();
@@ -62,7 +74,7 @@ const UpdateJob: React.FC = () => {
     const [originalData, setOriginalData] = useState<JobData | null>(null);
     const [formData, setFormData] = useState({
         description: "",
-        category: "",
+        category: "",       // stores category id for UI/filtering
         subcategory: "",
         jobType: "FULL_TIME",
         servicecharges: "",
@@ -81,22 +93,25 @@ const UpdateJob: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedImage, setSelectedImage] = useState(0);
-    const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([]);
     const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
-    const categories = categoriesData.categories;
-    const subcategories = subcategoriesData.subcategories;
+    // ── Filtered subcategories based on selected category id ─────────────────
+    const getFilteredSubcategories = (): SubCategory[] => {
+        if (!formData.category) return [];
+        const group = subcategoryGroups.find(
+            (g) => String(g.categoryId) === formData.category
+        );
+        return group?.items || [];
+    };
+    const filteredSubcategories = getFilteredSubcategories();
 
     // ── Fetch job data ────────────────────────────────────────────────────────
     useEffect(() => {
         if (!jobId) return;
-
         const fetchJob = async () => {
             try {
                 setLoading(true);
                 const res = await getJobById(jobId);
-
-                // API may return { success, job: {...} } or { success, data: {...} }
                 const job: JobData = res.job || res.data || res;
 
                 if (!job || !job._id) {
@@ -106,12 +121,12 @@ const UpdateJob: React.FC = () => {
 
                 setOriginalData(job);
 
-                // Resolve category: could be a numeric id — map to name
-                const resolvedCategory = resolveCategoryName(job.category);
+                // Resolve category name from DB → category id for UI
+                const resolvedCategoryId = resolveCategoryId(job.category);
 
                 setFormData({
                     description: job.description || "",
-                    category: resolvedCategory,
+                    category: resolvedCategoryId,
                     subcategory: job.subcategory || "",
                     jobType: job.jobType || "FULL_TIME",
                     servicecharges: String(job.servicecharges || ""),
@@ -125,19 +140,7 @@ const UpdateJob: React.FC = () => {
                     longitude: job.longitude || 0,
                 });
 
-                // ✅ Store raw image paths — resolveImageUrl handles display
                 setExistingImages(job.images || []);
-
-                // Set subcategories for the loaded category
-                const selectedCat = categories.find(
-                    (c) => c.name.toLowerCase() === resolvedCategory.toLowerCase()
-                );
-                if (selectedCat) {
-                    const subList = subcategories.find(
-                        (s) => s.categoryId === selectedCat.id
-                    );
-                    setFilteredSubcategories(subList?.items || []);
-                }
             } catch (err) {
                 console.error("Fetch job error:", err);
                 alert("Error loading job data");
@@ -145,9 +148,18 @@ const UpdateJob: React.FC = () => {
                 setLoading(false);
             }
         };
-
         fetchJob();
     }, [jobId]);
+
+    // ── Clear subcategory if category changes and subcategory no longer valid ─
+    useEffect(() => {
+        if (formData.category && formData.subcategory) {
+            const isValid = getFilteredSubcategories().some(
+                (sub) => sub.name === formData.subcategory
+            );
+            if (!isValid) setFormData((prev) => ({ ...prev, subcategory: "" }));
+        }
+    }, [formData.category]);
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleInputChange = (
@@ -155,18 +167,6 @@ const UpdateJob: React.FC = () => {
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-    };
-
-    const handleCategoryChange = (e: ChangeEvent<HTMLSelectElement>) => {
-        const categoryName = e.target.value;
-        setFormData((prev) => ({ ...prev, category: categoryName, subcategory: "" }));
-        const selectedCat = categories.find((c) => c.name === categoryName);
-        if (selectedCat) {
-            const subList = subcategories.find((s) => s.categoryId === selectedCat.id);
-            setFilteredSubcategories(subList?.items || []);
-        } else {
-            setFilteredSubcategories([]);
-        }
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -196,10 +196,13 @@ const UpdateJob: React.FC = () => {
         try {
             setIsSubmitting(true);
 
+            // ✅ Resolve category id → name before sending to backend
+            const categoryName = getCategoryName(formData.category);
+
             const fd = new FormData();
             fd.append("jobType", formData.jobType.trim());
             fd.append("description", formData.description.trim());
-            fd.append("category", formData.category.trim());
+            fd.append("category", categoryName);   // ✅ Send name, not id
             fd.append("latitude", String(formData.latitude));
             fd.append("longitude", String(formData.longitude));
 
@@ -212,7 +215,6 @@ const UpdateJob: React.FC = () => {
             if (formData.startDate) fd.append("startDate", formData.startDate);
             if (formData.endDate) fd.append("endDate", formData.endDate);
 
-            // ✅ Append new image files
             newImages.forEach((file) => fd.append("images", file));
 
             const response = await fetch(`${API_BASE_URL}/updateJob/${jobId}`, {
@@ -259,7 +261,6 @@ const UpdateJob: React.FC = () => {
         );
     }
 
-    // ── Resolved image URLs for display ──────────────────────────────────────
     const resolvedImages = existingImages.map(resolveImageUrl);
 
     return (
@@ -277,18 +278,16 @@ const UpdateJob: React.FC = () => {
                     <h1 className={typography.heading.h3}>Update Job</h1>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
 
                     {/* ── LEFT: Current Job Details ── */}
-                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 h-fit lg:sticky lg:top-6">
+                    <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6 lg:sticky lg:top-6">
                         <h2 className={`${typography.heading.h5} mb-4 text-gray-800`}>
                             Current Job Details
                         </h2>
 
-                        {/* ✅ FIXED: Image display with proper URL resolution */}
                         {resolvedImages.length > 0 ? (
                             <>
-                                {/* Main image */}
                                 <div className="mb-3 rounded-xl overflow-hidden bg-gray-100 h-48 sm:h-64 flex items-center justify-center">
                                     {imgErrors[selectedImage] ? (
                                         <div className="flex flex-col items-center gap-2 text-gray-400">
@@ -308,7 +307,6 @@ const UpdateJob: React.FC = () => {
                                     )}
                                 </div>
 
-                                {/* Thumbnails */}
                                 {resolvedImages.length > 1 && (
                                     <div className="flex gap-2 mb-4 flex-wrap">
                                         {resolvedImages.map((url, i) => (
@@ -319,8 +317,8 @@ const UpdateJob: React.FC = () => {
                                                         setImgErrors((prev) => ({ ...prev, [i]: false }));
                                                     }}
                                                     className={`w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border-2 transition ${selectedImage === i
-                                                        ? "border-blue-500 ring-2 ring-blue-300"
-                                                        : "border-gray-200 hover:border-blue-300"
+                                                            ? "border-blue-500 ring-2 ring-blue-300"
+                                                            : "border-gray-200 hover:border-blue-300"
                                                         }`}
                                                 >
                                                     {imgErrors[i] ? (
@@ -338,7 +336,6 @@ const UpdateJob: React.FC = () => {
                                                         />
                                                     )}
                                                 </button>
-                                                {/* Remove existing image button */}
                                                 <button
                                                     type="button"
                                                     onClick={() => handleRemoveExistingImage(i)}
@@ -351,7 +348,6 @@ const UpdateJob: React.FC = () => {
                                     </div>
                                 )}
 
-                                {/* Remove single image button */}
                                 {resolvedImages.length === 1 && (
                                     <button
                                         type="button"
@@ -371,13 +367,10 @@ const UpdateJob: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Details */}
                         <div className="space-y-3 text-sm">
                             <div>
                                 <span className="font-medium text-gray-600">Category: </span>
-                                <span className="text-gray-800">
-                                    {resolveCategoryName(originalData.category)}
-                                </span>
+                                <span className="text-gray-800">{originalData.category}</span>
                             </div>
 
                             {originalData.subcategory && (
@@ -414,7 +407,9 @@ const UpdateJob: React.FC = () => {
 
                             <div>
                                 <h4 className="font-medium text-gray-600 mb-1">Description</h4>
-                                <p className="text-gray-700 leading-relaxed">{originalData.description}</p>
+                                <p className="text-gray-700 leading-relaxed break-words overflow-hidden">
+                                    {originalData.description}
+                                </p>
                             </div>
 
                             {(originalData.area || originalData.city || originalData.state) && (
@@ -455,51 +450,55 @@ const UpdateJob: React.FC = () => {
 
                         <div className="space-y-4 sm:space-y-5">
 
-                            {/* Category */}
+                            {/* ── Category — IconSelect (same as PostJob) ── */}
                             <div>
                                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
                                     Category *
                                 </label>
-                                <select
-                                    name="category"
+                                <IconSelect
+                                    label=""
                                     value={formData.category}
-                                    onChange={handleCategoryChange}
-                                    className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input}`}
-                                >
-                                    <option value="">Select Category</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat.id} value={cat.name}>
-                                            {cat.icon} {cat.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                    placeholder="Select Category"
+                                    options={categories.map((c) => ({ id: c.id, name: c.name, icon: c.icon }))}
+                                    onChange={(val) =>
+                                        setFormData((prev) => ({ ...prev, category: val, subcategory: "" }))
+                                    }
+                                    disabled={isSubmitting}
+                                />
+                                {formData.category && (
+                                    <p className="mt-1 text-xs text-gray-400">
+                                        Will save as:{" "}
+                                        <span className="font-semibold text-gray-600">
+                                            {getCategoryName(formData.category)}
+                                        </span>
+                                    </p>
+                                )}
                             </div>
 
-                            {/* Subcategory */}
+                            {/* ── Subcategory — IconSelect (same as PostJob) ── */}
                             <div>
                                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
                                     Subcategory
                                 </label>
-                                <select
-                                    name="subcategory"
+                                <IconSelect
+                                    label=""
                                     value={formData.subcategory}
-                                    onChange={handleInputChange}
-                                    disabled={!formData.category || filteredSubcategories.length === 0}
-                                    className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input} disabled:bg-gray-100 disabled:cursor-not-allowed`}
-                                >
-                                    <option value="">
-                                        {!formData.category
-                                            ? "Select category first"
-                                            : filteredSubcategories.length === 0
+                                    placeholder={
+                                        formData.category
+                                            ? filteredSubcategories.length === 0
                                                 ? "No subcategories available"
-                                                : "Select Subcategory"}
-                                    </option>
-                                    {filteredSubcategories.map((sub, index) => (
-                                        <option key={index} value={sub.name}>
-                                            {sub.icon} {sub.name}
-                                        </option>
-                                    ))}
-                                </select>
+                                                : "Select Subcategory"
+                                            : "Select category first"
+                                    }
+                                    options={filteredSubcategories.map((s) => ({
+                                        name: s.name,
+                                        icon: SUBCATEGORY_ICONS[s.name],
+                                    }))}
+                                    onChange={(val) =>
+                                        setFormData((prev) => ({ ...prev, subcategory: val }))
+                                    }
+                                    disabled={isSubmitting || !formData.category || filteredSubcategories.length === 0}
+                                />
                             </div>
 
                             {/* Job Type */}
@@ -635,7 +634,6 @@ const UpdateJob: React.FC = () => {
                                     className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.body.small} file:mr-4 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:text-sm file:font-medium`}
                                 />
 
-                                {/* New image previews */}
                                 {newImages.length > 0 && (
                                     <div className="mt-3">
                                         <p className="text-xs text-gray-500 mb-2">New images to upload:</p>

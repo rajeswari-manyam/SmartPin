@@ -608,7 +608,7 @@ const EventServicesList: React.FC = () => {
                             ((e.currentTarget as HTMLElement).style.backgroundColor = "#00598a")
                         }
                     >
-                        + Add Post
+                        + Attach Event Service
                     </button>
                 </div>
 

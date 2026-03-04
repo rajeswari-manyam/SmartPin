@@ -90,18 +90,18 @@ const PromoSlides: React.FC<PromoSlidesProps> = ({ className = "" }) => {
     ];
 
     return (
-        <div className={`w-full ${className}`}>
+        <div className={`w-full px-3 md:px-6 py-3 md:py-0 ${className}`}>
             <Carousel
                 autoplay={true}
                 autoplayDelay={5000}
                 showDots={true}
                 showArrows={true}
-                className="h-80 rounded-xl shadow-lg overflow-hidden"
+                className="h-52 sm:h-64 md:h-80 rounded-xl shadow-lg overflow-hidden"
             >
                 {slides.map((slide, index) => (
                     <div
                         key={slide.id}
-                        className={`relative h-80 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r ${slide.gradient}`}
+                        className={`relative h-52 sm:h-64 md:h-80 flex items-center justify-center overflow-hidden rounded-xl bg-gradient-to-r ${slide.gradient}`}
                     >
                         {/* First slide with image background */}
                         {slide.image && index === 0 ? (

@@ -461,7 +461,7 @@ const SportsServicesList: React.FC = () => {
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center"
                     >
-                        + Add Post
+                        + Attach Sports & Fitness Service
                     </Button>
                 </div>
 

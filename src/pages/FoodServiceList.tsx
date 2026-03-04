@@ -196,9 +196,8 @@ const FoodServicesList: React.FC = () => {
 
                     {/* Open/Closed badge — top right */}
                     <div className="absolute top-3 right-3 z-10">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg shadow ${
-                            isOpen ? "bg-green-500 text-white" : "bg-red-500 text-white"
-                        }`}>
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg shadow ${isOpen ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                            }`}>
                             {isOpen ? (
                                 <svg className="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -334,148 +333,147 @@ const FoodServicesList: React.FC = () => {
     // ============================================================================
     return (
         <>
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+            <div className="min-h-screen bg-gray-50">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
 
-                {/* Header — title left, create button right (matches hospital page) */}
-                <div className="flex items-start justify-between gap-4 mb-2">
-                    {/* Left: back + title */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => window.history.back()}
-                            className="p-2 rounded-full hover:bg-gray-100 transition shrink-0"
-                        >
-                            <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                        </button>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900 leading-tight">
-                                {getDisplayTitle(subcategory)}
-                            </h1>
-                            <p className="text-xs text-gray-500">Manage Restaurants &amp; Food services</p>
-                        </div>
-                    </div>
-
-                    {/* Right: Create button — top right corner */}
-                    <button
-                        onClick={handleAddPost}
-                        className="shrink-0 flex items-center gap-2 px-5 py-3 bg-[#00598a] hover:bg-[#004a75] text-white font-semibold text-sm rounded-xl shadow-md transition-colors duration-200 active:scale-95 whitespace-nowrap"
-                    >
-                        + Create {getDisplayTitle(subcategory)} &amp; Food Service
-                    </button>
-                </div>
-
-                {/* Location status */}
-                {fetchingLocation && (
-                    <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full" />
-                        <span className="text-sm text-[#00598a]">Getting your location...</span>
-                    </div>
-                )}
-                {locationError && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
-                        <p className="text-yellow-700 text-sm">{locationError}</p>
-                    </div>
-                )}
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                        <p className="text-red-700 font-medium text-sm">{error}</p>
-                    </div>
-                )}
-
-                {/* 1. DUMMY CARDS */}
-                {renderDummyCards() && (
-                    <div className="space-y-4">{renderDummyCards()}</div>
-                )}
-
-                {/* 2. API DATA */}
-                {userLocation && !fetchingLocation && renderNearbySection()}
-
-            </div>
-        </div>
-
-        {/* ── Phone Number Modal ── */}
-        {phoneModal && (
-            <div
-                className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-                onClick={() => setPhoneModal(null)}
-            >
-                <div
-                    className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
-                    onClick={e => e.stopPropagation()}
-                >
-                    {/* Modal Header */}
-                    <div className="px-6 pt-6 pb-4 border-b border-gray-100">
-                        <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-full flex items-center justify-center"
-                                style={{ backgroundColor: '#e8f2f8' }}>
-                                <span className="text-xl">📞</span>
-                            </div>
+                    {/* Header — responsive: stacked on mobile, side-by-side on md+ */}
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-2">
+                        {/* Left: back + title */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => window.history.back()}
+                                className="p-2 rounded-full hover:bg-gray-100 transition shrink-0"
+                            >
+                                <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
                             <div>
-                                <h3 className="font-bold text-gray-900 text-base leading-tight">
-                                    {phoneModal.name}
-                                </h3>
-                                <p className="text-xs text-gray-400 mt-0.5">Contact Information</p>
+                                <h1 className="text-lg md:text-xl font-bold text-gray-900 leading-tight">
+                                    {getDisplayTitle(subcategory)}
+                                </h1>
+                                <p className="text-xs text-gray-500">Manage Restaurants &amp; Food services</p>
                             </div>
                         </div>
+
+                        <button
+                            onClick={handleAddPost}
+                            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 md:px-5 md:py-3 bg-[#00598a] hover:bg-[#004a75] text-white font-semibold text-sm rounded-xl shadow-md transition-colors duration-200 active:scale-95"
+                        >
+                            + Attach Restaurants & Food Services
+                        </button>
                     </div>
 
-                    {/* Phone Number Display */}
-                    <div className="px-6 py-5">
-                        {phoneModal.phone ? (
-                            <>
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                                    Phone Number
-                                </p>
-                                <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
-                                    <span className="text-xl font-bold text-gray-900 tracking-wide">
-                                        {phoneModal.phone}
-                                    </span>
-                                    <button
-                                        onClick={() => navigator.clipboard?.writeText(phoneModal.phone)}
-                                        className="p-1.5 hover:bg-gray-200 rounded-lg transition text-gray-500 text-xs"
-                                        title="Copy"
-                                    >
-                                        📋
-                                    </button>
-                                </div>
+                    {/* Location status */}
+                    {fetchingLocation && (
+                        <div className="bg-[#00598a]/10 border border-[#00598a]/20 rounded-lg p-3 flex items-center gap-2">
+                            <div className="animate-spin h-4 w-4 border-2 border-[#00598a] border-t-transparent rounded-full" />
+                            <span className="text-sm text-[#00598a]">Getting your location...</span>
+                        </div>
+                    )}
+                    {locationError && (
+                        <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-lg">
+                            <p className="text-yellow-700 text-sm">{locationError}</p>
+                        </div>
+                    )}
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                            <p className="text-red-700 font-medium text-sm">{error}</p>
+                        </div>
+                    )}
 
-                                {/* Action buttons */}
-                                <div className="grid grid-cols-2 gap-3 mt-4">
+                    {/* 1. DUMMY CARDS */}
+                    {renderDummyCards() && (
+                        <div className="space-y-4">{renderDummyCards()}</div>
+                    )}
+
+                    {/* 2. API DATA */}
+                    {userLocation && !fetchingLocation && renderNearbySection()}
+
+                </div>
+            </div>
+
+            {/* ── Phone Number Modal ── */}
+            {phoneModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+                    onClick={() => setPhoneModal(null)}
+                >
+                    <div
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Modal Header */}
+                        <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+                            <div className="flex items-center gap-3">
+                                <div className="w-11 h-11 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: '#e8f2f8' }}>
+                                    <span className="text-xl">📞</span>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-base leading-tight">
+                                        {phoneModal.name}
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">Contact Information</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Phone Number Display */}
+                        <div className="px-6 py-5">
+                            {phoneModal.phone ? (
+                                <>
+                                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                                        Phone Number
+                                    </p>
+                                    <div className="flex items-center justify-between bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                                        <span className="text-xl font-bold text-gray-900 tracking-wide">
+                                            {phoneModal.phone}
+                                        </span>
+                                        <button
+                                            onClick={() => navigator.clipboard?.writeText(phoneModal.phone)}
+                                            className="p-1.5 hover:bg-gray-200 rounded-lg transition text-gray-500 text-xs"
+                                            title="Copy"
+                                        >
+                                            📋
+                                        </button>
+                                    </div>
+
+                                    {/* Action buttons */}
+                                    <div className="grid grid-cols-2 gap-3 mt-4">
+                                        <button
+                                            onClick={() => setPhoneModal(null)}
+                                            className="py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition"
+                                        >
+                                            Close
+                                        </button>
+                                        <a
+                                            href={`tel:${phoneModal.phone}`}
+                                            className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm text-center transition flex items-center justify-center gap-1.5"
+                                        >
+                                            📞 Call Now
+                                        </a>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="text-center py-4">
+                                        <span className="text-4xl">😕</span>
+                                        <p className="mt-3 text-gray-500 font-medium">No phone number available for this service.</p>
+                                    </div>
                                     <button
                                         onClick={() => setPhoneModal(null)}
-                                        className="py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition"
+                                        className="w-full mt-4 py-3 rounded-xl bg-[#00598a] text-white font-semibold text-sm transition hover:bg-[#004a75]"
                                     >
                                         Close
                                     </button>
-                                    <a
-                                        href={`tel:${phoneModal.phone}`}
-                                        className="py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold text-sm text-center transition flex items-center justify-center gap-1.5"
-                                    >
-                                        📞 Call Now
-                                    </a>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="text-center py-4">
-                                    <span className="text-4xl">😕</span>
-                                    <p className="mt-3 text-gray-500 font-medium">No phone number available for this service.</p>
-                                </div>
-                                <button
-                                    onClick={() => setPhoneModal(null)}
-                                    className="w-full mt-4 py-3 rounded-xl bg-[#00598a] text-white font-semibold text-sm transition hover:bg-[#004a75]"
-                                >
-                                    Close
-                                </button>
-                            </>
-                        )}
+                                </>
+                            )}
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
+            )}
         </>
     );
 };

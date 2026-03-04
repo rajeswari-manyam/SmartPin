@@ -1,8 +1,4 @@
-// src/screens/AddSkillsScreen.tsx
-// Web port aligned with RN patterns:
-//   • screenState machine   • same guard logic as handleSubmit in RN
-//   • same error classification (network vs. 409 vs. generic)
-//   • localStorage ≈ AsyncStorage
+
 
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -258,7 +254,7 @@ const AddSkillsScreen: React.FC = () => {
 
       setSuccessMessage("Skill added successfully!");
       setScreenState("success");
-      setTimeout(() => navigate("/home"), 1500);
+  setTimeout(() => navigate("/my-skills"), 1500);
     } catch (err: any) {
       // Mirrors RN error classification block
       let msg = "Failed to add skill. Please try again.";

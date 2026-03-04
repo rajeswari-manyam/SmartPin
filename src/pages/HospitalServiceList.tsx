@@ -617,7 +617,7 @@ const HospitalServicesList: React.FC = () => {
                         onClick={handleAddPost}
                         className="w-full sm:w-auto justify-center bg-[#00598a] hover:bg-[#004a73] text-white"
                     >
-                        + Create Hospitals & Healthcare Service
+                        + Attach Hospitals & Healthcare Service
                     </Button>
                 </div>
 

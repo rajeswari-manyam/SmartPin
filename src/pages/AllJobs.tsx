@@ -42,6 +42,7 @@ const resolveImageUrl = (path: string): string | null => {
 const getImageUrls = (images?: string[]): string[] =>
     (images || []).map(resolveImageUrl).filter(Boolean) as string[];
 
+// ── Image Carousel ─────────────────────────────────────────────────────────────
 const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, title }) => {
     const [idx, setIdx] = useState(0);
     const [imgError, setImgError] = useState(false);
@@ -97,6 +98,7 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
     );
 };
 
+// ── Job Card ───────────────────────────────────────────────────────────────────
 const JobCard: React.FC<{
     job: JobDetail;
     onClick: () => void;
@@ -128,8 +130,10 @@ const JobCard: React.FC<{
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
+            {/* ── Image area — fixed height ── */}
             <div className="relative h-48 md:h-52 bg-gray-100 flex-shrink-0 overflow-hidden">
-                <div className="w-full h-full transition-transform duration-300" style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}>
+                <div className="w-full h-full transition-transform duration-300"
+                    style={{ transform: isHovered ? "scale(1.03)" : "scale(1)" }}>
                     <ImageCarousel images={imgs} title={job.title} />
                 </div>
                 {distLabel && (
@@ -141,8 +145,11 @@ const JobCard: React.FC<{
                 )}
             </div>
 
-            <div className="flex flex-col flex-1 px-3 md:px-4 pt-3 pb-4">
-                <div className="flex flex-wrap gap-1.5 mb-2">
+            {/* ── Card Body — flex column, fixed structure ── */}
+            <div className="flex flex-col flex-1 px-3 md:px-4 pt-3 pb-4 min-w-0">
+
+                {/* Badges */}
+                <div className="flex flex-wrap gap-1.5 mb-2 flex-shrink-0">
                     <span className={`${typography.misc.badge} px-2 py-0.5 rounded-full border`}
                         style={{ backgroundColor: "rgba(0,89,138,0.08)", color: BRAND, borderColor: "rgba(0,89,138,0.2)" }}>
                         {categoryName}
@@ -154,16 +161,49 @@ const JobCard: React.FC<{
                     )}
                 </div>
 
-                <h3 className={`${typography.card.title} line-clamp-2 leading-snug mb-1.5`}
-                    style={{ color: isHovered ? BRAND : "#111827" }}>
+                {/* Title — max 2 lines */}
+                <h3
+                    className="font-bold leading-snug mb-1.5 flex-shrink-0"
+                    style={{
+                        color: isHovered ? BRAND : "#111827",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflow: "hidden",
+                        wordBreak: "break-word",
+                        overflowWrap: "break-word",
+                    }}
+                >
                     {job.title}
                 </h3>
-                <p className={`${typography.card.description} text-gray-600 mb-2 line-clamp-2`}>{job.description}</p>
-                <div className={`flex items-center gap-1.5 mb-1.5 ${typography.body.xs} text-gray-500`}>
-                    <MapPin size={12} className="flex-shrink-0 text-gray-400" />
-                    <span className="line-clamp-1">{locationStr}</span>
+
+                {/* Description — strictly 2 lines, word-break for long strings */}
+                <div className="flex-shrink-0 mb-2" style={{ minHeight: "2.5rem" }}>
+                    <p
+                        className={`${typography.card.description} text-gray-600`}
+                        style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            wordBreak: "break-all",
+                            overflowWrap: "break-word",
+                            whiteSpace: "normal",
+                            maxHeight: "2.5rem",
+                        }}
+                    >
+                        {job.description}
+                    </p>
                 </div>
-                <div className={`flex items-center gap-1.5 mb-3 ${typography.body.xs} text-gray-500`}>
+
+                {/* Location — 1 line */}
+                <div className={`flex items-center gap-1.5 mb-1.5 ${typography.body.xs} text-gray-500 flex-shrink-0 min-w-0`}>
+                    <MapPin size={12} className="flex-shrink-0 text-gray-400" />
+                    <span className="truncate">{locationStr}</span>
+                </div>
+
+                {/* Date range */}
+                <div className={`flex items-center gap-1.5 mb-3 ${typography.body.xs} text-gray-500 flex-shrink-0`}>
                     <Calendar size={12} className="flex-shrink-0 text-gray-400" />
                     <span>
                         {startDate.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -172,19 +212,30 @@ const JobCard: React.FC<{
                     </span>
                 </div>
 
+                {/* Spacer pushes footer to bottom */}
                 <div className="flex-1" />
-                <div className="flex items-center justify-between pt-3 border-t"
-                    style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}>
+
+                {/* Footer — price + button, always at bottom */}
+                <div
+                    className="flex items-center justify-between pt-3 border-t flex-shrink-0"
+                    style={{ borderColor: isHovered ? "rgba(0,89,138,0.15)" : "#f3f4f6" }}
+                >
                     <div>
-                        <p className="uppercase tracking-wide text-gray-400 mb-0.5" style={{ fontSize: "10px" }}>Service Charges</p>
+                        <p className="uppercase tracking-wide text-gray-400 mb-0.5" style={{ fontSize: "10px" }}>
+                            Service Charges
+                        </p>
                         <p className={`${typography.heading.h6} text-green-600 flex items-center gap-0.5 leading-none`}>
                             <IndianRupee size={15} className="mt-0.5" />
                             {parseFloat(job.servicecharges).toLocaleString("en-IN")}
                         </p>
                     </div>
-                    <button onClick={onViewClick}
+                    <button
+                        onClick={onViewClick}
                         className={`flex items-center gap-1.5 text-white ${typography.body.xs} font-bold px-3 md:px-4 py-2 rounded-xl shadow-sm transition-all duration-200 active:scale-95`}
-                        style={{ backgroundColor: BRAND }}>
+                        style={{ backgroundColor: BRAND }}
+                        onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                        onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                    >
                         View Details <ArrowRight size={14} />
                     </button>
                 </div>
@@ -193,8 +244,10 @@ const JobCard: React.FC<{
     );
 };
 
+// ── Constants ──────────────────────────────────────────────────────────────────
 const RADIUS_OPTIONS = [2, 5, 10, 20, 50];
 
+// ── Main Component ─────────────────────────────────────────────────────────────
 const AllJobs: React.FC<AllJobsProps> = ({
     searchText = "",
     filterCategory,
@@ -225,8 +278,6 @@ const AllJobs: React.FC<AllJobsProps> = ({
         try {
             setLoading(true);
             setError("");
-
-            // Use prop first, then localStorage only — no backend fallback
             const workerId =
                 workerIdProp ||
                 localStorage.getItem("workerId") ||
@@ -280,9 +331,13 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 <div className="text-6xl mb-4">📋</div>
                 <h2 className={`${typography.heading.h4} text-gray-800 mb-2`}>No Jobs Available</h2>
                 <p className={`${typography.body.small} text-gray-600 mb-6`}>{error}</p>
-                <button onClick={fetchJobs}
+                <button
+                    onClick={fetchJobs}
                     className={`text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 active:scale-95 ${typography.body.small}`}
-                    style={{ backgroundColor: BRAND }}>
+                    style={{ backgroundColor: BRAND }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_DARK}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = BRAND}
+                >
                     Try Again
                 </button>
             </div>
@@ -291,10 +346,16 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
     return (
         <div className="max-w-7xl mx-auto px-3 md:px-6 py-4 md:py-6">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+
+            {/* Header + Filters */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3 mb-5">
                 <div>
-                    <h1 className={`${typography.heading.h4} text-gray-900 tracking-tight`}>Nearby Job Opportunities</h1>
-                    <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>Browse all available jobs in your area</p>
+                    <h1 className={`${typography.heading.h4} text-gray-900 tracking-tight`}>
+                        Nearby Job Opportunities
+                    </h1>
+                    <p className={`${typography.body.xs} text-gray-500 mt-0.5`}>
+                        Browse all available jobs in your area
+                    </p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -302,8 +363,10 @@ const AllJobs: React.FC<AllJobsProps> = ({
                     <div id="radius-dropdown" className="relative">
                         <div className="flex items-center gap-1 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
                             <span className={`${typography.body.xs} text-gray-500 font-medium`}>Within:</span>
-                            <button onClick={() => setRadiusDropdownOpen(p => !p)}
-                                className={`flex items-center gap-1 ${typography.body.xs} font-semibold text-gray-800`}>
+                            <button
+                                onClick={() => setRadiusDropdownOpen(p => !p)}
+                                className={`flex items-center gap-1 ${typography.body.xs} font-semibold text-gray-800`}
+                            >
                                 {selectedRadius} km
                                 <ChevronDown size={13} className={`transition-transform ${radiusDropdownOpen ? "rotate-180" : ""}`} />
                             </button>
@@ -311,9 +374,12 @@ const AllJobs: React.FC<AllJobsProps> = ({
                         {radiusDropdownOpen && (
                             <div className="absolute right-0 top-full mt-2 w-28 bg-white border border-gray-200 rounded-xl shadow-lg z-50 py-1">
                                 {RADIUS_OPTIONS.map(r => (
-                                    <button key={r} onClick={() => { setSelectedRadius(r); setRadiusDropdownOpen(false); }}
+                                    <button key={r}
+                                        onClick={() => { setSelectedRadius(r); setRadiusDropdownOpen(false); }}
                                         className={`w-full text-left px-4 py-2 ${typography.body.xs}`}
-                                        style={selectedRadius === r ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
+                                        style={selectedRadius === r
+                                            ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
+                                            : { color: "#374151" }}>
                                         {r} km
                                     </button>
                                 ))}
@@ -323,25 +389,33 @@ const AllJobs: React.FC<AllJobsProps> = ({
 
                     {/* Category dropdown */}
                     <div id="category-dropdown" className="relative">
-                        <button onClick={() => setDropdownOpen(p => !p)}
+                        <button
+                            onClick={() => setDropdownOpen(p => !p)}
                             className={`flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 md:px-4 py-2 ${typography.body.xs} font-medium text-gray-700 shadow-sm min-w-[130px] md:min-w-[150px] justify-between`}
-                            style={dropdownOpen ? { borderColor: BRAND, color: BRAND } : {}}>
+                            style={dropdownOpen ? { borderColor: BRAND, color: BRAND } : {}}
+                        >
                             <span className="truncate">{categoryLabel}</span>
                             <ChevronDown size={13} className={`flex-shrink-0 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
                         </button>
                         {dropdownOpen && (
                             <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
                                 <div className="max-h-72 overflow-y-auto py-1">
-                                    <button onClick={() => { setSelectedCategory("all"); setDropdownOpen(false); }}
+                                    <button
+                                        onClick={() => { setSelectedCategory("all"); setDropdownOpen(false); }}
                                         className={`w-full text-left px-4 py-2.5 ${typography.body.xs}`}
-                                        style={selectedCategory === "all" ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
+                                        style={selectedCategory === "all"
+                                            ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
+                                            : { color: "#374151" }}>
                                         All Categories
                                     </button>
                                     <div className="border-t border-gray-100 my-1" />
                                     {CategoriesData.categories.map(cat => (
-                                        <button key={cat.name} onClick={() => { setSelectedCategory(cat.name); setDropdownOpen(false); }}
+                                        <button key={cat.name}
+                                            onClick={() => { setSelectedCategory(cat.name); setDropdownOpen(false); }}
                                             className={`w-full text-left px-4 py-2.5 ${typography.body.xs}`}
-                                            style={selectedCategory === cat.name ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 } : { color: "#374151" }}>
+                                            style={selectedCategory === cat.name
+                                                ? { backgroundColor: "rgba(0,89,138,0.1)", color: BRAND, fontWeight: 600 }
+                                                : { color: "#374151" }}>
                                             {cat.name}
                                         </button>
                                     ))}
@@ -352,6 +426,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 </div>
             </div>
 
+            {/* Result count */}
             <p className={`mb-4 ${typography.body.xs} text-gray-500`}>
                 Found <span className="font-semibold text-gray-800">{filtered.length}</span>{" "}
                 job{filtered.length !== 1 ? "s" : ""}
@@ -360,6 +435,7 @@ const AllJobs: React.FC<AllJobsProps> = ({
                 )}
             </p>
 
+            {/* Empty filtered state */}
             {filtered.length === 0 ? (
                 <div className="text-center py-16">
                     <div className="text-gray-300 text-5xl mb-4">🔍</div>
@@ -368,9 +444,11 @@ const AllJobs: React.FC<AllJobsProps> = ({
                         {selectedCategory !== "all" ? ` in "${categoryLabel}"` : ""}
                     </p>
                     {(searchText || selectedCategory !== "all") && (
-                        <button onClick={() => setSelectedCategory("all")}
+                        <button
+                            onClick={() => setSelectedCategory("all")}
                             className={`mt-3 font-medium ${typography.body.xs} underline underline-offset-2`}
-                            style={{ color: BRAND }}>
+                            style={{ color: BRAND }}
+                        >
                             Clear filters
                         </button>
                     )}
@@ -378,9 +456,12 @@ const AllJobs: React.FC<AllJobsProps> = ({
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                     {filtered.map(job => (
-                        <JobCard key={job._id} job={job}
+                        <JobCard
+                            key={job._id}
+                            job={job}
                             onClick={() => navigate(`/job-details/${job._id}`)}
-                            onViewClick={e => { e.stopPropagation(); navigate(`/job-details/${job._id}`); }} />
+                            onViewClick={e => { e.stopPropagation(); navigate(`/job-details/${job._id}`); }}
+                        />
                     ))}
                 </div>
             )}

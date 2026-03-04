@@ -478,7 +478,7 @@ const IndustrialServicesList: React.FC = () => {
                             onMouseEnter={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#004a73'}
                             onMouseLeave={e => (e.currentTarget as HTMLElement).style.backgroundColor = '#00598a'}
                         >
-                            + Add Post
+                            + Attach Industrial Service
                         </button>
                     </div>
                 </div>

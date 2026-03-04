@@ -66,28 +66,28 @@ const Filters: React.FC<FiltersProps> = ({
 
     return (
         <>
-            <div className="px-6 py-4 border-b bg-gray-50">
-                <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm text-gray-600">
+            <div className="px-3 md:px-6 py-3 md:py-4 border-b bg-gray-50">
+                <div className="flex items-center justify-between mb-2 md:mb-3">
+                    <span className="text-xs md:text-sm text-gray-600">
                         {workerCount} worker{workerCount !== 1 ? 's' : ''} found
                     </span>
                     <button
                         onClick={() => setShowFilterModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-[#00598a] transition-colors relative"
+                        className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 bg-white border border-gray-300 rounded-lg hover:bg-[#00598a] hover:text-white transition-colors relative"
                     >
-                        <Filter size={18} />
-                        <span className="text-sm font-medium">Filters</span>
+                        <Filter size={15} />
+                        <span className="text-xs md:text-sm font-medium">Filters</span>
                         {hasActiveFilters && (
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-600 rounded-full"></span>
                         )}
                     </button>
                 </div>
 
-                <div className="flex gap-2 overflow-x-auto">
+                <div className="flex gap-2 overflow-x-auto scroll-x-mobile pb-1">
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-shrink-0 px-2 py-1.5 md:px-3 md:py-2 bg-white border border-gray-300 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="distance">Sort: Distance</option>
                         <option value="price">Sort: Price</option>
@@ -97,7 +97,7 @@ const Filters: React.FC<FiltersProps> = ({
                     <select
                         value={filterBy}
                         onChange={(e) => setFilterBy(e.target.value)}
-                        className="px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-shrink-0 px-2 py-1.5 md:px-3 md:py-2 bg-white border border-gray-300 rounded-lg text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         <option value="All">All Experience</option>
                         <option value="1+ years">1+ years</option>

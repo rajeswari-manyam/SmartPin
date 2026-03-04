@@ -282,51 +282,51 @@ const CategoryPage: React.FC = () => {
                 </button>
 
                 {/* Category Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                <div className="mb-6 md:mb-8">
+                    <h1 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2">
                         {category.name}
                     </h1>
-                    <p className="text-gray-600">
+                    <p className="text-sm md:text-base text-gray-600">
                         Choose a service from {category.name.toLowerCase()}
                     </p>
                 </div>
 
                 {/* Subcategories Grid */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6">
                     {subcategoryGroup.items.map((item, index) => (
                         <button
                             key={index}
                             onClick={() => handleClick(item.name)}
-                            className="group bg-white rounded-2xl border border-[#00598a] p-6 flex flex-col items-center text-center transition-all duration-300 hover:bg-[#00598a] hover:shadow-xl hover:-translate-y-1"
+                            className="group bg-white rounded-2xl border border-[#00598a] p-3 md:p-6 flex flex-col items-center text-center transition-all duration-300 hover:bg-[#00598a] hover:shadow-xl hover:-translate-y-1 w-full"
                         >
-                        {/* Icon */}
-   <div
-  className="w-16 h-16 rounded-full flex items-center justify-center
-             bg-[#00598a] mb-4
+                            {/* Icon */}
+                            <div
+                                className="w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center
+             bg-[#00598a] mb-2 md:mb-4
              transition-all duration-300
              group-hover:bg-white"
->
-  {SUBCATEGORY_ICONS[item.name] ? (
-    <img
-      src={SUBCATEGORY_ICONS[item.name]}
-      alt={item.name}
-      className="
-        w-8 h-8 object-contain
+                            >
+                                {SUBCATEGORY_ICONS[item.name] ? (
+                                    <img
+                                        src={SUBCATEGORY_ICONS[item.name]}
+                                        alt={item.name}
+                                        className="
+        w-6 h-6 md:w-8 md:h-8 object-contain
         transition-all duration-300
         filter brightness-0 invert
         group-hover:invert-0
       "
-    />
-  ) : (
-    <Wrench
-      size={28}
-      className="text-white transition-colors duration-300
+                                    />
+                                ) : (
+                                    <Wrench
+                                        size={20}
+                                        className="text-white transition-colors duration-300
                  group-hover:text-[#00598a]"
-    />
-  )}
-</div>
+                                    />
+                                )}
+                            </div>
                             {/* Text */}
-                            <p className="font-semibold text-sm md:text-base text-[#00598a] transition-colors duration-300 group-hover:text-white">
+                            <p className="font-semibold text-xs md:text-sm text-[#00598a] transition-colors duration-300 group-hover:text-white leading-tight">
                                 {item.name}
                             </p>
                         </button>
@@ -346,21 +346,12 @@ const CategoryPage: React.FC = () => {
                     </div>
                 )}
 
-                {/* Helper Text */}
-                <div className="mt-12 p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                    <div className="flex items-start gap-3">
-                        <div className="text-2xl">💡</div>
-                        <div>
-                            <h3 className="font-bold text-blue-900 mb-1">Need Help?</h3>
-                            <p className="text-sm text-blue-800">
-                                Select a service to view available workers or locations in your area.
-                                Make sure your location is enabled for better results.
-                            </p>
+            
+
+
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+         
     );
 };
 

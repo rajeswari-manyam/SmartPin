@@ -29,7 +29,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
     onSearch,
     onVoiceSearch,
     onClearSearch,
-    placeholder = "Search for plumbers, electricians, carpenters, cleaning services...",
+    placeholder = "Search services...",
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [showSuggestions, setShowSuggestions] = React.useState(false);
@@ -69,9 +69,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
         <div className="relative w-full">
             <form onSubmit={handleSubmit} className="relative">
                 {/* Search Input Container */}
-                <div className="relative flex items-center bg-gray-50 rounded-2xl border-2 border-gray-200 focus-within:border-blue-500 focus-within:shadow-lg transition-all duration-200">
-                    {/* Search Icon */}
-                    <div className="pl-5 pr-3">
+                <div className="relative flex items-center bg-gray-50 rounded-xl md:rounded-2xl border-2 border-gray-200 focus-within:border-blue-500 focus-within:shadow-lg transition-all duration-200">
+
+                    {/* Search Icon — hidden on mobile to save space */}
+                    <div className="hidden sm:flex pl-4 md:pl-5 pr-2 md:pr-3">
                         <SearchIcon className={`${typography.icon.base} text-gray-400`} />
                     </div>
 
@@ -83,7 +84,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
                         onChange={handleInputChange}
                         onFocus={() => setShowSuggestions(true)}
                         placeholder={placeholder}
-                        className={`flex-1 py-4 ${typography.search.input} text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none`}
+                        className={`flex-1 pl-3 sm:pl-0 pr-1 py-3 md:py-4 ${typography.search?.input ?? "text-sm"} text-gray-800 placeholder-gray-400 bg-transparent focus:outline-none`}
                         disabled={isSearching}
                     />
 
@@ -92,9 +93,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
                         <button
                             type="button"
                             onClick={handleClear}
-                            className={buttonStyles.search.clear}
+                            className={`${buttonStyles.search?.clear ?? ""} p-2 text-gray-400 hover:text-gray-600 active:scale-95 transition-all`}
+                            aria-label="Clear search"
                         >
-                            <TimesIcon className={typography.icon.sm} />
+                            <TimesIcon className={typography.icon?.sm ?? "w-3 h-3"} />
                         </button>
                     )}
 
@@ -103,19 +105,37 @@ const SearchBar: React.FC<SearchBarProps> = ({
                         type="button"
                         onClick={onVoiceSearch}
                         disabled={isSearching}
-                        className={isListening ? buttonStyles.search.voice.listening : buttonStyles.search.voice.default}
+                        className={`${isListening
+                            ? buttonStyles.search?.voice?.listening ?? "bg-red-100 text-red-600"
+                            : buttonStyles.search?.voice?.default ?? "text-gray-500 hover:text-blue-600"
+                            } p-2 md:p-3 rounded-full transition-all active:scale-95`}
                         title={isListening ? "Listening..." : "Voice Search"}
+                        aria-label={isListening ? "Listening" : "Voice Search"}
                     >
-                        <MicrophoneIcon className={typography.icon.base} />
+                        <MicrophoneIcon className={`${typography.icon?.base ?? "w-4 h-4"} ${isListening ? "animate-pulse" : ""}`} />
                     </button>
 
                     {/* Search Button */}
                     <button
                         type="submit"
                         disabled={!searchText.trim() || isSearching}
-                        className={buttonStyles.search.submit}
+                        className={`${buttonStyles.search?.submit ?? "bg-blue-600 text-white"} 
+                            px-3 md:px-6 py-3 md:py-4 rounded-r-xl md:rounded-r-2xl
+                            flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed
+                            active:scale-95 transition-all text-sm md:text-base font-semibold`}
                     >
-                        {isSearching ? "Searching..." : "Search"}
+                        {isSearching ? (
+                            <>
+                                {/* Spinner on mobile instead of text */}
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin sm:hidden" />
+                                <span className="hidden sm:inline">Searching...</span>
+                            </>
+                        ) : (
+                            <>
+                                <SearchIcon className="sm:hidden w-4 h-4" />
+                                <span className="hidden sm:inline">Search</span>
+                            </>
+                        )}
                     </button>
                 </div>
             </form>
@@ -130,20 +150,20 @@ const SearchBar: React.FC<SearchBarProps> = ({
                     />
 
                     {/* Suggestions List */}
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-2xl border border-gray-200 z-50 overflow-hidden max-h-96 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden max-h-72 md:max-h-96 overflow-y-auto">
                         {suggestions.map((suggestion) => (
                             <button
                                 key={suggestion.id}
                                 onClick={() => handleSuggestionClick(suggestion)}
-                                className="w-full px-5 py-3 text-left hover:bg-[#00598a] transition-colors duration-150 flex items-center gap-3 group"
+                                className="w-full px-4 md:px-5 py-3 text-left hover:bg-blue-50 active:bg-blue-100 transition-colors duration-150 flex items-center gap-3 group border-b border-gray-50 last:border-0"
                             >
-                                <SearchIcon className={`${typography.icon.xs} text-gray-400 group-hover:text-blue-600 transition-colors`} />
-                                <div className="flex-1">
-                                    <p className={`${typography.fontSize.sm} font-medium text-gray-800 group-hover:text-blue-700`}>
+                                <SearchIcon className={`${typography.icon?.xs ?? "w-3 h-3"} text-gray-400 group-hover:text-blue-600 flex-shrink-0 transition-colors`} />
+                                <div className="flex-1 min-w-0">
+                                    <p className={`${typography.fontSize?.sm ?? "text-sm"} font-medium text-gray-800 group-hover:text-blue-700 truncate`}>
                                         {suggestion.text}
                                     </p>
                                     {suggestion.category && (
-                                        <p className={`${typography.fontSize.xs} text-gray-500`}>
+                                        <p className={`${typography.fontSize?.xs ?? "text-xs"} text-gray-500 truncate`}>
                                             {suggestion.category}
                                         </p>
                                     )}
@@ -156,13 +176,13 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
             {/* Voice Recognition Status */}
             {isListening && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-3">
-                    <div className="flex gap-1">
-                        <span className="w-1 h-4 bg-red-500 rounded-full animate-pulse"></span>
-                        <span className="w-1 h-4 bg-red-500 rounded-full animate-pulse delay-75"></span>
-                        <span className="w-1 h-4 bg-red-500 rounded-full animate-pulse delay-150"></span>
+                <div className="absolute top-full left-0 right-0 mt-1.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3 z-50">
+                    <div className="flex gap-1 flex-shrink-0">
+                        <span className="w-1 h-3.5 md:h-4 bg-red-500 rounded-full animate-pulse" />
+                        <span className="w-1 h-3.5 md:h-4 bg-red-500 rounded-full animate-pulse delay-75" />
+                        <span className="w-1 h-3.5 md:h-4 bg-red-500 rounded-full animate-pulse delay-150" />
                     </div>
-                    <p className={`${typography.fontSize.sm} font-medium text-red-700`}>
+                    <p className={`${typography.fontSize?.sm ?? "text-sm"} font-medium text-red-700`}>
                         Listening... Speak now
                     </p>
                 </div>

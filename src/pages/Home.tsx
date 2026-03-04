@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useAccount } from "../context/AccountContext";
-
+import LocationIcon from "../assets/icons/Location.png";
 import SearchContainer from "../components/SearchContainer";
 import PromoSlides from "../components/PromoSlides";
 import Categories from "../components/Categories";
@@ -31,18 +31,12 @@ const getLocationByIP = async (): Promise<{ lat: number; lng: number; city: stri
     return null;
 };
 
-// ── Resolve workerId from localStorage only (set by WorkerProfile on profile creation) ──
 const resolveWorkerId = (user: any): string | null => {
-    // 1. From AuthContext user object
     if (user?.workerId) return user.workerId;
-
-    // 2. From localStorage keys
     for (const key of ["workerId", "@worker_id", "worker_id"]) {
         const val = localStorage.getItem(key);
         if (val && val !== "null" && val !== "undefined") return val;
     }
-
-    // 3. Inside stored user JSON
     try {
         const raw = localStorage.getItem("user");
         if (raw) {
@@ -51,7 +45,6 @@ const resolveWorkerId = (user: any): string | null => {
             if (id && typeof id === "string") return id;
         }
     } catch { }
-
     return null;
 };
 
@@ -61,7 +54,6 @@ const HomePage: React.FC = () => {
     const { accountType } = useAccount();
 
     const [showWelcome, setShowWelcome] = useState(false);
-
     const [userLocation, setUserLocation] = useState<{
         latitude: number | null;
         longitude: number | null;
@@ -79,15 +71,13 @@ const HomePage: React.FC = () => {
         detectLocation();
     }, []);
 
-    // Resolve workerId from localStorage/user object — no backend call needed
     useEffect(() => {
         if (!isWorker) return;
         const id = resolveWorkerId(user);
         if (id) {
-            console.log("✅ workerId resolved:", id);
             setWorkerId(id);
         } else {
-            console.warn("⚠️ No workerId found in storage. User may need to complete profile.");
+            console.warn("⚠️ No workerId found in storage.");
         }
     }, [isWorker, user]);
 
@@ -176,101 +166,113 @@ const HomePage: React.FC = () => {
         setTopSearchText(text);
     };
 
+    /* ── Reusable status screens ── */
+    const LocationDetectingScreen = () => (
+        <div className="flex flex-col items-center justify-center mt-16 md:mt-24 gap-4 px-4">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600" />
+            <p className="text-gray-500 text-sm text-center">Detecting your location...</p>
+        </div>
+    );
+
+    const LocationErrorScreen = () => (
+        <div className="mx-4 md:max-w-xl md:mx-auto bg-yellow-50 border border-yellow-300 p-5 md:p-8 rounded-2xl shadow mt-8 md:mt-12 text-center">
+            <div className="text-4xl md:text-5xl mb-3">📍</div>
+            <h2 className="text-lg md:text-xl font-bold text-yellow-800 mb-2">Location Required</h2>
+            <p className="text-yellow-700 text-sm mb-5 leading-relaxed">{locationError}</p>
+            <button
+                onClick={detectLocation}
+                className="w-full md:w-auto bg-yellow-600 text-white px-6 py-3 rounded-xl hover:bg-yellow-700 active:scale-95 transition-all font-medium text-sm"
+            >
+                Try Again
+            </button>
+        </div>
+    );
+
+    const LocationUnavailableScreen = () => (
+        <div className="mx-4 md:max-w-xl md:mx-auto bg-gray-100 p-5 md:p-8 rounded-2xl shadow mt-8 md:mt-12 text-center">
+            <div className="text-4xl md:text-5xl mb-3">🌍</div>
+            <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-2">Location Not Available</h2>
+            <p className="text-gray-600 text-sm leading-relaxed">
+                Please enable location services or select a location manually.
+            </p>
+        </div>
+    );
+
+    const ProfileIncompleteScreen = () => (
+        <div className="mx-4 md:max-w-xl md:mx-auto bg-orange-50 border border-orange-300 p-5 md:p-8 rounded-2xl shadow mt-8 md:mt-12 text-center">
+            <div className="text-4xl md:text-5xl mb-3">⚠️</div>
+            <h2 className="text-lg md:text-xl font-bold text-orange-800 mb-2">Profile Incomplete</h2>
+            <p className="text-orange-700 text-sm mb-5 leading-relaxed">
+                Your worker profile could not be found. Please complete your profile setup.
+            </p>
+            <button
+                onClick={() => navigate("/worker-profile")}
+                className="w-full md:w-auto bg-orange-600 text-white px-6 py-3 rounded-xl hover:bg-orange-700 active:scale-95 transition-all font-medium text-sm"
+            >
+                Complete Profile
+            </button>
+        </div>
+    );
+
+    const renderContent = () => {
+        if (locationDetecting) return <LocationDetectingScreen />;
+        if (locationError) return <LocationErrorScreen />;
+        if (!userLocation.latitude || !userLocation.longitude) return <LocationUnavailableScreen />;
+
+        if (isWorker) {
+            return workerId ? (
+                <AllJobs
+                    latitude={userLocation.latitude}
+                    longitude={userLocation.longitude}
+                    searchText={topSearchText}
+                    workerId={workerId}
+                />
+            ) : (
+                <ProfileIncompleteScreen />
+            );
+        }
+
+        return (
+            <>
+                <PromoSlides />
+                <Categories
+                    onCategoryClick={() => {
+                        if (!isAuthenticated) {
+                            setShowWelcome(true);
+                            return false;
+                        }
+                        return true;
+                    }}
+                />
+            </>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
 
-            {/* ── TOP SEARCH BAR ──────────────────────────────────────── */}
+            {/* Search Bar */}
             <SearchContainer
                 onLocationChange={handleLocationChange}
                 onSearchChange={handleSearchChange}
             />
 
-            {/* ── CONTENT ─────────────────────────────────────────────── */}
-            <div className="pt-2">
-
-                {/* Location pill */}
-                {!locationDetecting && userLocation.city && userLocation.latitude && userLocation.longitude && (
-                    <div className="max-w-7xl mx-auto px-4 md:px-6 py-2">
-                        <div className="inline-flex items-center gap-1.5 text-sm text-gray-600 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
-                            <span className="text-red-500">📍</span>
-                            <span>
-                                Showing results for{" "}
-                                <span className="font-semibold text-gray-900">{userLocation.city}</span>
-                            </span>
-                        </div>
+            {/* Location pill */}
+            {!locationDetecting && userLocation.city && userLocation.latitude && userLocation.longitude && (
+                <div className="max-w-7xl mx-auto px-3 md:px-6 pt-2 pb-1">
+                    <div className="inline-flex items-center gap-1.5 text-xs md:text-sm text-gray-600 bg-white border border-gray-200 rounded-full px-3 py-1 shadow-sm">
+                        <img src={LocationIcon} className="w-3.5 h-3.5 md:w-4 md:h-4 flex-shrink-0" alt="Location" />
+                        <span className="truncate max-w-[220px] md:max-w-none">
+                            Showing results for{" "}
+                            <span className="font-semibold text-gray-900">{userLocation.city}</span>
+                        </span>
                     </div>
-                )}
+                </div>
+            )}
 
-                {/* Loading location */}
-                {locationDetecting ? (
-                    <div className="flex flex-col items-center justify-center mt-20 gap-3">
-                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-                        <p className="text-gray-500 text-sm">Detecting your location...</p>
-                    </div>
-
-                ) : locationError ? (
-                    <div className="max-w-xl mx-auto bg-yellow-50 border border-yellow-300 p-6 rounded-xl shadow mt-10 text-center">
-                        <div className="text-5xl mb-4">📍</div>
-                        <h2 className="text-xl font-bold text-yellow-800 mb-2">Location Required</h2>
-                        <p className="text-yellow-700 text-sm mb-4">{locationError}</p>
-                        <button
-                            onClick={detectLocation}
-                            className="bg-yellow-600 text-white px-6 py-2.5 rounded-lg hover:bg-yellow-700 transition font-medium text-sm"
-                        >
-                            Try Again
-                        </button>
-                    </div>
-
-                ) : !userLocation.latitude || !userLocation.longitude ? (
-                    <div className="max-w-xl mx-auto bg-gray-100 p-6 rounded-xl shadow mt-10 text-center">
-                        <div className="text-5xl mb-4">🌍</div>
-                        <h2 className="text-xl font-bold text-gray-800 mb-2">Location Not Available</h2>
-                        <p className="text-gray-600 text-sm mb-4">
-                            Please enable location services or select a location manually.
-                        </p>
-                    </div>
-
-                ) : isWorker ? (
-                    /* ── WORKER FLOW ─────────────────────────────────────── */
-                    workerId ? (
-                        <AllJobs
-                            latitude={userLocation.latitude}
-                            longitude={userLocation.longitude}
-                            searchText={topSearchText}
-                            workerId={workerId}
-                        />
-                    ) : (
-                        /* Worker logged in but no workerId — needs to complete profile */
-                        <div className="max-w-xl mx-auto bg-orange-50 border border-orange-300 p-6 rounded-xl shadow mt-10 text-center">
-                            <div className="text-5xl mb-4">⚠️</div>
-                            <h2 className="text-xl font-bold text-orange-800 mb-2">Profile Incomplete</h2>
-                            <p className="text-orange-700 text-sm mb-4">
-                                Your worker profile could not be found. Please complete your profile setup.
-                            </p>
-                            <button
-                                onClick={() => navigate("/worker-profile")}
-                                className="bg-orange-600 text-white px-6 py-2.5 rounded-lg hover:bg-orange-700 transition font-medium text-sm"
-                            >
-                                Complete Profile
-                            </button>
-                        </div>
-                    )
-
-                ) : (
-                    /* ── CUSTOMER FLOW ───────────────────────────────────── */
-                    <>
-                        <PromoSlides />
-                        <Categories
-                            onCategoryClick={() => {
-                                if (!isAuthenticated) {
-                                    setShowWelcome(true);
-                                    return false;
-                                }
-                                return true;
-                            }}
-                        />
-                    </>
-                )}
+            {/* Main content */}
+            <div className="pb-6">
+                {renderContent()}
             </div>
 
             <WelcomePage isOpen={showWelcome} onClose={() => setShowWelcome(false)} />

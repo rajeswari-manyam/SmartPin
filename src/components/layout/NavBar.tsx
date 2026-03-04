@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Bell, Home } from "lucide-react";
+import { Menu, X, Bell } from "lucide-react";
 
 // Custom navbar icons
 import ListedJobsIcon from "../../assets/icons/ListedJobs.png";
 import MyBusinessIcon from "../../assets/icons/MyBusiness.png";
 import MySkillsIcon from "../../assets/icons/MySkills.png";
-
+import HomeIcon from "../../assets/icons/HomeIcon.png";
 import { useAuth } from "../../context/AuthContext";
 import { useAccount } from "../../context/AccountContext";
 import Button from "../ui/Buttons";
@@ -15,6 +15,7 @@ import WelcomePage from "../Auth/WelcomePage";
 import OTPVerification from "../Auth/OTPVerification";
 import LanguageSelector from "../LanguageSelector";
 import ProfileSidebar from "../overlays/ProfileSideBar";
+import NotificationIcon from "../../assets/icons/Notifications.png";
 import {
   getUserById,
   getNotificationCount,
@@ -225,24 +226,32 @@ const Navbar: React.FC = () => {
               <div className="hidden lg:flex items-center space-x-1">
                 {accountType === "user" ? (
                   <>
-                    <NavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Home} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                    <NavItem icon={HomeIcon} imgSrc={HomeIcon} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
+                    <NavItem icon={HomeIcon} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
                   </>
                 ) : (
                   <>
-                    <NavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                    <NavItem icon={Home} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
-                    <NavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
+                    <NavItem icon={HomeIcon} imgSrc={HomeIcon} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
+                    <NavItem icon={HomeIcon} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
+                    <NavItem icon={HomeIcon} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
                   </>
                 )}
               </div>
 
-              {/* ── Notification Bell ── */}
               <button
                 onClick={handleNotificationClick}
-                className="relative p-1 text-gray-700 transition-all duration-300 hover:text-primary hover:scale-110 hover:drop-shadow-lg"
+                className="relative p-1 transition-all duration-300 hover:scale-110 hover:drop-shadow-lg"
               >
-                <Bell className="w-6 h-6 hover:animate-pulse" />
+                <img
+                  src={NotificationIcon}
+                  alt="Notifications"
+                  className="w-6 h-6 transition-all duration-300"
+                  style={{
+                    filter: location.pathname === "/notifications"
+                      ? "invert(27%) sepia(86%) saturate(600%) hue-rotate(175deg) brightness(85%) contrast(95%)"
+                      : "invert(45%) sepia(0%) saturate(0%) brightness(65%) contrast(90%)",
+                  }}
+                />
                 {unreadCount > 0 && (
                   <div className="absolute top-0 right-0 transform translate-x-1/4 -translate-y-1/4">
                     <span className="relative flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white border-2 border-white">
@@ -362,14 +371,14 @@ const Navbar: React.FC = () => {
             {/* ── Nav links ── */}
             {accountType === "user" ? (
               <>
-                <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Home} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
+                <MobileNavItem icon={HomeIcon} imgSrc={HomeIcon} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem icon={HomeIcon} imgSrc={ListedJobsIcon} label="Jobs" path="/listed-jobs" onClick={() => handleNavClick("/listed-jobs")} />
               </>
             ) : (
               <>
-                <MobileNavItem icon={Home} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
-                <MobileNavItem icon={Home} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
-                <MobileNavItem icon={Home} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
+                <MobileNavItem icon={HomeIcon} imgSrc={HomeIcon} label="Home" path="/home" onClick={() => handleNavClick("/home")} />
+                <MobileNavItem icon={HomeIcon} imgSrc={MySkillsIcon} label="My Skills" path="/my-skills" onClick={() => handleNavClick("/my-skills")} />
+                <MobileNavItem icon={HomeIcon} imgSrc={MyBusinessIcon} label="My Business" path="/my-business" onClick={() => handleNavClick("/my-business")} />
               </>
             )}
 
@@ -405,13 +414,10 @@ const Navbar: React.FC = () => {
             {/* ── Mobile notification item with count ── */}
             <button
               onClick={handleNotificationClick}
-              className={`group w-full text-left px-4 py-3 flex items-center gap-3 transition-all duration-200 ${location.pathname === "/notifications"
-                ? "bg-primary/10 text-primary font-semibold"
-                : "text-gray-700 hover:bg-gray-100 hover:text-primary"
-                }`}
+              className="group relative p-1 transition-all duration-300 hover:scale-110 hover:drop-shadow-lg"
             >
               <div className="relative">
-                <Bell className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
+                <img src={NotificationIcon} alt="Notification" className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                     {unreadCount > 9 ? "9+" : unreadCount}
@@ -529,7 +535,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path, onCl
         <img
           src={imgSrc}
           alt={label}
-          className="w-5 h-5 object-contain transition-transform duration-300 group-hover:scale-110"
+          className="w-5 h-5 object-contain transition-all duration-300 group-hover:scale-110"
+          style={{
+            filter: isActive
+              ? "invert(27%) sepia(86%) saturate(600%) hue-rotate(175deg) brightness(85%) contrast(95%)"
+              : "invert(45%) sepia(0%) saturate(0%) brightness(65%) contrast(90%)",
+          }}
         />
       ) : (
         <Icon className="w-5 h-5 transition-transform duration-300 group-hover:scale-110" />
@@ -557,12 +568,15 @@ const MobileNavItem: React.FC<NavItemProps> = ({ icon: Icon, imgSrc, label, path
         <img
           src={imgSrc}
           alt={label}
-          className="w-5 h-5 object-contain transition-transform duration-200 group-hover:scale-150"
+          className="w-5 h-5 object-contain transition-all duration-200 group-hover:scale-150"
+          style={{
+            filter: isActive
+              ? "invert(27%) sepia(86%) saturate(600%) hue-rotate(175deg) brightness(85%) contrast(95%)"
+              : "invert(45%) sepia(0%) saturate(0%) brightness(65%) contrast(90%)",
+          }}
         />
       ) : (
-        Icon && (
-          <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
-        )
+        Icon && <Icon className="w-5 h-5 transition-transform duration-200 group-hover:scale-150" />
       )}
       <span className="transition-all duration-200 group-hover:translate-x-1">{label}</span>
     </button>
