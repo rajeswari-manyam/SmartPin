@@ -5,11 +5,10 @@ import {
     Route,
     Navigate,
     useLocation,
-    useParams,
 } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-import { AccountProvider, useAccount } from "./context/AccountContext";
+import { AccountProvider } from "./context/AccountContext";
 import { LocationProvider } from "./store/Location.context";
 
 import Navbar from "./components/layout/NavBar";
@@ -110,14 +109,17 @@ import FoodForm from "./pages/FoodServiceForm";
 import FoodServiceList from "./pages/FoodServiceList";
 import ConfirmedWorkersPage from "./pages/ConforimedWorkerPage";
 import JobApplicantsPage from "./pages/JobApplicationPage";
-
+import Reviews from "./pages/Reviews";
 import { onMessage } from "firebase/messaging";
 import { messaging } from "./firebase";
+// ✅
 import { API_BASE_URL } from "./services/api.service";
 
-import GoogleTranslate from "./components/GoogleTransulator";
-import Reviews from "./pages/Reviews";
-// ── Save FCM token to backend ─────────────────────────────────────────────────
+// ── Foreground toast component ───────────────────────────────────
+
+
+
+// ── Save FCM token to backend ─────────────────────────────────────
 const saveFcmTokenToBackend = async (
     userId: string,
     role: "User" | "Worker",
@@ -141,13 +143,14 @@ const saveFcmTokenToBackend = async (
     }
 };
 
-// ── Protected Route ───────────────────────────────────────────────────────────
+
+/* ---------------- Protected Route ---------------- */
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
     const { isAuthenticated } = useAuth();
     return isAuthenticated ? children : <Navigate to="/" replace />;
 };
 
-// ── ListedJobs Wrapper ────────────────────────────────────────────────────────
+/* ---------------- ListedJobs Wrapper ---------------- */
 const ListedJobsWrapper: React.FC = () => {
     const { user } = useAuth();
     if (!user?._id) {
@@ -160,7 +163,7 @@ const ListedJobsWrapper: React.FC = () => {
     return <ListedJobs userId={user._id} />;
 };
 
-// ── MyBusiness Wrapper ────────────────────────────────────────────────────────
+/* ---------------- MyBusiness Wrapper ---------------- */
 const MyBusinessWrapper: React.FC = () => {
     const { user } = useAuth();
     if (!user?._id) {
@@ -173,8 +176,7 @@ const MyBusinessWrapper: React.FC = () => {
     return <MyBusiness userId={user._id} />;
 };
 
-
-// ── Layout ────────────────────────────────────────────────────────────────────
+/* ---------------- Layout ---------------- */
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <div className="min-h-screen bg-secondary">
         <Navbar />
@@ -182,34 +184,43 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     </div>
 );
 
-// ── App Routes ────────────────────────────────────────────────────────────────
+
 const AppRoutes: React.FC = () => {
     const location = useLocation();
     const background = location.state?.background;
 
+    // ✅ FCM foreground messages hook
     useEffect(() => {
+        // Request notification permission
         if (Notification.permission !== "granted") {
             Notification.requestPermission().then(permission => {
                 console.log("Notification permission:", permission);
             });
         }
 
+        // Listen for foreground messages
         const unsubscribe = onMessage(messaging, (payload) => {
             console.log("🔔 Foreground message:", payload);
             const { title, body } = payload.notification || {};
             if (title && Notification.permission === "granted") {
-                new Notification(title, { body, icon: "/Notification.png" });
+                new Notification(title, {
+                    body,
+                    icon: "/logo192.png",
+                });
             }
         });
 
         return () => unsubscribe();
     }, []);
 
+
     return (
         <>
+            {/* Show in-app toast when push arrives while app is open */}
+            {/* <NotificationToast /> */}
+
             <Layout>
                 <Routes location={background || location}>
-                    {/* ── Core ── */}
                     <Route path="/" element={<HomePage />} />
                     <Route path="/home" element={<HomePage />} />
                     <Route path="/role-selection" element={<RoleSelection />} />
@@ -220,26 +231,25 @@ const AppRoutes: React.FC = () => {
                     <Route path="/post-job" element={<UserProfile />} />
                     <Route path="/category/:id" element={<CategoryPage />} />
 
-                    {/* ── Worker ── */}
                     <Route path="/worker-profile/:id" element={<WorkerProfile />} />
                     <Route path="/worker-details/:id" element={<WorkerDetails />} />
                     <Route path="/add-skills" element={<AddSkillsScreen />} />
                     <Route path="/edit-skill/:skillId" element={<EditSkillScreen />} />
 
-                    {/* ── Booking & Interaction ── */}
+                    {/* Booking & Interaction */}
                     <Route path="/booknow/:jobId" element={<BookNow />} />
                     <Route path="/call/:id" element={<CallingScreen />} />
                     <Route path="/send-enquiry/:id" element={<ServiceEnquiryForm />} />
                     <Route path="/feedback/:id" element={<FeedbackForm />} />
                     <Route path="/thank-you/:id" element={<ThankYouScreen />} />
 
-                    {/* ── Jobs ── */}
+                    {/* Jobs */}
                     <Route path="/all-jobs" element={<AllJobs />} />
                     <Route path="/update-job/:jobId" element={<UpdateJob />} />
                     <Route path="/job-applicants/:jobId" element={<JobApplicantsPage />} />
                     <Route path="/confirmed-workers/:jobId" element={<ConfirmedWorkersPage />} />
 
-                    {/* ── User Settings ── */}
+                    {/* User Settings */}
                     <Route path="/my-profile" element={<MyProfile />} />
                     <Route path="/refer-and-earn" element={<ReferAndEarnScreen />} />
                     <Route path="/about-us" element={<AboutUs />} />
@@ -247,7 +257,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/view-tickets" element={<ViewTicketsUI />} />
                     <Route path="/my-skills" element={<MySkills />} />
 
-                    {/* ── Service Forms ── */}
+                    {/* Service Forms */}
                     <Route path="/add-automotive-form" element={<AutomotiveForm />} />
                     <Route path="/add-hotel-service-form" element={<HotelForm />} />
                     <Route path="/add-hospital-service-form" element={<HospitalForm />} />
@@ -273,7 +283,7 @@ const AppRoutes: React.FC = () => {
                     <Route path="/add-food-service-form/:id" element={<FoodServiceForm />} />
                     <Route path="/add-food-form" element={<FoodForm />} />
 
-                    {/* ── Service Lists ── */}
+                    {/* Service Lists */}
                     <Route path="/food-services/:subcategory" element={<FoodService />} />
                     <Route path="/food-services/all" element={<FoodService />} />
                     <Route path="/hotel-services/:subcategory" element={<HotelServiceList />} />
@@ -337,9 +347,8 @@ const AppRoutes: React.FC = () => {
                     <Route path="/home-personal" element={<HomePersonalServiceList />} />
                     <Route path="/food/:subcategory" element={<FoodServiceList />} />
                     <Route path="/food" element={<FoodServiceList />} />
-                    {/* Reviews route */}
-                    <Route path="/reviews/:workerId" element={<Reviews />} />
-                    {/* ── Worker-only routes ── */}
+                                         <Route path="/reviews/:workerId" element={<Reviews />} />
+                    {/* Worker routes */}
                     <Route
                         path="/add-skills"
                         element={
@@ -357,16 +366,34 @@ const AppRoutes: React.FC = () => {
                         }
                     />
 
-                    {/* ── Protected routes ── */}
-                    <Route path="/listed-jobs" element={<ProtectedRoute><ListedJobsWrapper /></ProtectedRoute>} />
-                    <Route path="/my-business" element={<ProtectedRoute><MyBusinessWrapper /></ProtectedRoute>} />
-                    <Route path="/free-listing" element={<ProtectedRoute><FreeListing /></ProtectedRoute>} />
-                    <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
-                    <Route path="/saved" element={<ProtectedRoute><Saved /></ProtectedRoute>} />
-                    <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-                    <Route path="/policy" element={<ProtectedRoute><Policy /></ProtectedRoute>} />
-                    <Route path="/feedback" element={<ProtectedRoute><FeedBack /></ProtectedRoute>} />
-                    <Route path="/help" element={<ProtectedRoute><Help /></ProtectedRoute>} />
+                    {/* Protected routes */}
+                    <Route path="/listed-jobs"
+                        element={<ProtectedRoute><ListedJobsWrapper /></ProtectedRoute>}
+                    />
+                    <Route path="/my-business"
+                        element={<ProtectedRoute><MyBusinessWrapper /></ProtectedRoute>}
+                    />
+                    <Route path="/free-listing"
+                        element={<ProtectedRoute><FreeListing /></ProtectedRoute>}
+                    />
+                    <Route path="/favorites"
+                        element={<ProtectedRoute><Favorites /></ProtectedRoute>}
+                    />
+                    <Route path="/saved"
+                        element={<ProtectedRoute><Saved /></ProtectedRoute>}
+                    />
+                    <Route path="/notifications"
+                        element={<ProtectedRoute><Notifications /></ProtectedRoute>}
+                    />
+                    <Route path="/policy"
+                        element={<ProtectedRoute><Policy /></ProtectedRoute>}
+                    />
+                    <Route path="/feedback"
+                        element={<ProtectedRoute><FeedBack /></ProtectedRoute>}
+                    />
+                    <Route path="/help"
+                        element={<ProtectedRoute><Help /></ProtectedRoute>}
+                    />
 
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
@@ -374,21 +401,21 @@ const AppRoutes: React.FC = () => {
 
             {background && (
                 <Routes>
-                    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+                    <Route path="/profile"
+                        element={<ProtectedRoute><ProfilePage /></ProtectedRoute>}
+                    />
                 </Routes>
             )}
         </>
     );
 };
 
-// ── Root App ──────────────────────────────────────────────────────────────────
 const App: React.FC = () => {
     return (
         <AuthProvider>
             <AccountProvider>
                 <LocationProvider>
                     <Router>
-                        <GoogleTranslate />
                         <AppRoutes />
                     </Router>
                 </LocationProvider>

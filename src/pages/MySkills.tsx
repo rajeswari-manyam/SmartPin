@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkerWithSkills, deleteWorkerSkill } from "../services/api.service";
+import { getWorkerWithSkills, getWorkerByUserId, deleteWorkerSkill } from "../services/api.service";
 import {
     MoreVertical, Edit, Trash2, ImageIcon,
     CheckCircle, AlertCircle, X, ChevronLeft, ChevronRight,
@@ -253,8 +253,6 @@ const SkillCard: React.FC<{
 }> = ({ skill, dropdownOpen, onToggleDropdown, onEdit, onDelete }) => {
     const [isHovered, setIsHovered] = useState(false);
     const allImages = (skill.images || []).filter(img => img && img.trim() !== "");
-
-    // ✅ skill.skill holds the description text entered in the form
     const skillDescription = skill.skill && skill.skill !== "General" ? skill.skill : (skill.description || "");
 
     const handleToggle = (e: React.MouseEvent) => {
@@ -324,7 +322,7 @@ const SkillCard: React.FC<{
                     {skill.subCategory}
                 </h3>
 
-                {/* ✅ Skill Description — shown below title, 2 lines max */}
+                {/* Skill Description */}
                 {skillDescription && (
                     <p
                         className={`${typography.body.xs} text-gray-500 mb-3 flex-shrink-0`}
@@ -396,11 +394,28 @@ const EmptyState: React.FC<{ onAddSkill: () => void }> = ({ onAddSkill }) => (
     </div>
 );
 
+// ─── Skeleton Loader ──────────────────────────────────────────────────────────
+const SkeletonCard: React.FC = () => (
+    <div className="bg-white rounded-2xl shadow-md overflow-hidden animate-pulse">
+        <div className="w-full h-48 bg-gray-200" />
+        <div className="p-4 space-y-3">
+            <div className="h-6 w-24 bg-gray-200 rounded-full" />
+            <div className="h-5 w-3/4 bg-gray-200 rounded" />
+            <div className="h-4 w-full bg-gray-100 rounded" />
+            <div className="h-4 w-2/3 bg-gray-100 rounded" />
+            <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
+                <div className="h-6 w-20 bg-gray-200 rounded" />
+                <div className="h-8 w-20 bg-gray-100 rounded-full" />
+            </div>
+        </div>
+    </div>
+);
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 const WorkerList: React.FC = () => {
     const navigate = useNavigate();
-    const workerId = localStorage.getItem("workerId") || localStorage.getItem("@worker_id");
 
+    const [resolvedWorkerId, setResolvedWorkerId] = useState<string | null>(null);
     const [profileExists, setProfileExists] = useState(false);
     const [skills, setSkills] = useState<WorkerSkill[]>([]);
     const [loading, setLoading] = useState(true);
@@ -412,14 +427,59 @@ const WorkerList: React.FC = () => {
         open: boolean; skillId: string; skillName: string; loading: boolean;
     }>({ open: false, skillId: "", skillName: "", loading: false });
 
+    /* ── Step 1: Resolve workerId ── */
     useEffect(() => {
+        const resolveWorkerId = async () => {
+            // 1️⃣ Direct hit — already stored
+            const direct = localStorage.getItem("workerId");
+            if (direct) { setResolvedWorkerId(direct); return; }
+
+            // 2️⃣ Keyed by userId — stored during previous session
+            const userId = localStorage.getItem("userId");
+            if (userId) {
+                const keyed = localStorage.getItem(`worker_id_for_${userId}`);
+                if (keyed) { setResolvedWorkerId(keyed); return; }
+
+                // 3️⃣ Fallback — fetch from API using userId
+                try {
+                    const res = await getWorkerByUserId(userId);
+                    const id = res?.worker?._id;
+                    if (id) {
+                        // Persist so next time it's instant
+                        localStorage.setItem("workerId", id);
+                        localStorage.setItem(`worker_id_for_${userId}`, id);
+                        setResolvedWorkerId(id);
+                        return;
+                    }
+                } catch { /* no profile yet */ }
+            }
+
+            // 4️⃣ Legacy key
+            const legacy = localStorage.getItem("@worker_id");
+            if (legacy) { setResolvedWorkerId(legacy); return; }
+
+            setResolvedWorkerId(null);
+        };
+
+        resolveWorkerId();
+    }, []);
+
+    /* ── Step 2: Fetch skills once workerId is known ── */
+    useEffect(() => {
+        if (resolvedWorkerId === null && !loading) return; // still resolving, wait
+        if (resolvedWorkerId === undefined) return;
+
         const fetchSkills = async () => {
-            if (!workerId) { setProfileExists(false); setLoading(false); return; }
+            if (!resolvedWorkerId) {
+                setProfileExists(false);
+                setLoading(false);
+                return;
+            }
             try {
-                const res = await getWorkerWithSkills(workerId);
+                const res = await getWorkerWithSkills(resolvedWorkerId);
                 if (res?.worker) {
                     setProfileExists(true);
-                    setSkills(res?.workerSkills || []);
+                    setSkills(res.workerSkills || []);
                 } else {
                     setProfileExists(false);
                     setSkills([]);
@@ -431,9 +491,17 @@ const WorkerList: React.FC = () => {
                 setLoading(false);
             }
         };
-        fetchSkills();
-    }, [workerId]);
 
+        if (resolvedWorkerId !== null) {
+            fetchSkills();
+        } else {
+            // resolvedWorkerId resolved to null (no profile)
+            setProfileExists(false);
+            setLoading(false);
+        }
+    }, [resolvedWorkerId]);
+
+    /* ── Close dropdown on outside click ── */
     useEffect(() => {
         const handler = () => setOpenDropdown(null);
         document.addEventListener("click", handler);
@@ -466,19 +534,30 @@ const WorkerList: React.FC = () => {
         }
     };
 
+    /* ── Loading ── */
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-white">
-                <div className="flex flex-col items-center gap-4">
-                    <div className="w-10 h-10 border-[3px] border-t-transparent rounded-full animate-spin"
-                        style={{ borderColor: BRAND, borderTopColor: "transparent" }} />
-                    <p className={`${typography.body.xs} text-gray-500`}>Loading...</p>
+            <div className="min-h-screen bg-gray-50 pb-20">
+                <div className="sticky top-0 z-30 bg-white border-b border-gray-200 px-4 py-4">
+                    <div className="flex items-center justify-between max-w-7xl mx-auto">
+                        <div>
+                            <div className="h-5 w-24 bg-gray-200 rounded animate-pulse" />
+                            <div className="h-3 w-20 bg-gray-100 rounded animate-pulse mt-1.5" />
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />
+                    </div>
+                </div>
+                <div className="max-w-7xl mx-auto px-4 py-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+                    </div>
                 </div>
             </div>
         );
     }
 
-    if (!profileExists && skills.length === 0) {
+    /* ── No profile / no skills ── */
+    if (!profileExists) {
         return (
             <div className="min-h-screen bg-white">
                 <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
@@ -505,6 +584,7 @@ const WorkerList: React.FC = () => {
         );
     }
 
+    /* ── Skills list ── */
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
 
@@ -530,18 +610,22 @@ const WorkerList: React.FC = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 py-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {skills.map(skill => (
-                        <SkillCard
-                            key={skill._id}
-                            skill={skill}
-                            dropdownOpen={openDropdown === skill._id}
-                            onToggleDropdown={setOpenDropdown}
-                            onEdit={() => navigate(`/edit-skill/${skill._id}`)}
-                            onDelete={() => requestDelete(skill)}
-                        />
-                    ))}
-                </div>
+                {skills.length === 0 ? (
+                    <EmptyState onAddSkill={() => navigate("/add-skills")} />
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {skills.map(skill => (
+                            <SkillCard
+                                key={skill._id}
+                                skill={skill}
+                                dropdownOpen={openDropdown === skill._id}
+                                onToggleDropdown={setOpenDropdown}
+                                onEdit={() => navigate(`/edit-skill/${skill._id}`)}
+                                onDelete={() => requestDelete(skill)}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             <DeleteConfirmModal
