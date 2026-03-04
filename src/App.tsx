@@ -115,7 +115,6 @@ import { onMessage } from "firebase/messaging";
 import { messaging } from "./firebase";
 import { API_BASE_URL } from "./services/api.service";
 
-import NotificationToast from "./components/NotificationToast";
 import GoogleTranslate from "./components/GoogleTransulator";
 import Reviews from "./pages/Reviews";
 // ── Save FCM token to backend ─────────────────────────────────────────────────
