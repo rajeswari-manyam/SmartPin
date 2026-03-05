@@ -74,6 +74,7 @@
 // };
 
 // export default OTPInputBoxes;
+
 import React from "react";
 
 interface OTPInputBoxesProps {
@@ -91,11 +92,9 @@ const OTPInputBoxes: React.FC<OTPInputBoxesProps> = ({
 }) => {
     const handleChange = (index: number, value: string) => {
         if (!/^\d*$/.test(value)) return;
-
         const newOtp = [...otp];
         newOtp[index] = value.slice(-1);
         setOtp(newOtp);
-
         if (value && index < 5) {
             inputRefs.current[index + 1]?.focus();
         }
@@ -105,18 +104,6 @@ const OTPInputBoxes: React.FC<OTPInputBoxesProps> = ({
         if (e.key === "Backspace" && !otp[index] && index > 0) {
             inputRefs.current[index - 1]?.focus();
         }
-    };
-
-    const handlePaste = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const pastedData = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-        if (!pastedData) return;
-
-        const newOtp = [...pastedData.split(""), ...Array(6 - pastedData.length).fill("")];
-        setOtp(newOtp);
-
-        const lastIndex = Math.min(pastedData.length, 5);
-        setTimeout(() => inputRefs.current[lastIndex]?.focus(), 0);
     };
 
     return (
@@ -130,20 +117,17 @@ const OTPInputBoxes: React.FC<OTPInputBoxesProps> = ({
                     type="text"
                     inputMode="numeric"
                     pattern="\d*"
-                    autoComplete="one-time-code"
+                    autoComplete="off"
                     maxLength={1}
                     value={digit}
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={handlePaste}
                     disabled={isVerifying}
-                    className={`w-14 h-16 text-center text-3xl font-bold bg-white border-b-2 transition-colors ${
-                        digit
-                            ? "text-gray-900 border-blue-600"
-                            : "text-gray-400 border-gray-300"
-                    } focus:outline-none focus:border-blue-600 focus:text-gray-900 ${
-                        isVerifying ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
+                    className={`w-14 h-16 text-center text-3xl font-bold bg-white border-b-2 transition-colors ${digit
+                        ? "text-gray-900 border-blue-600"
+                        : "text-gray-400 border-gray-300"
+                        } focus:outline-none focus:border-blue-600 focus:text-gray-900 ${isVerifying ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
                     autoFocus={index === 0}
                 />
             ))}

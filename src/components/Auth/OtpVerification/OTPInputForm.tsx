@@ -207,8 +207,9 @@
 // };
 
 // export default OTPInputForm;
+
 import React from "react";
-import { Volume2, Loader2, ClipboardPaste } from "lucide-react";
+import { Volume2, Loader2 } from "lucide-react";
 import Button from "../../ui/Buttons";
 import typography from "../../../styles/typography";
 import OTPInputBoxes from "./OTPInputBoxes";
@@ -262,42 +263,8 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
         }
     };
 
-    // ── Paste autofill — handles Ctrl+V / Cmd+V / long-press Paste ───────────
-    const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-        const pasted = e.clipboardData.getData("text");
-        const digits = pasted.replace(/\D/g, "").slice(0, 6);
-        if (!digits) return;
-        e.preventDefault();
-
-        const next = Array(6).fill("");
-        digits.split("").forEach((d, i) => { next[i] = d; });
-        setOtp(next);
-
-        // Focus last filled box (or box 5 if all 6 digits)
-        const focusIdx = Math.min(digits.length, 5);
-        setTimeout(() => inputRefs.current[focusIdx]?.focus(), 0);
-    };
-
-    // ── Manual clipboard button (for mobile users who can't Ctrl+V) ──────────
-    const handleClipboardButton = async () => {
-        try {
-            const text = await navigator.clipboard.readText();
-            const digits = text.replace(/\D/g, "").slice(0, 6);
-            if (!digits) return;
-
-            const next = Array(6).fill("");
-            digits.split("").forEach((d, i) => { next[i] = d; });
-            setOtp(next);
-
-            const focusIdx = Math.min(digits.length, 5);
-            setTimeout(() => inputRefs.current[focusIdx]?.focus(), 0);
-        } catch {
-            // User denied clipboard permission — silently ignore
-        }
-    };
-
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#00598a]/10 via-white to-[#f5b340]/10 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-white flex items-center justify-center p-4">
             <div className="w-full max-w-md bg-white rounded-3xl shadow-lg p-8 relative">
 
                 {/* Back Arrow Button */}
@@ -328,30 +295,13 @@ const OTPInputForm: React.FC<OTPInputFormProps> = ({
                 {/* OTP Input Form */}
                 <div className="space-y-6">
 
-                    {/* ── OTP Boxes — wrapped in onPaste div ─────────────────── */}
-                    <div onPaste={handlePaste}>
-                        <OTPInputBoxes
-                            otp={otp}
-                            setOtp={setOtp}
-                            inputRefs={inputRefs}
-                            isVerifying={isVerifying}
-                        />
-                    </div>
-
-                    {/* ── Paste from clipboard button (mobile-friendly) ─────── */}
-                    <button
-                        type="button"
-                        onClick={handleClipboardButton}
-                        disabled={isVerifying}
-                        className={`w-full py-3 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2 border-2 border-dashed
-                            ${isVerifying
-                                ? "border-gray-200 text-gray-300 cursor-not-allowed bg-white"
-                                : "border-[#00598a]/40 text-[#00598a] hover:border-[#00598a] hover:bg-[#00598a]/5 bg-white"
-                            }`}
-                    >
-                        <ClipboardPaste className="w-4 h-4" />
-                        Paste OTP from clipboard
-                    </button>
+                    {/* OTP Boxes */}
+                    <OTPInputBoxes
+                        otp={otp}
+                        setOtp={setOtp}
+                        inputRefs={inputRefs}
+                        isVerifying={isVerifying}
+                    />
 
                     {/* Voice Error Message */}
                     {voiceError && (

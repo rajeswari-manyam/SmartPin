@@ -2,15 +2,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
     Plus, MapPin, Calendar, IndianRupee,
-    ChevronRight, ChevronLeft, Loader2, MoreVertical,
-    Pencil, Trash2, Briefcase, Eye, Layers
+    ChevronRight, ChevronLeft, Loader2, Users, MoreVertical,
+    Pencil, Trash2, Briefcase, Eye
 } from "lucide-react";
 
 import JobIcon from "../assets/icons/ListedJobs.png";
 import { getUserJobs, getConfirmedWorkersCount, deleteJob, API_BASE_URL } from "../services/api.service";
-import typography from "../styles/typography";
+import typography, { fontWeight } from "../styles/typography";
 import { categories } from "../components/categories/Categories";
 
+// ── Brand Color ───────────────────────────────────────────────────────────────
 const BRAND = "#00598a";
 const BRAND_DARK = "#004a75";
 
@@ -27,12 +28,19 @@ const resolveImageUrl = (path?: string): string | null => {
     return `${base}${cleaned.startsWith("/") ? cleaned : "/" + cleaned}`;
 };
 
+// Helper to get category name from ID or name
 const getCategoryDisplayName = (categoryValue: string): string => {
     if (!categoryValue) return "Unknown";
+
+    // Check if it's an ID (numeric string)
     const categoryById = categories.find(c => c.id === categoryValue);
     if (categoryById) return categoryById.name;
+
+    // Check if it's already a name
     const categoryByName = categories.find(c => c.name.toLowerCase() === categoryValue.toLowerCase());
     if (categoryByName) return categoryByName.name;
+
+    // Return as-is if not found
     return categoryValue;
 };
 
@@ -49,7 +57,7 @@ const DropdownItem: React.FC<{
             onClick={onClick}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="w-full flex items-center gap-2.5 px-4 py-2.5 transition-all duration-200 text-sm"
+            className={`w-full flex items-center gap-2.5 px-4 py-2.5 transition-all duration-200 text-sm`}
             style={{
                 backgroundColor: hovered ? (danger ? "#ef4444" : BRAND) : "transparent",
                 color: hovered ? "#ffffff" : danger ? "#ef4444" : "#374151",
@@ -94,13 +102,21 @@ const JobActionDropdown: React.FC<{
             >
                 <MoreVertical size={16} />
             </button>
+
             {open && (
                 <div className="absolute right-0 top-9 z-50 w-36 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden">
-                    <DropdownItem icon={<Pencil size={14} />} label="Edit"
-                        onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }} />
+                    <DropdownItem
+                        icon={<Pencil size={14} />}
+                        label="Edit"
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onEdit(); }}
+                    />
                     <div className="h-px bg-gray-100" />
-                    <DropdownItem icon={<Trash2 size={14} />} label="Delete" danger
-                        onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }} />
+                    <DropdownItem
+                        icon={<Trash2 size={14} />}
+                        label="Delete"
+                        danger
+                        onClick={(e) => { e.stopPropagation(); setOpen(false); onDelete(); }}
+                    />
                 </div>
             )}
         </div>
@@ -121,8 +137,8 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
         );
     }
 
-    const prev = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex(i => i === 0 ? validImages.length - 1 : i - 1); };
-    const next = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex(i => i === validImages.length - 1 ? 0 : i + 1); };
+    const prev = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((i) => (i === 0 ? validImages.length - 1 : i - 1)); };
+    const next = (e: React.MouseEvent) => { e.stopPropagation(); setCurrentIndex((i) => (i === validImages.length - 1 ? 0 : i + 1)); };
 
     return (
         <div className="relative w-full h-full overflow-hidden">
@@ -145,7 +161,7 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
                                 className={`rounded-full transition-all ${i === currentIndex ? "w-3 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/50"}`} />
                         ))}
                     </div>
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/40 text-white text-[10px] font-bold px-2 py-0.5 rounded-full z-10 pointer-events-none">
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/40 text-white text-xs font-bold px-2 py-0.5 rounded-full z-10 pointer-events-none">
                         {currentIndex + 1} / {validImages.length}
                     </div>
                 </>
@@ -168,22 +184,20 @@ const MyJobCard: React.FC<{
     const endDate = new Date(job.endDate);
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "—";
     const images: string[] = Array.isArray(job.images) ? job.images : [];
+
+    // Get proper category name
     const categoryName = getCategoryDisplayName(job.category);
 
-    const subCategoryRaw = job.subCategory || job.subcategory || job.subCategories || job.subcategories || "";
-    const subCategoryList: string[] = Array.isArray(subCategoryRaw)
-        ? subCategoryRaw.filter(Boolean)
-        : subCategoryRaw ? [subCategoryRaw] : [];
-
-    const formatDate = (d: Date) => `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
+    // Format date like screenshot: 1/10/2026 – 1/15/2026
+    const formatDate = (date: Date) => {
+        return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    };
     const dateRange = `${formatDate(startDate)} – ${formatDate(endDate)}`;
     const postedDate = new Date(job.createdAt || job.postedAt || Date.now()).toLocaleDateString("en-US", {
-        month: "numeric", day: "numeric", year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        year: "numeric"
     });
-
-    // Truncate description to max 100 chars as a hard fallback
-    const rawDesc = job.description || "Need a skilled worker for this job";
-    const description = rawDesc.length > 100 ? rawDesc.slice(0, 100) + "…" : rawDesc;
 
     useEffect(() => {
         if (job._id) {
@@ -195,7 +209,7 @@ const MyJobCard: React.FC<{
         <div
             onMouseEnter={() => setCardHovered(true)}
             onMouseLeave={() => setCardHovered(false)}
-            className="bg-white rounded-2xl overflow-hidden shadow-sm border transition-all duration-300 ease-in-out flex flex-col"
+            className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-300 ease-in-out"
             style={{
                 borderColor: cardHovered ? BRAND : "#e5e7eb",
                 boxShadow: cardHovered ? "0 4px 20px rgba(0,89,138,0.15)" : "0 1px 3px rgba(0,0,0,0.08)",
@@ -203,97 +217,69 @@ const MyJobCard: React.FC<{
             }}
         >
             {/* ── Image area ── */}
-            <div className="relative h-40 bg-gray-100 flex-shrink-0">
+            <div className="relative h-40 bg-gray-100">
                 <ImageCarousel images={images} title={job.title || categoryName} />
+
+                {/* 3-Dot Dropdown - Top Right */}
                 <div className="absolute top-2 right-2 z-20">
-                    <JobActionDropdown onEdit={() => onEdit(job._id)} onDelete={() => onDelete(job._id)} />
+                    <JobActionDropdown
+                        onEdit={() => onEdit(job._id)}
+                        onDelete={() => onDelete(job._id)}
+                    />
                 </div>
             </div>
 
-            {/* ── Card Body ── */}
-            <div className="p-4 flex flex-col flex-1 min-w-0">
-
+            {/* ── Body ── */}
+            <div className="p-4">
                 {/* Title */}
-                <h3 className="text-lg font-bold text-gray-900 mb-1 truncate flex-shrink-0">
+                <h3 className={`text-lg font-bold text-gray-900 mb-2 line-clamp-1 ${typography.card.title}`}>
                     {job.title || categoryName}
                 </h3>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-1.5 mb-3 flex-shrink-0">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#e8f4fb] text-[#00598a] border border-[#00598a]/20 whitespace-nowrap">
-                        <Briefcase size={10} />
-                        {categoryName}
-                    </span>
-                    {subCategoryList.slice(0, 2).map((sub, i) => (
-                        <span key={i} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-purple-50 text-purple-600 border border-purple-200 whitespace-nowrap">
-                            <Layers size={10} />
-                            {sub}
-                        </span>
-                    ))}
-                    {subCategoryList.length > 2 && (
-                        <span className="inline-flex items-center text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-500 whitespace-nowrap">
-                            +{subCategoryList.length - 2}
-                        </span>
-                    )}
-                </div>
-
-                {/* ── Description — hard clamped, always 2 lines, word-break ── */}
-                <div className="flex-shrink-0 mb-3" style={{ minHeight: "2.5rem" }}>
-                    <p
-                        className="text-gray-600 text-sm leading-5 w-full"
-                        style={{
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                            wordBreak: "break-all",
-                            overflowWrap: "break-word",
-                            whiteSpace: "normal",
-                            maxHeight: "2.5rem",
-                        }}
-                    >
-                        {description}
-                    </p>
-                </div>
+                {/* Description */}
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {job.description || "Need a skilled worker for this job"}
+                </p>
 
                 {/* Location */}
-                <div className="flex items-center gap-1.5 mb-2 text-gray-600 flex-shrink-0 min-w-0">
+                <div className="flex items-center gap-1.5 mb-2 text-gray-600">
                     <MapPin size={14} className="text-red-500 flex-shrink-0" />
-                    <span className="text-sm truncate">{locationStr}</span>
+                    <span className="text-sm line-clamp-1">{locationStr}</span>
                 </div>
 
-                {/* Price + Job type */}
-                <div className="flex items-center gap-2 mb-2 flex-shrink-0">
-                    <span className="text-green-600 font-bold text-base flex items-center gap-0.5">
-                        <IndianRupee size={14} />
+                {/* Price and Job Type */}
+                <div className="flex items-center gap-2 mb-2">
+                    <span className="text-green-600 font-bold text-base flex items-center">
+                        <IndianRupee size={14} className="inline" />
                         {parseFloat(job.servicecharges || "0").toLocaleString("en-IN")}
                     </span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${job.jobType === "FULL_TIME" ? "bg-yellow-100 text-yellow-700" : "bg-blue-100 text-blue-700"
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${job.jobType === "FULL_TIME"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-blue-100 text-blue-700"
                         }`}>
                         {job.jobType === "FULL_TIME" ? "FULL-TIME" : "PART-TIME"}
                     </span>
                 </div>
 
-                {/* Date range */}
-                <div className="flex items-center gap-1.5 mb-1 text-gray-600 flex-shrink-0">
+                {/* Date Range with calendar icon */}
+                <div className="flex items-center gap-1.5 mb-1 text-gray-600">
                     <Calendar size={14} className="flex-shrink-0" />
                     <span className="text-sm">{dateRange}</span>
                 </div>
-                <p className="text-gray-400 text-xs mb-4 flex-shrink-0">Posted: {postedDate}</p>
 
-                {/* Button pinned to bottom */}
-                <div className="mt-auto">
-                    <button
-                        onClick={() => onViewApplicants(job._id)}
-                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-white font-medium text-sm transition-colors"
-                        style={{ backgroundColor: BRAND }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = BRAND)}
-                    >
-                        <Eye size={16} />
-                        View Applicants {applicantCount !== null && `(${applicantCount})`}
-                    </button>
-                </div>
+                {/* Posted date */}
+                <p className="text-gray-400 text-xs mb-4">
+                    Posted: {postedDate}
+                </p>
+
+                {/* View Applicants Button */}
+                <button
+                    onClick={() => onViewApplicants(job._id)}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-[#00598a] text-white font-medium text-sm hover:bg-[#004a73] transition-colors mb-3"
+                >
+                    <Eye size={16} />
+                    View Applicants {applicantCount !== null && `(${applicantCount})`}
+                </button>
             </div>
         </div>
     );
@@ -327,7 +313,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
         try {
             const result = await deleteJob(jobId);
             if (result.success) {
-                setMyJobs(prev => prev.filter(j => j._id !== jobId));
+                setMyJobs((prev) => prev.filter((j) => j._id !== jobId));
             } else {
                 alert("Failed to delete job. Please try again.");
             }
@@ -340,75 +326,57 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-
-            {/* Sticky Header */}
-            <div
-                className="sticky top-0 z-10 bg-white px-4 py-3.5 flex items-center justify-between"
-                style={{ borderBottom: "1px solid #e9ecef", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}
-            >
-                <div className="flex items-center gap-2.5">
-                    <img src={JobIcon} alt="Jobs" className="w-8 h-8 object-contain flex-shrink-0" />
-                    <div>
-                        <h1 className="text-lg font-bold text-gray-900 leading-tight">My Jobs</h1>
-                        {!loadingMyJobs && (
-                            <p className="text-xs text-gray-400 leading-none">
-                                {myJobs.length} job{myJobs.length !== 1 ? "s" : ""} posted
-                            </p>
-                        )}
+        <div className="min-h-screen bg-gray-50 px-4 py-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* ── Header ── */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <h1 className={`text-2xl font-bold text-gray-900`}>
+                            My Jobs ({myJobs.length})
+                        </h1>
                     </div>
+                    <p className="text-gray-500 text-sm">Welcome, Cherry! 👋</p>
                 </div>
 
-                <button
-                    onClick={() => navigate("/post-job")}
-                    className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-white text-sm font-semibold transition-all duration-200 active:scale-95 shadow-sm hover:shadow-md"
-                    style={{ background: `linear-gradient(135deg, ${BRAND}, #0077b6)`, boxShadow: `0 2px 10px ${BRAND}44` }}
-                    onMouseEnter={e => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND_DARK}, #005f93)`)}
-                    onMouseLeave={e => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND}, #0077b6)`)}
-                >
-                    <Plus size={16} />
-                    Post Job
-                </button>
-            </div>
-
-            {/* Content */}
-            <div className="max-w-7xl mx-auto px-4 py-6">
-                {loadingMyJobs ? (
-                    <div className="flex justify-center items-center py-16">
-                        <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
-                    </div>
-                ) : myJobs.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-12 text-center">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: "#e8f4fb" }}>
-                            <img src={JobIcon} alt="No jobs" className="w-10 h-10 object-contain" />
+                {/* ── My Posted Jobs ── */}
+                <div>
+                    {loadingMyJobs ? (
+                        <div className="flex justify-center items-center py-10">
+                            <Loader2 className="w-8 h-8 animate-spin" style={{ color: BRAND }} />
                         </div>
-                        <p className="text-gray-700 mb-1 font-semibold text-base">No jobs posted yet</p>
-                        <p className="text-gray-400 mb-6 text-sm">Post your first job to find skilled workers near you</p>
-                        <button
-                            onClick={() => navigate("/post-job")}
-                            className="inline-flex items-center gap-2 text-white px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 active:scale-95"
-                            style={{ background: `linear-gradient(135deg, ${BRAND}, #0077b6)` }}
-                            onMouseEnter={e => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND_DARK}, #005f93)`)}
-                            onMouseLeave={e => (e.currentTarget.style.background = `linear-gradient(135deg, ${BRAND}, #0077b6)`)}
-                        >
-                            <Plus size={16} />
-                            Post Your First Job
-                        </button>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-                        {myJobs.map(job => (
-                            <div key={job._id} className={`transition-opacity ${deletingId === job._id ? "opacity-40 pointer-events-none" : ""}`}>
-                                <MyJobCard
-                                    job={job}
-                                    onViewApplicants={handleViewApplicants}
-                                    onEdit={handleEdit}
-                                    onDelete={handleDelete}
-                                />
-                            </div>
-                        ))}
-                    </div>
-                )}
+                    ) : myJobs.length === 0 ? (
+                        <div className="bg-white rounded-2xl border border-dashed border-gray-200 p-8 text-center">
+                            <Briefcase size={36} className="text-gray-300 mx-auto mb-3" />
+                            <p className={`text-gray-500 mb-1 ${typography.body.small} ${fontWeight.medium}`}>No jobs posted yet</p>
+                            <p className={`text-gray-400 mb-4 ${typography.body.xs}`}>Post your first job to find workers near you</p>
+                            <button
+                                onClick={() => navigate("/post-job")}
+                                className={`inline-flex items-center gap-1.5 text-white px-4 py-2 rounded-xl transition-all duration-300 active:scale-95 ${typography.body.small} ${fontWeight.bold}`}
+                                style={{ backgroundColor: BRAND }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = BRAND_DARK)}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = BRAND)}
+                            >
+                                <Plus size={14} /> Post a Job
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {myJobs.map((job) => (
+                                <div
+                                    key={job._id}
+                                    className={`transition-opacity ${deletingId === job._id ? "opacity-40 pointer-events-none" : ""}`}
+                                >
+                                    <MyJobCard
+                                        job={job}
+                                        onViewApplicants={handleViewApplicants}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

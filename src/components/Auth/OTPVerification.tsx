@@ -4,7 +4,7 @@ import VoiceService from "../../services/voiceService";
 import { useAuth } from "../../context/AuthContext";
 import OTPInputForm from "./OtpVerification/OTPInputForm";
 import SuccessScreen from "./OtpVerification/SuccessScreen";
-import UpdateUserModal from "../../modal/UserModal";   // ← now resolves to UpdateUserModal
+import UpdateUserModal from "../../modal/UserModal";
 import { extractDigits } from "../../utils/OTPUtils";
 import { verifyOtp, resendOtp, getUserById, getWorkerByUserId } from "../../services/api.service";
 import { getFcmToken } from "../../lib/fcm";
@@ -64,12 +64,9 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showSuccess, setShowSuccess] = useState(false);
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
 
-    // userId stored in both ref (sync, always current) and state (for renders)
     const userIdRef = useRef<string>("");
     const [userId, setUserId] = useState<string>("");
 
-    // Existing coords from getUserById — passed to modal so it can echo them
-    // back to the backend (avoids "Latitude and Longitude are required" error)
     const existingCoordsRef = useRef<{ lat: number | null; lng: number | null }>({
         lat: null, lng: null,
     });
@@ -112,41 +109,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         }
     }, [otp]);
 
-    // ─── WEB OTP AUTOFILL (SMS — Chrome Android) ──────────────────────────────
-    useEffect(() => {
-        if (!("OTPCredential" in window)) return;
-        const controller = new AbortController();
-        navigator.credentials
-            .get({ otp: { transport: ["sms"] }, signal: controller.signal } as any)
-            .then((cred: any) => {
-                if (cred?.code) {
-                    const digits = cred.code.replace(/\D/g, "").slice(0, 6);
-                    setOtp(digits.split(""));
-                }
-            })
-            .catch(() => { });
-        return () => controller.abort();
-    }, []);
-
-    // ─── CLIPBOARD PASTE AUTOFILL ─────────────────────────────────────────────
-    useEffect(() => {
-        const handlePaste = (e: ClipboardEvent) => {
-            const pasted = e.clipboardData?.getData("text") ?? "";
-            const digits = pasted.replace(/\D/g, "").slice(0, 6);
-            if (digits.length === 0) return;
-            e.preventDefault();
-            const filled = digits.split("");
-            setOtp(prev => {
-                const next = [...prev];
-                filled.forEach((d, i) => { next[i] = d; });
-                return next;
-            });
-            setTimeout(() => inputRefs.current[Math.min(filled.length, 5)]?.focus(), 0);
-        };
-        document.addEventListener("paste", handlePaste);
-        return () => document.removeEventListener("paste", handlePaste);
-    }, []);
-
     // ─── TIMER ────────────────────────────────────────────────────────────────
     useEffect(() => {
         if (timer > 0 && !showSuccess && !showFirstTimeModal) {
@@ -188,7 +150,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             const extractedId = extractUserId(response);
             if (!extractedId) throw new Error("Invalid user ID in response");
 
-            // ✅ Write to REF first (synchronous) — then to state (async re-render)
             userIdRef.current = extractedId;
             setUserId(extractedId);
 
@@ -216,7 +177,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         const hasSeenModal = localStorage.getItem(`isFirstTimeUser_${uid}`) === "false";
 
         try {
-            // Run both fetches in parallel for speed
             const [userRes, workerRes] = await Promise.allSettled([
                 getUserById(uid),
                 getWorkerByUserId(uid),
@@ -258,7 +218,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 userData.name.trim().length === 0 ||
                 userData.name.trim().toLowerCase() === "user";
 
-            // ✅ KEY FIX: if hasSeenModal is true, skip the modal even if name looks default
             if (isDefaultOrEmptyName && !hasSeenModal) {
                 existingCoordsRef.current = {
                     lat: userData?.latitude ? parseFloat(String(userData.latitude)) : null,
@@ -269,7 +228,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 return;
             }
 
-            // Returning regular user
             localStorage.setItem("role", "USER");
             localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
 
@@ -307,11 +265,9 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     // ─── MODAL SUCCESS CALLBACK ───────────────────────────────────────────────
     const handleModalSuccess = (userName: string) => {
-        const uid = userIdRef.current;   // ← always the real ID, never ""
+        const uid = userIdRef.current;
         const role = normalizeRole(localStorage.getItem("role"));
 
-        // ✅ FIX: Mark this user as having completed setup so the modal
-        //         never appears again on future logins
         localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
         localStorage.setItem("userName", userName);
 
