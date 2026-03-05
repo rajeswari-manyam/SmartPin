@@ -1,0 +1,1 @@
+export type StarSize = "sm" | "md" | "lg";

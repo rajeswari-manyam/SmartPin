@@ -74,9 +74,6 @@ export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<Ap
         throw error;
     }
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// REPLACE ONLY THIS FUNCTION in your api.service.ts
-// ─────────────────────────────────────────────────────────────────────────────
 
 export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> => {
     try {
@@ -84,16 +81,9 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
         formData.append("email", params.email);
         formData.append("otp", params.otp);
 
-        // ✅ FIXED: Only send fcmToken if it's non-empty — empty string causes 400
         if (params.fcmToken && params.fcmToken.trim().length > 0) {
             formData.append("fcmToken", params.fcmToken);
         }
-
-        console.log("📤 verify-otp request:", {
-            email: params.email,
-            otp: params.otp,
-            fcmToken: params.fcmToken ? "present" : "skipped (empty)",
-        });
 
         const response = await fetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
@@ -141,7 +131,7 @@ export interface CreateJobPayload {
     userId: string;
     title: string;
     name: string;
-    phone?: string;       // optional (email-based login)
+    phone?: string;
     description: string;
     category: string;
     subcategory?: string;
@@ -348,7 +338,7 @@ export interface Worker {
     userId: string;
     name: string;
     email?: string;
-     phone?: string;          // ✅ ADD THIS LINE
+    phone?: string;
     category: string | string[];
     subCategories?: string[];
     skills?: string[];
@@ -374,14 +364,6 @@ export const getWorkerById = async (workerId: string): Promise<{ success: boolea
     return response.data;
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CREATE WORKER — Step 1  POST /createworkers
-//
-// Backend contract (confirmed via Postman):
-//   Fields  : userId, name, area, city, state, pincode,
-//             latitude, longitude, phone (optional), profilePic (optional File)
-//   Response: { success, message, worker: { _id, userId, name, phone, ... } }
-// ─────────────────────────────────────────────────────────────────────────────
 export interface CreateWorkerBasePayload {
     userId: string;
     name: string;
@@ -412,49 +394,32 @@ export interface WorkerResponse {
     };
 }
 
-/* ─────────────────────────────────────────────
-   CREATE WORKER PROFILE
-   POST /createworkers
-   ───────────────────────────────────────────── */
 export const createWorkerBase = async (
     payload: CreateWorkerBasePayload
 ): Promise<WorkerResponse> => {
     try {
         const formData = new FormData();
-
         formData.append("userId", payload.userId);
         formData.append("name", payload.name);
         formData.append("city", payload.city);
-
         if (payload.area) formData.append("area", payload.area);
         if (payload.state) formData.append("state", payload.state);
         if (payload.pincode) formData.append("pincode", payload.pincode);
         if (payload.phone) formData.append("phone", payload.phone);
-        if (payload.latitude !== undefined)
-            formData.append("latitude", String(payload.latitude));
-        if (payload.longitude !== undefined)
-            formData.append("longitude", String(payload.longitude));
-        if (payload.profilePic)
-            formData.append("profilePic", payload.profilePic);
+        if (payload.latitude !== undefined) formData.append("latitude", String(payload.latitude));
+        if (payload.longitude !== undefined) formData.append("longitude", String(payload.longitude));
+        if (payload.profilePic) formData.append("profilePic", payload.profilePic);
 
         const res = await API_MULTIPART.post("/createworkers", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
+            headers: { "Content-Type": "multipart/form-data" },
         });
         return res.data;
     } catch (err: any) {
         const message =
-            err?.response?.data?.message ||
-            err?.message ||
-            "Failed to create worker profile";
-
+            err?.response?.data?.message || err?.message || "Failed to create worker profile";
         throw new Error(message);
     }
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// ADD WORKER SKILL — Step 2  POST /addworkerSkill
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface AddWorkerSkillPayload {
     workerId: string;
@@ -496,17 +461,14 @@ export const addWorkerSkill = async (
     try {
         const formData = new FormData();
         formData.append("workerId", payload.workerId);
-
         const categoryString = Array.isArray(payload.category)
             ? payload.category.join(",")
             : payload.category;
         formData.append("category", categoryString);
-
         formData.append("subCategory", payload.subCategory);
         formData.append("skill", payload.skill);
         formData.append("serviceCharge", String(payload.serviceCharge));
         formData.append("chargeType", payload.chargeType);
-
         if (payload.images?.length) {
             payload.images.forEach((file) => formData.append("images", file));
         }
@@ -518,28 +480,20 @@ export const addWorkerSkill = async (
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("addWorkerSkill API error:", errorText);
             throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
         }
 
-        const data: AddWorkerSkillResponse = await response.json();
-        console.log("✅ addWorkerSkill response:", data);
-        return data;
+        return await response.json();
     } catch (error) {
         console.error("❌ addWorkerSkill error:", error);
         throw error;
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// COMBINED WORKER CREATION (Step 1 + Step 2)
-// ─────────────────────────────────────────────────────────────────────────────
-
 export interface CreateWorkerCompletePayload {
     userId: string;
     name: string;
     email?: string;
-    /** Optional phone — auto-detected, not used for login */
     phone?: string;
     category: string | string[];
     subCategory: string;
@@ -566,8 +520,6 @@ export const createWorkerComplete = async (
     skillWorker: AddWorkerSkillResponse;
 }> => {
     try {
-        console.log("📝 Step 1: Creating base worker profile...");
-
         const baseWorkerResponse = await createWorkerBase({
             userId: payload.userId,
             name: payload.name,
@@ -582,9 +534,6 @@ export const createWorkerComplete = async (
         });
 
         const workerId = baseWorkerResponse.worker._id;
-        console.log("✅ Base worker created with ID:", workerId);
-
-        console.log("📝 Step 2: Adding worker skills...");
 
         const skillResponse = await addWorkerSkill({
             workerId,
@@ -595,8 +544,6 @@ export const createWorkerComplete = async (
             chargeType: payload.chargeType,
             images: payload.images,
         });
-
-        console.log("✅ Worker skills added successfully");
 
         return {
             success: true,
@@ -609,27 +556,15 @@ export const createWorkerComplete = async (
         throw error;
     }
 };
-// 🔹 Get worker using userId (used on WorkerProfile page)
+
 export const getWorkerByUserId = async (userId: string) => {
-    const res = await fetch(
-        `${API_BASE_URL}/getWorkerByUserId/${userId}`,
-        {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-        }
-    );
-
-    if (!res.ok) {
-        throw new Error("Worker not found");
-    }
-
+    const res = await fetch(`${API_BASE_URL}/getWorkerByUserId/${userId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error("Worker not found");
     return res.json();
 };
-// ─────────────────────────────────────────────────────────────────────────────
-// GET WORKER WITH SKILLS
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface WorkerSkillDetail {
     _id: string;
@@ -719,10 +654,6 @@ export const getWorkersWithSkills = async (): Promise<{
     if (!response.ok) throw new Error("Failed to fetch workers");
     return response.json();
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// WORKER SKILL CRUD
-// ─────────────────────────────────────────────────────────────────────────────
 
 export interface WorkerSkillResponse {
     success: boolean;
@@ -835,7 +766,6 @@ export interface UpdateUserPayload {
     profilePic?: File;
 }
 
-/** email is required (email-based login); phone is optional */
 export interface User {
     _id: string;
     email: string;
@@ -1286,8 +1216,9 @@ export interface Notification {
     senderModel: "User" | "Worker";
     title: string;
     message: string;
-    type: "NEW_JOB" | "JOB_ENQUIRY" | "JOB_CONFIRMED" | "PAYMENT" | "JOB_COMPLETED" | string;
+    type: "NEW_JOB" | "JOB_ENQUIRY" | "JOB_CONFIRMED" | "PAYMENT" | "JOB_COMPLETED" | "NEW_REVIEW" | string;
     jobId?: string;
+    reviewId?: string;   // ← review notification ID field
     isRead: boolean;
     createdAt: string;
     updatedAt: string;
@@ -1449,10 +1380,11 @@ export const notifyMatchingWorkers = async (
         throw error;
     }
 };
-// ─────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REVIEWS
-// ─────────────────────────────────────────────
-// Get reviews (query string, not path param)
+// ─────────────────────────────────────────────────────────────────────────────
+
 export interface ReviewData {
     _id: string;
     user: string | { _id: string; name: string };
@@ -1466,77 +1398,98 @@ export interface ReviewData {
 export const getReviews = async (
     workerId: string
 ): Promise<{ success: boolean; data: ReviewData[] }> => {
-    const res = await fetch(
-        `${API_BASE_URL}/getReviews?workerId=${workerId}`
-    );
-
-    if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-    }
-
+    const res = await fetch(`${API_BASE_URL}/getReviews?workerId=${workerId}`);
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     return res.json();
 };
+
+// ── Get a single review by ID (used by review notification modal) ─────────────
+export interface SingleReviewData {
+    _id: string;
+    user: {
+        _id: string;
+        name: string;
+        email: string;
+        profilePic?: string;
+    };
+    worker: string | null;
+    rating: number;
+    review: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export const getReviewById = async (
+    reviewId: string
+): Promise<{ success: boolean; data: SingleReviewData }> => {
+    try {
+        const res = await fetch(`${API_BASE_URL}/getReviewById/${reviewId}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+    } catch (error) {
+        console.error("❌ getReviewById error:", error);
+        throw error;
+    }
+};
+
 export const addReview = async (
-  userId: string,
-  workerId: string,
-  rating: number,
-  review: string
+    userId: string,
+    workerId: string,
+    rating: number,
+    review: string
 ): Promise<{ success: boolean; message: string; data?: any }> => {
-  const formData = new URLSearchParams();
-  formData.append("userId", userId);
-  formData.append("workerId", workerId);
-  formData.append("rating", String(rating));
-  formData.append("review", review);
+    const formData = new URLSearchParams();
+    formData.append("userId", userId);
+    formData.append("workerId", workerId);
+    formData.append("rating", String(rating));
+    formData.append("review", review);
 
-  const res = await fetch(`${API_BASE_URL}/addReview`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: formData,
-  });
+    const res = await fetch(`${API_BASE_URL}/addReview`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+    });
 
-  const json = await res.json();
-
-  if (!res.ok) {
-    throw new Error(json?.message || `HTTP error! status: ${res.status}`);
-  }
-
-  return json;
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.message || `HTTP error! status: ${res.status}`);
+    return json;
 };
-// Update review
+
 export const updateReview = async (
-  reviewId: string,
-  rating: number,
-  review: string
+    reviewId: string,
+    rating: number,
+    review: string
 ) => {
-  const formData = new URLSearchParams();
-  formData.append("rating", String(rating));
-  formData.append("review", review);
+    const formData = new URLSearchParams();
+    formData.append("rating", String(rating));
+    formData.append("review", review);
 
-  const res = await fetch(`${API_BASE_URL}/updateReview/${reviewId}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: formData,
-  });
+    const res = await fetch(`${API_BASE_URL}/updateReview/${reviewId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+    });
 
-  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-  return res.json();
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
 };
 
-// Delete review
 export const deleteReview = async (reviewId: string) => {
-  const res = await fetch(`${API_BASE_URL}/deleteReview/${reviewId}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-  return res.json();
+    const res = await fetch(`${API_BASE_URL}/deleteReview/${reviewId}`, {
+        method: "DELETE",
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
 };
 
-// Worker average rating
 export const getWorkerAverageRating = async (workerId: string) => {
-  const res = await fetch(`${API_BASE_URL}/getWorkerAverageRating?workerId=${workerId}`, {
-    method: "GET",
-    headers: { "Content-Type": "application/json" },
-  });
-  if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-  return res.json();
+    const res = await fetch(`${API_BASE_URL}/getWorkerAverageRating?workerId=${workerId}`, {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    return res.json();
 };

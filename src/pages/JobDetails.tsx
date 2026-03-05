@@ -77,8 +77,8 @@ const calcDistance = (lat1: number, lon1: number, lat2: number, lon2: number): s
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) ** 2;
   const d = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return d < 1 ? `${(d * 1000).toFixed(0)} m` : `${d.toFixed(1)} km`;
 };
@@ -137,7 +137,6 @@ const ImageCarousel: React.FC<{ images: string[]; title: string }> = ({ images, 
           >
             <ChevronRight size={16} className="text-gray-700" />
           </button>
-          {/* Counter badge — uses misc.badge from typography */}
           <div className={`absolute top-2 right-2 bg-black/50 text-white ${typography.misc.badge} px-2.5 py-0.5 rounded-full`}>
             {idx + 1}/{images.length}
           </div>
@@ -155,15 +154,11 @@ const StatCell: React.FC<{
   last?: boolean;
 }> = ({ icon, value, label, last }) => (
   <div
-    className={`flex flex-col items-center justify-center py-4 px-3 text-center ${
-      !last ? "border-r border-gray-100" : ""
-    }`}
+    className={`flex flex-col items-center justify-center py-4 px-3 text-center ${!last ? "border-r border-gray-100" : ""
+      }`}
   >
-    {/* Icon — icon.sm from typography */}
     <div className={`text-[#00598a] mb-1.5 ${typography.icon.sm}`}>{icon}</div>
-    {/* Value — body.xs from typography */}
     <div className={`${typography.body.xs} font-extrabold text-gray-900 leading-tight`}>{value}</div>
-    {/* Label — misc.caption from typography */}
     <div className={`${typography.misc.caption} mt-0.5`}>{label}</div>
   </div>
 );
@@ -241,8 +236,12 @@ const JobDetailsPage: React.FC = () => {
     setEnquiryError("");
     try {
       const result = await sendEnquiryToJob(jobId, currentWorkerId);
-      if (result.success) setEnquirySent(true);
-      else setEnquiryError(result.message || "Failed to send enquiry. Try again.");
+      if (result.success) {
+        setEnquirySent(true);
+        navigate("/");           // ← navigate home on success
+      } else {
+        setEnquiryError(result.message || "Failed to send enquiry. Try again.");
+      }
     } catch {
       setEnquiryError("Network error. Please try again.");
     } finally {
@@ -255,7 +254,6 @@ const JobDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-3">
         <div className="w-10 h-10 border-4 border-[#00598a]/20 border-t-[#00598a] rounded-full animate-spin" />
-        {/* misc.caption for subtle loading text */}
         <p className={`${typography.misc.caption} font-medium`}>Loading job details…</p>
       </div>
     );
@@ -266,9 +264,7 @@ const JobDetailsPage: React.FC = () => {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-3 p-6">
         <AlertTriangle size={48} className="text-amber-400" />
-        {/* heading.h5 for error title */}
         <h2 className={typography.heading.h5}>Not Found</h2>
-        {/* misc.caption for error subtitle */}
         <p className={typography.misc.caption}>{error || "Job not available"}</p>
         <button
           onClick={() => navigate(-1)}
@@ -304,7 +300,6 @@ const JobDetailsPage: React.FC = () => {
             <ChevronLeft size={15} /> Back
           </button>
 
-          {/* Breadcrumb — misc.caption */}
           <div className={`hidden sm:flex items-center gap-1.5 ${typography.misc.caption}`}>
             <span>Jobs</span>
             <ChevronRight size={12} className="text-gray-300" />
@@ -313,7 +308,7 @@ const JobDetailsPage: React.FC = () => {
 
           <button
             onClick={() =>
-              navigator.share?.({ title, url: window.location.href }).catch(() => {})
+              navigator.share?.({ title, url: window.location.href }).catch(() => { })
             }
             className={`flex items-center gap-1 text-gray-400 hover:text-[#00598a] hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ${typography.body.xs} font-medium`}
           >
@@ -326,8 +321,6 @@ const JobDetailsPage: React.FC = () => {
       {/* ── Page Body ── */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
         <div className="grid grid-cols-1 gap-4">
-
-          {/* ════ LEFT COLUMN ════ */}
           <div className="flex flex-col gap-4">
 
             {/* Hero Image */}
@@ -336,7 +329,6 @@ const JobDetailsPage: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent pointer-events-none" />
 
               <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 z-10">
-                {/* Category badges */}
                 <div className="flex flex-wrap gap-1.5 mb-2 items-center">
                   {jobData.category && (
                     <span className={`bg-orange-500 text-white ${typography.misc.badge} px-2.5 py-0.5 rounded-md`}>
@@ -353,18 +345,15 @@ const JobDetailsPage: React.FC = () => {
                   </span>
                 </div>
 
-                {/* Price + title row */}
                 <div className="flex items-baseline gap-3 flex-wrap">
                   {jobData.servicecharges && (
                     <span className={`text-white font-extrabold ${typography.heading.h5} leading-none`}>
                       ₹{jobData.servicecharges}
                     </span>
                   )}
-                  {/* card.subtitle for overlay title */}
                   <h1 className={`text-white ${typography.card.subtitle} flex-1 leading-snug`}>{title}</h1>
                 </div>
 
-                {/* Meta pills */}
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2">
                   {jobData.jobType && (
                     <span className={`flex items-center gap-1 bg-[#00598a]/80 text-white ${typography.misc.badge} px-2.5 py-0.5 rounded-full`}>
@@ -388,11 +377,9 @@ const JobDetailsPage: React.FC = () => {
               <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                 <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
                 <div>
-                  {/* body.xs + bold for banner title */}
                   <p className={`${typography.body.xs} font-bold text-green-700`}>
                     Enquiry Sent Successfully!
                   </p>
-                  {/* misc.caption for banner subtitle */}
                   <p className={`${typography.misc.caption} text-green-600 mt-0.5`}>
                     The customer will review your application and contact you soon.
                   </p>
@@ -402,17 +389,14 @@ const JobDetailsPage: React.FC = () => {
 
             {/* Job Header Card */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-              {/* card.title for the main job heading */}
               <h2 className={`${typography.card.title} text-gray-900 mb-1`}>
                 {jobData.category || title}
               </h2>
-              {/* misc.caption for the meta line */}
               <p className={typography.misc.caption}>
                 {jobData.createdAt ? `Posted ${timeAgo(jobData.createdAt)} · ` : ""}
                 {[jobData.city, jobData.state].filter(Boolean).join(", ")}
               </p>
 
-              {/* Tag pills */}
               <div className="flex flex-wrap gap-1.5 mt-3">
                 {jobData.jobType && (
                   <span className={`${typography.misc.badge} bg-orange-50 border border-orange-200 text-orange-600 px-2.5 py-0.5 rounded-full`}>
@@ -463,9 +447,7 @@ const JobDetailsPage: React.FC = () => {
 
             {/* Description */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-              {/* search.label style for section label */}
               <p className={`${typography.search.label} text-gray-400 mb-2`}>About this job</p>
-              {/* body.small for readable description text */}
               <p className={`${typography.body.small} text-gray-600 leading-relaxed`}>
                 {jobData.description || "No description provided."}
               </p>
@@ -504,7 +486,6 @@ const JobDetailsPage: React.FC = () => {
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 space-y-3">
               <p className={`${typography.search.label} text-gray-400`}>Posted By</p>
 
-              {/* Profile row */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#00598a]/10 to-blue-100 flex items-center justify-center flex-shrink-0 border border-blue-100">
                   <User size={22} className="text-[#00598a]" />
@@ -532,12 +513,10 @@ const JobDetailsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Error message */}
               {enquiryError && (
                 <p className={`${typography.form.error} text-center`}>{enquiryError}</p>
               )}
 
-              {/* CTA Button */}
               {enquirySent ? (
                 <button
                   disabled
@@ -561,9 +540,6 @@ const JobDetailsPage: React.FC = () => {
             </div>
 
           </div>
-
-
-
         </div>
       </div>
 
