@@ -211,7 +211,7 @@ const Navbar: React.FC = () => {
                   "text-primary hidden sm:block transition-colors duration-300 group-hover:text-primary/80"
                 )}
               >
-                ServiceHub
+                FlexHours
               </h1>
             </div>
 

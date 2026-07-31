@@ -168,7 +168,7 @@ const response = await registerWithOtp({
                     </div>
                 </div>
                 <h1 className={`text-gray-900 mb-2 ${typography.heading.h3}`}>
-                    ServiceHub
+                    {isLogin ? "Welcome Back to FlexHours" : "Welcome to FlexHours"}
                 </h1>
                 <p className={`text-gray-600 ${typography.body.base}`}>
                     {isLogin ? "Welcome Back" : "Find Professionals"}

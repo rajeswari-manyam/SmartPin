@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ onBack, onSkip }) => {
                     </button>
 
                     <h1 className={`${fontSize["2xl"]} sm:text-3xl ${fontWeight.bold}`}>
-                        ServiceHub
+                      FlexHours  
                     </h1>
 
                     <button

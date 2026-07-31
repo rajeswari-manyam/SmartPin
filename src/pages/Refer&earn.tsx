@@ -6,12 +6,12 @@ const ReferAndEarnScreen: React.FC = () => {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const message = `🎉 Join ServiceHub and get amazing services!\n\nUse my referral code: ${referralCode}\n\nDownload now: https://servicehub.app`;
+    const message = `🎉 Join FlexHours and get amazing services!\n\nUse my referral code: ${referralCode}\n\nDownload now: https://flexhours.in`;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Join ServiceHub',
+          title: 'Join FlexHours',
           text: message,
         });
       } catch (error) {
@@ -176,7 +176,7 @@ const ReferAndEarnScreen: React.FC = () => {
             <p>• Referral reward will be credited after your friend completes their first booking</p>
             <p>• Maximum 10 referrals per user per month</p>
             <p>• Rewards cannot be transferred or exchanged for cash</p>
-            <p>• ServiceHub reserves the right to modify the referral program</p>
+            <p>• FlexHours reserves the right to modify the referral program</p>
           </div>
         </div>
       </main>

@@ -63,7 +63,7 @@ const SuccessScreen: React.FC<SuccessScreenProps> = ({ onContinue }) => {
                     fullWidth
                     className="shadow-md"
                 >
-                    Continue to ServiceHub
+                    Continue to FlexHours
                 </Button>
 
                 {/* Styling */}

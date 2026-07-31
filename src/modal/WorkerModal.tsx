@@ -118,7 +118,7 @@ const WorkerModal: React.FC<WorkerModalProps> = ({
                         <span className="text-4xl">👷‍♂️</span>
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">
-                        Welcome to ServiceHub!
+                        Welcome to FlexHours!
                     </h2>
                     <p className="text-white/90 text-sm">
                         Let's set up your worker profile
