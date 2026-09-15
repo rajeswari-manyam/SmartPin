@@ -3,7 +3,7 @@ import { useSearchController } from "../hooks/useSearchController";
 
 import LocationSelector from "./LocationSelector";
 import VoiceSearchModal from "../modal/VoiceSearchmodal";
-import DownloadAppModal from "../modal/DownloadAppModal";
+
 
 import SearchIcon from "../assets/icons/Search.png";
 import VoiceIcon from "../assets/icons/Voice.png";
@@ -19,7 +19,6 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
     onSearchChange,
 }) => {
     const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
-    const [showDownloadModal, setShowDownloadModal] = useState(false);
 
     const {
         state,
@@ -55,7 +54,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
     };
 
     useEffect(() => {
-        if (showDownloadModal || isVoiceModalOpen) {
+        if (isVoiceModalOpen) {
             document.body.style.overflow = "hidden";
         } else {
             document.body.style.overflow = "auto";
@@ -63,7 +62,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
         return () => {
             document.body.style.overflow = "auto";
         };
-    }, [showDownloadModal, isVoiceModalOpen]);
+    }, [isVoiceModalOpen]);
 
     return (
         <>
@@ -84,7 +83,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
 
                             <button
                                 className="flex-shrink-0 flex items-center gap-1.5 bg-white border border-gray-300 rounded-xl px-3 py-2.5 hover:shadow-md active:scale-95 transition-all"
-                                onClick={() => setShowDownloadModal(true)}
+                                onClick={() => window.open("https://play.google.com/store/apps/details?id=com.anonymous.flexhours&pli=1", "_blank")}
                             >
                                 <img src={MobileIcon} alt="Download App" className="w-4 h-4" />
                                 <span className="text-xs font-semibold whitespace-nowrap text-gray-700">
@@ -214,7 +213,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
                         {/* Download App */}
                         <button
                             className="flex-shrink-0 flex items-center gap-2 bg-white border border-gray-300 rounded-xl px-5 py-3.5 hover:shadow-lg transition"
-                            onClick={() => setShowDownloadModal(true)}
+                            onClick={() => window.open("https://play.google.com/store/apps/details?id=com.anonymous.flexhours&pli=1", "_blank")}
                         >
                             <img src={MobileIcon} alt="Download App" className="w-5 h-5" />
                             <span className="text-sm font-semibold whitespace-nowrap">Download App</span>
@@ -232,11 +231,7 @@ const SearchContainer: React.FC<SearchContainerProps> = ({
                 onClose={handleVoiceModalClose}
             />
 
-            {/* Download App Modal */}
-            <DownloadAppModal
-                isOpen={showDownloadModal}
-                onClose={() => setShowDownloadModal(false)}
-            />
+
         </>
     );
 };

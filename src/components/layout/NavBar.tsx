@@ -7,6 +7,7 @@ import ListedJobsIcon from "../../assets/icons/ListedJobs.png";
 import MyBusinessIcon from "../../assets/icons/MyBusiness.png";
 import MySkillsIcon from "../../assets/icons/MySkills.png";
 import HomeIcon from "../../assets/icons/HomeIcon.png";
+import flexHoursLogo from "../../assets/images/flexhourslogo.png";
 import { useAuth } from "../../context/AuthContext";
 import { useAccount } from "../../context/AccountContext";
 import Button from "../ui/Buttons";
@@ -200,19 +201,13 @@ const Navbar: React.FC = () => {
             {/* ── Logo ── */}
             <div
               onClick={() => navigate("/")}
-              className="flex items-center space-x-2 cursor-pointer transition-all duration-300 hover:scale-105 group"
+              className="flex items-center cursor-pointer transition-all duration-300 hover:scale-105 group"
             >
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center transition-all duration-300 group-hover:rotate-6 group-hover:shadow-lg">
-                <span className="text-white text-xl">⚡</span>
-              </div>
-              <h1
-                className={combineTypography(
-                  typography.logo.title,
-                  "text-primary hidden sm:block transition-colors duration-300 group-hover:text-primary/80"
-                )}
-              >
-                FlexHours
-              </h1>
+              <img
+                src={flexHoursLogo}
+                alt="FlexHours"
+                className="h-11 w-auto max-w-[220px] object-contain"
+              />
             </div>
 
             {/* ── Right Section ── */}
