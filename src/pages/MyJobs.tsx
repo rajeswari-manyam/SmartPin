@@ -274,24 +274,43 @@ const MyJobsPage: React.FC<MyJobsPageProps> = ({ userId, userName = "User" }) =>
             <div className="max-w-lg mx-auto space-y-5">
 
                 {/* ── Header ── */}
-                <div className="flex items-start justify-between">
-                    <div>
-                        <h1 className="text-2xl font-extrabold text-gray-900">
-                            My Jobs ({jobs.length})
-                        </h1>
-                        <p className="text-sm text-gray-500 mt-0.5">
-                            Welcome, {userName}! 👋
-                        </p>
-                    </div>
-                    <button
-                        onClick={() => fetchJobs(true)}
-                        disabled={refreshing}
-                        className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center shadow-sm hover:bg-[#00598a]/60 transition active:scale-95"
-                    >
-                        <RefreshCw size={16} className={`text-blue-500 ${refreshing ? "animate-spin" : ""}`} />
-                    </button>
-                </div>
+              {/* Header */}
+<div className="flex items-center justify-between">
+    <div>
+        <h1 className="text-2xl font-extrabold text-gray-900">
+            My Jobs ({jobs.length})
+        </h1>
 
+        <p className="text-sm text-gray-500 mt-0.5">
+            Welcome, {userName}! 👋
+        </p>
+    </div>
+
+    <div className="flex items-center gap-2">
+        {/* Post Job Button */}
+        <button
+            onClick={() => navigate("/post-job")}
+            className="flex items-center gap-1.5 bg-[#00598a] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-[#004b73] transition active:scale-95"
+        >
+            <Plus size={16} />
+            Post Job
+        </button>
+
+        {/* Refresh Button */}
+        <button
+            onClick={() => fetchJobs(true)}
+            disabled={refreshing}
+            className="w-10 h-10 rounded-full border border-gray-200 bg-white flex items-center justify-center shadow-sm hover:bg-gray-100 transition active:scale-95"
+        >
+            <RefreshCw
+                size={16}
+                className={`text-blue-500 ${
+                    refreshing ? "animate-spin" : ""
+                }`}
+            />
+        </button>
+    </div>
+</div>
                 {/* ── Error ── */}
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3">

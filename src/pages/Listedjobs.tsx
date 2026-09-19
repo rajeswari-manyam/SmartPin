@@ -329,13 +329,20 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
         <div className="min-h-screen bg-gray-50 px-4 py-6">
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* ── Header ── */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-start justify-between gap-3">
+                    <div>
                         <h1 className={`text-2xl font-bold text-gray-900`}>
                             My Jobs ({myJobs.length})
                         </h1>
+                        <p className="text-gray-500 text-sm mt-0.5">Welcome, Cherry! 👋</p>
                     </div>
-                    <p className="text-gray-500 text-sm">Welcome, Cherry! 👋</p>
+                    <button
+                        onClick={() => navigate("/post-job")}
+                        className="flex items-center gap-1.5 bg-[#00598a] text-white px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-[#004a73] transition-colors active:scale-95 shrink-0"
+                    >
+                        <Plus size={16} />
+                        Post Job
+                    </button>
                 </div>
 
                 {/* ── My Posted Jobs ── */}

@@ -1,22 +1,15 @@
 
-
-
-
-
-
-
-
 importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js");
 
 firebase.initializeApp({
-  apiKey: "AIzaSyC3CWgbVMX4ITNzQ5D0ZGfsmLpImAFupLI",
-  authDomain: "parttime-jobs-9b736.firebaseapp.com",
-  projectId: "parttime-jobs-9b736",
-  storageBucket: "parttime-jobs-9b736.firebasestorage.app",
-  messagingSenderId: "234889445653",
-  appId: "1:234889445653:web:bdf44e3270c35c3b71a91c",
-  measurementId: "G-11GDDTHRRL"
+  apiKey: "AIzaSyAIaHdY0vw-xqXSSB_5ONKOKFqQpdBTiq8",
+  authDomain: "flexhours-d094e.firebaseapp.com",
+  projectId: "flexhours-d094e",
+  storageBucket: "flexhours-d094e.firebasestorage.app",
+  messagingSenderId: "1042847599727",
+  appId: "10428475997271::web:43a20c08ae58faf0c7919a",
+  measurementId: "G-MN7WV83SJ2"
 });
 
 const messaging = firebase.messaging();
