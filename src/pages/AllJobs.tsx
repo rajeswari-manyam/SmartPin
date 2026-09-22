@@ -4,7 +4,7 @@ import {
     MapPin, Loader2, ChevronDown, ChevronLeft, ChevronRight,
     ArrowRight, IndianRupee, Briefcase, Calendar
 } from "lucide-react";
-import { getNearbyJobsForWorker, JobDetail, API_BASE_URL } from "../services/api.service";
+import { getNearbyJobs, JobDetail, API_BASE_URL } from "../services/api.service";
 import CategoriesData from "../data/categories.json";
 import { categories } from "../components/categories/Categories";
 import typography from "../styles/typography";
@@ -107,9 +107,9 @@ const JobCard: React.FC<{
     const [isHovered, setIsHovered] = useState(false);
     const imgs = getImageUrls(job.images || []);
 
-    const distLabel = job.distance != null
-        ? job.distance >= 1000 ? `${(job.distance / 1000).toFixed(1)} km` : `${Math.round(job.distance)} m`
-        : null;
+  const distLabel = job.distance != null
+    ? `${Number(job.distance).toFixed(1)} km`
+    : null;
 
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Nearby";
     const startDate = new Date(job.startDate);
@@ -249,6 +249,8 @@ const RADIUS_OPTIONS = [2, 5, 10, 20, 50];
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 const AllJobs: React.FC<AllJobsProps> = ({
+    latitude,
+    longitude,
     searchText = "",
     filterCategory,
     workerId: workerIdProp,
@@ -261,8 +263,11 @@ const AllJobs: React.FC<AllJobsProps> = ({
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [selectedRadius, setSelectedRadius] = useState(10);
     const [radiusDropdownOpen, setRadiusDropdownOpen] = useState(false);
+useEffect(() => {
+    if (latitude == null || longitude == null) return;
 
-    useEffect(() => { fetchJobs(); }, [workerIdProp]);
+    fetchJobs();
+}, [latitude, longitude]);
 
     useEffect(() => {
         const handle = (e: MouseEvent) => {
@@ -274,33 +279,55 @@ const AllJobs: React.FC<AllJobsProps> = ({
         return () => document.removeEventListener("mousedown", handle);
     }, []);
 
-    const fetchJobs = async () => {
-        try {
-            setLoading(true);
-            setError("");
-            const workerId =
-                workerIdProp ||
-                localStorage.getItem("workerId") ||
-                localStorage.getItem("@worker_id");
+  const fetchJobs = async () => {
+    try {
+        setLoading(true);
+        setError("");
 
-            if (!workerId) {
-                console.warn("⚠️ AllJobs: no workerId available");
-                setJobs([]);
-                setLoading(false);
-                return;
-            }
-
-            const res = await getNearbyJobsForWorker(workerId);
-            const data: JobDetail[] = res.jobs || [];
-            setJobs(data);
-            if (data.length === 0) setError("No jobs found near your location");
-        } catch (err: any) {
-            setError(err.message || "Failed to fetch jobs");
+        if (latitude == null || longitude == null) {
             setJobs([]);
-        } finally {
             setLoading(false);
+            return;
         }
-    };
+
+        console.log("=================================");
+        console.log("📍 NEARBY JOB SEARCH LOCATION");
+        console.log("Latitude:", latitude);
+        console.log("Longitude:", longitude);
+        console.log("=================================");
+
+        const res = await getNearbyJobs(latitude, longitude);
+
+        console.log("📦 NEARBY JOB API RESPONSE:", res);
+
+        const data: JobDetail[] = res.jobs || [];
+
+        console.log(
+            "📍 JOB LOCATIONS:",
+            data.map(job => ({
+                title: job.title,
+                area: job.area,
+                city: job.city,
+                state: job.state,
+                jobLatitude: job.latitude,
+                jobLongitude: job.longitude,
+                distance: job.distance,
+            }))
+        );
+
+        setJobs(data);
+
+        if (data.length === 0) {
+            setError("No jobs found near your location");
+        }
+
+    } catch (err: any) {
+        setError(err.message || "Failed to fetch jobs");
+        setJobs([]);
+    } finally {
+        setLoading(false);
+    }
+};
 
     const filtered = jobs.filter(job => {
         const sl = searchText.toLowerCase();
@@ -311,7 +338,8 @@ const AllJobs: React.FC<AllJobsProps> = ({
             || resolvedCat.toLowerCase().includes(sl)
             || (job.subcategory && job.subcategory.toLowerCase().includes(sl));
         const matchCat = selectedCategory === "all" || resolvedCat === selectedCategory;
-        const matchRadius = job.distance == null || job.distance <= selectedRadius * 1000;
+    const matchRadius =
+    job.distance == null || Number(job.distance) <= selectedRadius;
         return matchSearch && matchCat && matchRadius;
     });
 

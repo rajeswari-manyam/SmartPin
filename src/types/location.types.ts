@@ -1,9 +1,9 @@
-// export interface Location {
-//   city: string;              // ✅ REQUIRED
-//   state?: string;
-//   country?: string;
-//   lat: number;
-//   lng: number;
-//   fullAddress: string;       // ✅ REQUIRED everywhere
-// }
-export default {}
+export type SelectedLocation = {
+    address: string;
+    area: string;
+    city: string;
+    state: string;
+    pincode: string;
+    latitude: number;
+    longitude: number;
+};

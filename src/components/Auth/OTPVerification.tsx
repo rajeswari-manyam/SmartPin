@@ -66,6 +66,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
     const userIdRef = useRef<string>("");
     const [userId, setUserId] = useState<string>("");
+    const isFirstLoginRef = useRef(false);
 
     const existingCoordsRef = useRef<{ lat: number | null; lng: number | null }>({
         lat: null, lng: null,
@@ -193,6 +194,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 localStorage.setItem("workerId", workerData._id);
                 localStorage.setItem("userName", workerData.name || userData?.name || "Worker");
                 localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
+                isFirstLoginRef.current = false;
 
                 const user: User = {
                     _id: uid,
@@ -223,6 +225,10 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                     lat: userData?.latitude ? parseFloat(String(userData.latitude)) : null,
                     lng: userData?.longitude ? parseFloat(String(userData.longitude)) : null,
                 };
+                // Mark as seen the moment the prompt is shown, so the name box
+                // appears only ONCE per user id even if the update fails/refresh.
+                localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
+                isFirstLoginRef.current = true;
                 console.log("🆕 New user detected — showing setup modal");
                 setShowFirstTimeModal(true);
                 return;
@@ -230,6 +236,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
 
             localStorage.setItem("role", "USER");
             localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
+            isFirstLoginRef.current = false;
 
             const user: User = {
                 _id: uid,
@@ -248,6 +255,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
         } catch (err) {
             console.warn("⚠️ Profile fetch failed", err);
             if (hasSeenModal) {
+                isFirstLoginRef.current = false;
                 const role = normalizeRole(localStorage.getItem("role"));
                 login({
                     _id: uid, email,
@@ -257,6 +265,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
                 setShowSuccess(true);
             } else {
                 existingCoordsRef.current = { lat: null, lng: null };
+                localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
+                isFirstLoginRef.current = true;
                 console.log("🆕 New user (no profile) — showing setup modal");
                 setShowFirstTimeModal(true);
             }
@@ -320,7 +330,11 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const handleSuccessContinue = () => {
         onClose?.();
         onContinue?.();
-        navigate("/role-selection", { replace: true });
+        if (isFirstLoginRef.current) {
+            navigate("/role-selection", { replace: true });
+        } else {
+            navigate("/home", { replace: true });
+        }
     };
 
     // ─── RENDER ───────────────────────────────────────────────────────────────

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import LocationIcon from "../assets/icons/Location.png";
 import { SearchIcon } from "lucide-react";
+import type { SelectedLocation } from "../types/location.types";
 
 type Props = {
     initialLat?: number;
     initialLng?: number;
     onSaveLocation?: (city: string, lat: number, lng: number) => void;
+    onLocationSelect?: (loc: SelectedLocation) => void;
     onNavigate?: () => void;
     autoDetect?: boolean;
 };
@@ -29,6 +31,18 @@ interface GeoFeature {
         county?: string;
         state?: string;
         country?: string;
+        locality?: string;
+        district?: string;
+        suburb?: string;
+        neighbourhood?: string;
+        postcode?: string;
+        result_type?: string;
+        state_district?: string;
+        municipality?: string;
+        village?: string;
+        town?: string;
+        city_district?: string;
+        street?: string;
         lat?: number;
         lon?: number;
     };
@@ -44,6 +58,7 @@ interface NominatimResult {
     display_name?: string;
     lat?: string;
     lon?: string;
+    type?: string;
     address?: {
         city?: string;
         town?: string;
@@ -51,6 +66,12 @@ interface NominatimResult {
         county?: string;
         state?: string;
         country?: string;
+        suburb?: string;
+        neighbourhood?: string;
+        road?: string;
+        postcode?: string;
+        municipality?: string;
+        city_district?: string;
     };
 }
 
@@ -73,33 +94,152 @@ const nominatimToFeature = (item: NominatimResult): GeoFeature | null => {
             address_line1: item.name || item.display_name?.split(",")[0]?.trim(),
             formatted: item.display_name,
             name: item.name,
-            city: a.city || a.town || a.village || a.county,
+            city: a.city || a.town || a.municipality || a.county,
+            county: a.county,
+            municipality: a.municipality,
+            suburb: a.suburb || a.neighbourhood,
+            neighbourhood: a.neighbourhood,
+            village: a.village,
+            town: a.town,
+            city_district: a.city_district,
             state: a.state,
+            postcode: a.postcode,
             country: a.country,
+            result_type: item.type,
         },
     };
 };
 
-const fetchLocationSuggestions = async (q: string, signal?: AbortSignal): Promise<GeoFeature[]> => {
-    if (GEOAPIFY_KEY_VALID) {
-        const url = `${GEOAPIFY_BASE}/autocomplete?text=${encodeURIComponent(q)}&limit=6&lang=en&apiKey=${GEOAPIFY_API_KEY}`;
-        const res = await fetch(url, { signal });
-        if (res.status === 401 || res.status === 403) {
-            console.error("Geoapify API key is invalid or not authorized (401/403) — check REACT_APP_GEOAPIFY_API_KEY in .env");
-            return [];
-        }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data: GeocodeResponse = await res.json();
-        return data.features || [];
+const GEOAPIFY_AUTOCOMPLETE_LIMIT = 20;
+const RESULT_CAP = 15;
+
+const fetchGeoapifyAutocomplete = async (
+    q: string,
+    signal?: AbortSignal,
+    extraParams = ""
+): Promise<GeoFeature[]> => {
+    if (!GEOAPIFY_KEY_VALID) return [];
+    const url =
+        `${GEOAPIFY_BASE}/autocomplete` +
+        `?text=${encodeURIComponent(q)}` +
+        `&filter=countrycode:in` +
+        (extraParams ? `&${extraParams}` : "") +
+        `&limit=${GEOAPIFY_AUTOCOMPLETE_LIMIT}` +
+        `&lang=en` +
+        `&apiKey=${GEOAPIFY_API_KEY}`;
+    const res = await fetch(url, { signal });
+    if (res.status === 401 || res.status === 403) {
+        console.error("Geoapify API key is invalid or not authorized (401/403) — check REACT_APP_GEOAPIFY_API_KEY in .env");
+        return [];
     }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data: GeocodeResponse = await res.json();
+    console.log("India location results:", data.features);
+    return data.features || [];
+};
+
+const fetchNominatimSuggestions = async (
+    q: string,
+    signal?: AbortSignal
+): Promise<GeoFeature[]> => {
     await ensureNominatimRateLimit();
-    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=6&accept-language=en&q=${encodeURIComponent(q)}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=${GEOAPIFY_AUTOCOMPLETE_LIMIT}&accept-language=en&countrycodes=in&q=${encodeURIComponent(q)}`;
     const res = await fetch(url, { signal, headers: { "Accept-Language": "en" } });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: NominatimResult[] = await res.json();
+    console.log("Nominatim suggestions:", data);
     return (Array.isArray(data) ? data : [])
         .map(nominatimToFeature)
         .filter((f): f is GeoFeature => f !== null);
+};
+
+const isAnchorFeature = (f: GeoFeature): boolean => {
+    const rt = f.properties.result_type || "";
+    if (rt === "street" || rt === "address" || rt === "amenity" || rt === "building") return false;
+    const lat = getFeatureLat(f);
+    const lng = getFeatureLng(f);
+    return isFinite(lat) && isFinite(lng);
+};
+
+const pickCityAnchor = (features: GeoFeature[]): GeoFeature | undefined => {
+    const regionTypes = [
+        "city",
+        "town",
+        "municipality",
+        "village",
+        "administrative",
+        "county",
+        "district",
+    ];
+    const withCity = features.find(
+        (f) =>
+            regionTypes.includes((f.properties.result_type || "").toLowerCase()) &&
+            !!f.properties.city
+    );
+    if (withCity) return withCity;
+    const region = features.find((f) =>
+        regionTypes.includes((f.properties.result_type || "").toLowerCase())
+    );
+    if (region) return region;
+    return features.find(isAnchorFeature);
+};
+
+const countLocalities = (features: GeoFeature[]): number =>
+    features.filter((f) =>
+        SPECIFIC_AREA_TYPES.includes((f.properties.result_type || "").toLowerCase())
+    ).length;
+
+const fetchLocationSuggestions = async (q: string, signal?: AbortSignal): Promise<GeoFeature[]> => {
+    console.log("Location query:", q);
+    if (GEOAPIFY_KEY_VALID) {
+        const cityResults = await fetchGeoapifyAutocomplete(q, signal);
+        console.log("CITY SEARCH RESULTS:", cityResults);
+
+        let combined: GeoFeature[] = [...cityResults];
+
+        // Identify the main Indian city result, then run a focused second search
+        // for that city (e.g. "Vijayawada, Andhra Pradesh, India") so Geoapify
+        // returns more specific local areas inside it.
+        const anchor = pickCityAnchor(cityResults);
+        let localityQuery = "";
+        if (
+            anchor &&
+            isFinite(getFeatureLat(anchor)) &&
+            isFinite(getFeatureLng(anchor))
+        ) {
+            const p = anchor.properties;
+            const cityName = p.city || p.county || getSuggestionTitle(anchor);
+            const stateName = p.state || "";
+            localityQuery = [cityName, stateName, "India"].filter(Boolean).join(", ");
+
+            if (localityQuery.trim()) {
+                const localityResults = await fetchGeoapifyAutocomplete(localityQuery, signal);
+                console.log("LOCALITY SEARCH RESULTS:", localityResults);
+                if (localityResults.length) combined = [...combined, ...localityResults];
+            }
+        }
+
+        let mergedResults = sortSuggestions(combined, q);
+        console.log("MERGED LOCATION RESULTS:", mergedResults);
+
+        // Requirement: if Geoapify returned (almost) only city-level results,
+        // fall back to Nominatim to try to obtain additional locality results.
+        const localityCount = countLocalities(mergedResults);
+        if (localityCount < 3 && !signal?.aborted) {
+            const nom = await fetchNominatimSuggestions(q, signal);
+            let nomResults = sortSuggestions([...mergedResults, ...nom], q);
+            if (countLocalities(nomResults) < 3 && localityQuery && localityQuery !== q) {
+                const nom2 = await fetchNominatimSuggestions(localityQuery, signal);
+                if (nom2.length) nomResults = sortSuggestions([...nomResults, ...nom2], q);
+            }
+            mergedResults = nomResults;
+        }
+
+        return mergedResults.slice(0, RESULT_CAP);
+    }
+
+    const nom = await fetchNominatimSuggestions(q, signal);
+    return sortSuggestions(nom, q).slice(0, RESULT_CAP);
 };
 
 const fetchGeocodeFirst = async (text: string): Promise<GeoFeature | null> => {
@@ -152,17 +292,198 @@ const getFeatureAddress = (f: GeoFeature): string => {
     return parts.filter(Boolean).join(", ");
 };
 
-const getFeatureSubtitle = (f: GeoFeature): string => {
+const getSuggestionTitle = (f: GeoFeature): string => {
     const p = f.properties;
-    const main = getFeatureAddress(f);
-    const locality = [p.city, p.state, p.country].filter(
-        (x, i, a) => x && a.indexOf(x) === i
-    ) as string[];
-    return locality.filter((x) => !main.includes(x)).join(", ");
+    const pick = (v?: string) => (v || "").trim();
+    return (
+        pick(p.suburb) ||
+        pick(p.neighbourhood) ||
+        pick(p.locality) ||
+        pick(p.district) ||
+        pick(p.city_district) ||
+        pick(p.municipality) ||
+        pick(p.village) ||
+        pick(p.town) ||
+        pick(p.name) ||
+        pick(p.city) ||
+        pick(p.county) ||
+        pick(p.address_line1) ||
+        pick(p.formatted)
+    );
+};
+
+const getSuggestionSubtitle = (f: GeoFeature): string => {
+    const p = f.properties;
+    const title = getSuggestionTitle(f).toLowerCase();
+    const countyFallback = p.county || p.district || p.state_district;
+    const candidates = [
+        p.city,
+        countyFallback,
+        p.state,
+        p.postcode,
+    ].filter((x): x is string => !!x && x.trim() !== "");
+
+    const out: string[] = [];
+    for (const cand of candidates) {
+        const lower = cand.trim().toLowerCase();
+        if (!lower) continue;
+        if (title.includes(lower)) continue;
+        if (out.some((x) => x.toLowerCase() === lower)) continue;
+        out.push(cand.trim());
+    }
+    return out.join(", ");
+};
+
+const SPECIFIC_AREA_TYPES = [
+    "suburb",
+    "neighbourhood",
+    "locality",
+    "district",
+    "city_district",
+    "municipality",
+    "village",
+    "town",
+];
+
+const sortSuggestions = (
+    features: GeoFeature[],
+    q: string
+): GeoFeature[] => {
+    const query = q.trim().toLowerCase();
+
+    const seen = new Set<string>();
+    const unique: GeoFeature[] = [];
+
+    for (const feature of features) {
+        const title = getSuggestionTitle(feature)
+            .trim()
+            .toLowerCase();
+        const city = (feature.properties.city || "").trim().toLowerCase();
+        const state = (feature.properties.state || "").trim().toLowerCase();
+        const key = `${title}||${city}||${state}`;
+
+        if (!title || seen.has(key)) continue;
+
+        seen.add(key);
+        unique.push(feature);
+    }
+
+    return unique
+        .map((feature, index) => {
+            const p = feature.properties;
+            const title = getSuggestionTitle(feature)
+                .trim()
+                .toLowerCase();
+
+            const resultType =
+                (p.result_type || "").toLowerCase();
+
+            let typePriority = 10;
+
+            // SPECIFIC AREAS FIRST
+            if (SPECIFIC_AREA_TYPES.includes(resultType)) {
+                typePriority = 0;
+            }
+
+            // CITY SECOND
+            else if (resultType === "city") {
+                typePriority = 5;
+            }
+
+            // COUNTY / STATE / COUNTRY LAST
+            else if (
+                [
+                    "county",
+                    "state_district",
+                    "state",
+                    "country",
+                ].includes(resultType)
+            ) {
+                typePriority = 8;
+            }
+
+            const cityName = (p.city || "").trim().toLowerCase();
+            const ref = (cityName || query).replace(/[^a-z]/gi, "");
+            const titleAlpha = title.replace(/[^a-z]/gi, "");
+            const isRedundantCityVariant =
+                titleAlpha.startsWith(ref) && titleAlpha.length > ref.length;
+
+            let textPriority = 2;
+
+            if (title === query) {
+                textPriority = 1;
+            } else if (title.startsWith(query)) {
+                textPriority = 0;
+            }
+
+            // When a locality merely repeats the city name (e.g. "Vijayawada
+            // (Rural)"), rank genuinely distinct area names (Patamata, Gunadala,
+            // ...) above it so city variants do not dominate the dropdown.
+            if (typePriority === 0 && isRedundantCityVariant) {
+                textPriority = 3;
+            }
+
+            return {
+                feature,
+                index,
+                typePriority,
+                textPriority,
+            };
+        })
+        .sort((a, b) => {
+            if (a.typePriority !== b.typePriority) {
+                return a.typePriority - b.typePriority;
+            }
+
+            if (a.textPriority !== b.textPriority) {
+                return a.textPriority - b.textPriority;
+            }
+
+            return a.index - b.index;
+        })
+        .map(item => item.feature)
+        .slice(0, 15);
+};
+
+const buildSelectedLocation = (feature: GeoFeature): SelectedLocation | null => {
+    const latitude = getFeatureLat(feature);
+    const longitude = getFeatureLng(feature);
+    if (!isFinite(latitude) || !isFinite(longitude)) return null;
+    const p = feature.properties;
+    const area =
+        p.suburb ||
+        p.neighbourhood ||
+        p.locality ||
+        p.district ||
+        p.municipality ||
+        p.village ||
+        p.town ||
+        p.city_district ||
+        "";
+    return {
+        address: getFeatureAddress(feature),
+        area,
+        city: getFeatureCity(feature),
+        state: p.state || "",
+        pincode: p.postcode || "",
+        latitude,
+        longitude,
+    };
+};
+
+const saveSelectedLocation = (loc: SelectedLocation): void => {
+    localStorage.setItem("userLocationAddress", loc.address);
+    localStorage.setItem("userLocationArea", loc.area);
+    localStorage.setItem("userCity", loc.city);
+    localStorage.setItem("userLocationState", loc.state);
+    localStorage.setItem("userLocationPincode", loc.pincode);
+    localStorage.setItem("userLatitude", String(loc.latitude));
+    localStorage.setItem("userLongitude", String(loc.longitude));
 };
 
 export default function LocationSelector({
     onSaveLocation,
+    onLocationSelect,
     onNavigate,
 }: Props) {
     const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
@@ -170,6 +491,7 @@ export default function LocationSelector({
     const resolvedValueRef = useRef("");
     const actionSeqRef = useRef(0);
     const suggestionsAbortRef = useRef<AbortController | null>(null);
+    const selectedLocationRef = useRef<SelectedLocation | null>(null);
 
     const invalidateStaleResults = () => {
         actionSeqRef.current += 1;
@@ -179,6 +501,9 @@ export default function LocationSelector({
     const [query, setQuery] = useState("");
     const [city, setCity] = useState("");
     const [address, setAddress] = useState("");
+    const [area, setArea] = useState("");
+    const [selectedState, setSelectedState] = useState("");
+    const [pincode, setPincode] = useState("");
     const [lat, setLat] = useState<number | null>(null);
     const [lng, setLng] = useState<number | null>(null);
     const [suggestions, setSuggestions] = useState<GeoFeature[]>([]);
@@ -193,13 +518,31 @@ export default function LocationSelector({
         const savedCity = localStorage.getItem("userCity");
         const savedLat = localStorage.getItem("userLatitude");
         const savedLng = localStorage.getItem("userLongitude");
+        const savedAddress = localStorage.getItem("userLocationAddress");
+        const savedArea = localStorage.getItem("userLocationArea");
+        const savedState = localStorage.getItem("userLocationState");
+        const savedPincode = localStorage.getItem("userLocationPincode");
         if (savedCity && savedLat && savedLng) {
-            setCity(savedCity);
-            setLat(parseFloat(savedLat));
-            setLng(parseFloat(savedLng));
-            setInputValue(savedCity);
+            const restored: SelectedLocation = {
+                address: savedAddress || savedCity,
+                area: savedArea || "",
+                city: savedCity,
+                state: savedState || "",
+                pincode: savedPincode || "",
+                latitude: parseFloat(savedLat),
+                longitude: parseFloat(savedLng),
+            };
+            selectedLocationRef.current = restored;
+            setAddress(restored.address);
+            setArea(restored.area);
+            setSelectedState(restored.state);
+            setPincode(restored.pincode);
+            setCity(restored.city);
+            setLat(restored.latitude);
+            setLng(restored.longitude);
+            setInputValue(restored.address);
             setIsSaved(true);
-            onSaveLocation?.(savedCity, parseFloat(savedLat), parseFloat(savedLng));
+            onSaveLocation?.(restored.city, restored.latitude, restored.longitude);
         }
     }, []);
 
@@ -222,6 +565,7 @@ export default function LocationSelector({
             suggestionsAbortRef.current = controller;
             try {
                 const features = await fetchLocationSuggestions(q, controller.signal);
+                console.log("Location search:", q, "results:", features);
                 setSuggestions(features);
                 setSuggestionsOpen(features.length > 0);
             } catch (err: any) {
@@ -237,17 +581,18 @@ export default function LocationSelector({
     };
 
     const applyFeature = (feature: GeoFeature) => {
-        const latitude = getFeatureLat(feature);
-        const longitude = getFeatureLng(feature);
-        if (!isFinite(latitude) || !isFinite(longitude)) return;
-        const formattedAddress = getFeatureAddress(feature);
-        const selectedCity = getFeatureCity(feature);
+        const loc = buildSelectedLocation(feature);
+        if (!loc) return;
         invalidateStaleResults();
-        setLat(latitude);
-        setLng(longitude);
-        setCity(selectedCity);
-        setAddress(formattedAddress);
-        setInputValue(formattedAddress);
+        selectedLocationRef.current = loc;
+        setLat(loc.latitude);
+        setLng(loc.longitude);
+        setCity(loc.city);
+        setArea(loc.area);
+        setSelectedState(loc.state);
+        setPincode(loc.pincode);
+        setAddress(loc.address);
+        setInputValue(loc.address);
         setSuggestions([]);
         setSuggestionsOpen(false);
         setShowButtons(true);
@@ -289,8 +634,12 @@ export default function LocationSelector({
         invalidateStaleResults();
         setCity("");
         setAddress("");
+        setArea("");
+        setSelectedState("");
+        setPincode("");
         setLat(null);
         setLng(null);
+        selectedLocationRef.current = null;
         setLocationMethod(null);
         setIsSaved(false);
     };
@@ -315,20 +664,32 @@ export default function LocationSelector({
 
     const reverseGeocode = async (latitude: number, longitude: number): Promise<string> => {
         try {
+            const applyReverse = (feature: GeoFeature): string => {
+                const loc = buildSelectedLocation(feature);
+                const formattedAddress = getFeatureAddress(feature);
+                const extCity = getFeatureCity(feature);
+                if (loc) {
+                    selectedLocationRef.current = loc;
+                    setAddress(loc.address);
+                    setArea(loc.area);
+                    setSelectedState(loc.state);
+                    setPincode(loc.pincode);
+                } else {
+                    setArea("");
+                    setSelectedState("");
+                    setPincode("");
+                }
+                setInputValue(formattedAddress || extCity);
+                setCity(extCity);
+                return extCity;
+            };
             if (GEOAPIFY_KEY_VALID) {
                 const res = await fetch(
                     `${GEOAPIFY_BASE}/reverse?lat=${latitude}&lon=${longitude}&apiKey=${GEOAPIFY_API_KEY}&lang=en`
                 );
                 const data: GeocodeResponse = await res.json();
                 const feature = data.features?.[0];
-                if (feature) {
-                    const formattedAddress = getFeatureAddress(feature);
-                    const extCity = getFeatureCity(feature);
-                    setAddress(formattedAddress || extCity);
-                    setInputValue(formattedAddress || extCity);
-                    setCity(extCity);
-                    return extCity;
-                }
+                if (feature) return applyReverse(feature);
             }
             await ensureNominatimRateLimit();
             const res = await fetch(
@@ -336,14 +697,7 @@ export default function LocationSelector({
             );
             const data: NominatimResult = await res.json();
             const feature = nominatimToFeature(data);
-            if (feature) {
-                const formattedAddress = getFeatureAddress(feature);
-                const extCity = getFeatureCity(feature);
-                setAddress(formattedAddress || extCity);
-                setInputValue(formattedAddress || extCity);
-                setCity(extCity);
-                return extCity;
-            }
+            if (feature) return applyReverse(feature);
         } catch (e) { console.warn("Reverse geocode failed", e); }
         return "";
     };
@@ -374,10 +728,21 @@ export default function LocationSelector({
                         const extractedCity = await reverseGeocode(latitude, longitude);
                         if (isStale()) { setIsLoading(false); resolve(); return; }
                         if (extractedCity) {
-                            localStorage.setItem("userCity", extractedCity);
-                            localStorage.setItem("userLatitude", latitude.toString());
-                            localStorage.setItem("userLongitude", longitude.toString());
-                            onSaveLocation?.(extractedCity, latitude, longitude);
+                            const loc =
+                                selectedLocationRef.current ??
+                                {
+                                    address: extractedCity,
+                                    area: "",
+                                    city: extractedCity,
+                                    state: "",
+                                    pincode: "",
+                                    latitude,
+                                    longitude,
+                                };
+                            selectedLocationRef.current = loc;
+                            saveSelectedLocation(loc);
+                            onSaveLocation?.(loc.city, loc.latitude, loc.longitude);
+                            onLocationSelect?.(loc);
                             setIsSaved(true);
                         } else setShowButtons(true);
                         setIsLoading(false);
@@ -405,16 +770,28 @@ export default function LocationSelector({
             return;
         }
         if (ipData) {
-            setLat(ipData.lat);
-            setLng(ipData.lng);
-            setCity(ipData.city);
-            setInputValue(ipData.city);
-            setAddress(ipData.city);
+            const loc: SelectedLocation = {
+                address: ipData.city,
+                area: "",
+                city: ipData.city,
+                state: "",
+                pincode: "",
+                latitude: ipData.lat,
+                longitude: ipData.lng,
+            };
+            selectedLocationRef.current = loc;
+            setLat(loc.latitude);
+            setLng(loc.longitude);
+            setCity(loc.city);
+            setArea(loc.area);
+            setSelectedState(loc.state);
+            setPincode(loc.pincode);
+            setInputValue(loc.address);
+            setAddress(loc.address);
             setLocationMethod("ip");
-            localStorage.setItem("userCity", ipData.city);
-            localStorage.setItem("userLatitude", ipData.lat.toString());
-            localStorage.setItem("userLongitude", ipData.lng.toString());
-            onSaveLocation?.(ipData.city, ipData.lat, ipData.lng);
+            saveSelectedLocation(loc);
+            onSaveLocation?.(loc.city, loc.latitude, loc.longitude);
+            onLocationSelect?.(loc);
             setIsSaved(true);
         } else setShowButtons(true);
         setIsLoading(false);
@@ -425,11 +802,11 @@ export default function LocationSelector({
     };
 
     const handleSave = () => {
-        if (!city || lat === null || lng === null) return;
-        localStorage.setItem("userCity", city);
-        localStorage.setItem("userLatitude", lat.toString());
-        localStorage.setItem("userLongitude", lng.toString());
-        onSaveLocation?.(city, lat, lng);
+        const loc = selectedLocationRef.current;
+        if (!loc) return;
+        saveSelectedLocation(loc);
+        onSaveLocation?.(loc.city, loc.latitude, loc.longitude);
+        onLocationSelect?.(loc);
         setIsSaved(true);
         setIsEditing(false);
         setShowButtons(false);
@@ -442,8 +819,12 @@ export default function LocationSelector({
         setInputValue("");
         setCity("");
         setAddress("");
+        setArea("");
+        setSelectedState("");
+        setPincode("");
         setLat(null);
         setLng(null);
+        selectedLocationRef.current = null;
         setSuggestions([]);
         setSuggestionsOpen(false);
         setShowButtons(true);
@@ -518,11 +899,11 @@ export default function LocationSelector({
                                             className="w-full text-left px-4 py-2.5 hover:bg-[#e6f2f8] transition text-sm"
                                         >
                                             <span className="block text-gray-800 font-medium truncate">
-                                                {getFeatureAddress(feature)}
+                                                {getSuggestionTitle(feature)}
                                             </span>
-                                            {getFeatureSubtitle(feature) && (
+                                            {getSuggestionSubtitle(feature) && (
                                                 <span className="block text-xs text-gray-500 truncate">
-                                                    {getFeatureSubtitle(feature)}
+                                                    {getSuggestionSubtitle(feature)}
                                                 </span>
                                             )}
                                         </button>

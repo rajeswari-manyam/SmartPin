@@ -7,7 +7,6 @@ import {
   Navigation,
   Calendar,
   Briefcase,
-  Share2,
   CheckCircle,
   Loader2,
   AlertTriangle,
@@ -306,16 +305,7 @@ const JobDetailsPage: React.FC = () => {
             <span className="font-semibold text-gray-900 max-w-xs truncate">{title}</span>
           </div>
 
-          <button
-            onClick={() =>
-              navigator.share?.({ title, url: window.location.href }).catch(() => { })
-            }
-            className={`flex items-center gap-1 text-gray-400 hover:text-[#00598a] hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors ${typography.body.xs} font-medium`}
-          >
-            <Share2 size={14} />
-            <span className="hidden sm:inline">Share</span>
-          </button>
-        </div>
+          </div>
       </div>
 
       {/* ── Page Body ── */}

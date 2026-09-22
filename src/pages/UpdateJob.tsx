@@ -8,6 +8,8 @@ import SubCategoriesData from "../data/subcategories.json";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 import { categories } from "../components/categories/Categories";
+import LocationSelector from "../components/LocationSelector";
+import type { SelectedLocation } from "../types/location.types";
 
 interface JobData {
     _id: string;
@@ -167,6 +169,18 @@ const UpdateJob: React.FC = () => {
     ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleLocationSelect = (loc: SelectedLocation) => {
+        setFormData((prev) => ({
+            ...prev,
+            area: loc.area,
+            city: loc.city,
+            state: loc.state,
+            pincode: loc.pincode,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+        }));
     };
 
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -577,48 +591,45 @@ const UpdateJob: React.FC = () => {
 
                             {/* Location */}
                             <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Area</label>
-                                <input
-                                    name="area"
-                                    value={formData.area}
-                                    onChange={handleInputChange}
-                                    className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input}`}
-                                    placeholder="Enter area"
+                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
+                                    Location
+                                </label>
+                                <LocationSelector
+                                    onLocationSelect={handleLocationSelect}
                                 />
-                            </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>City</label>
-                                    <input
-                                        name="city"
-                                        value={formData.city}
-                                        onChange={handleInputChange}
-                                        className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input}`}
-                                        placeholder="Enter city"
-                                    />
-                                </div>
-                                <div>
-                                    <label className={`block ${typography.form.label} mb-2 text-gray-700`}>State</label>
-                                    <input
-                                        name="state"
-                                        value={formData.state}
-                                        onChange={handleInputChange}
-                                        className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input}`}
-                                        placeholder="Enter state"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className={`block ${typography.form.label} mb-2 text-gray-700`}>Pincode</label>
-                                <input
-                                    name="pincode"
-                                    value={formData.pincode}
-                                    onChange={handleInputChange}
-                                    className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none ${typography.form.input}`}
-                                    placeholder="Enter pincode"
-                                />
+                                {(formData.area || formData.city || formData.state || formData.pincode) && (
+                                    <div className="mt-3 rounded-xl bg-gray-50 border border-gray-200 p-3 text-sm text-gray-700">
+                                        <p className="flex items-center gap-1.5 mb-1">
+                                            <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                                            <span className="font-medium text-gray-800">Selected Location</span>
+                                        </p>
+                                        <p className="leading-relaxed break-words">
+                                            {[
+                                                formData.area,
+                                                formData.city,
+                                                formData.state,
+                                                formData.pincode,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(", ") || "Location not set"}
+                                        </p>
+                                        {formData.latitude !== 0 && formData.longitude !== 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    window.open(
+                                                        `https://www.google.com/maps?q=${formData.latitude},${formData.longitude}`,
+                                                        "_blank"
+                                                    )
+                                                }
+                                                className="mt-2 inline-flex items-center gap-1.5 text-blue-600 hover:underline font-medium"
+                                            >
+                                                <MapPin size={14} /> View on Google Maps
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Images Upload */}
