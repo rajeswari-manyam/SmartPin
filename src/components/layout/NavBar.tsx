@@ -56,11 +56,22 @@ const Navbar: React.FC = () => {
       const response = await getUserById(userId);
 
       if (response.success && response.data) {
-        const freshName = response.data.name?.trim() || "User";
+        const freshName = response.data.name?.trim() || "";
+        const savedName = (localStorage.getItem("userName") || "").trim();
 
-        // ✅ Update both state AND localStorage so they stay in sync
-        setUserName(freshName);
-        localStorage.setItem("userName", freshName);
+        const apiHasRealName = freshName !== "" && freshName.toLowerCase() !== "user";
+        const localHasRealName = savedName !== "" && savedName.toLowerCase() !== "user";
+
+        // Prefer the API name when it's a real name; otherwise keep the user's
+        // previously saved name instead of reverting to/overwriting with "User".
+        if (apiHasRealName) {
+          setUserName(freshName);
+          localStorage.setItem("userName", freshName);
+        } else if (localHasRealName) {
+          setUserName(savedName);
+        } else {
+          setUserName("User");
+        }
 
         if (response.data.profilePic) {
           const picUrl = response.data.profilePic.startsWith("http")

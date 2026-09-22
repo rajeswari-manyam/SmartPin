@@ -334,7 +334,7 @@ const ListedJobs: React.FC<ListedJobsProps> = ({ userId }) => {
                         <h1 className={`text-2xl font-bold text-gray-900`}>
                             My Jobs ({myJobs.length})
                         </h1>
-                        <p className="text-gray-500 text-sm mt-0.5">Welcome, Cherry! 👋</p>
+                        <p className="text-gray-500 text-sm mt-0.5">Welcome, {localStorage.getItem("userName") || "User"}! 👋</p>
                     </div>
                     <button
                         onClick={() => navigate("/post-job")}

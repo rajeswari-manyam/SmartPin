@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { FaTimes } from "react-icons/fa";
 
 import voiceIcon from "../../assets/icons/Voice.png";
+import flexHoursLogo from "../../assets/images/flexhourslogo.png";
 import LoginForm from "./LoginForm";
 import VoiceService from "../../services/voiceService";
 
@@ -121,8 +122,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ isOpen, onClose, onOpenOTP })
                     <div className="p-8">
                         {view === "welcome" ? (
                             <div className="text-center space-y-6">
-                                {/* Icon */}
-                                <div className="text-6xl">🔧</div>
+                                {/* Logo */}
+                                <img src={flexHoursLogo} alt="FlexHours" className="w-24 h-24 mx-auto object-contain" />
 
                                 {/* Title */}
                                 <div>

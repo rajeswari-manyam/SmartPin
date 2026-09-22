@@ -4,6 +4,7 @@ import Button from "../ui/Buttons";
 import typography from "../../styles/typography";
 import OTPVerification from "./OTPVerification";
 import voiceIcon from "../../assets/icons/Voice.png";
+import flexHoursLogo from "../../assets/images/flexhourslogo.png";
 import VoiceService from "../../services/voiceService";
 import { registerWithOtp } from "../../services/api.service";
 
@@ -103,7 +104,9 @@ const LoginForm: React.FC<LoginFormProps> = ({
             localStorage.setItem("userEmail", email);
 const response = await registerWithOtp({
     email,
-    name: "User",
+    // Re-use the user's saved name instead of resetting it to "User" on
+    // every login (otherwise the API name keeps reverting on 2nd+ login).
+    name: localStorage.getItem("userName") || "User",
     role: "USER",           // ✅ keep role
     latitude: latitude ?? 0,
     longitude: longitude ?? 0,
@@ -163,9 +166,7 @@ const response = await registerWithOtp({
 
             <div className="text-center pt-6">
                 <div className="flex justify-center mb-4">
-                    <div className="bg-gradient-to-r from-[#00598a] to-[#003a5c] p-4 rounded-full">
-                        <span className={`text-white ${typography.logo.icon}`}>⚡</span>
-                    </div>
+                    <img src={flexHoursLogo} alt="FlexHours" className="w-17 h-16 object-contain" />
                 </div>
                 <h1 className={`text-gray-900 mb-2 ${typography.heading.h3}`}>
                     {isLogin ? "Welcome Back to FlexHours" : "Welcome to FlexHours"}
