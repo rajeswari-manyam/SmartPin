@@ -5,6 +5,8 @@ import { ArrowLeft, RefreshCw, X, MapPin, Mic } from "lucide-react";
 import ProfilePhotoUpload from "../components/WorkerProfile/ProfilePhotoUpload";
 import { createWorkerBase, getWorkerByUserId } from "../services/api.service";
 import typography from "../styles/typography";
+import { useAuth } from "../context/AuthContext";
+import { useAccount } from "../context/AccountContext";
 
 /* ───────────────── CONSTANTS ───────────────── */
 const BRAND = "#00598a";
@@ -25,6 +27,8 @@ const micBtn =
 /* ───────────────── COMPONENT ───────────────── */
 const WorkerProfile: React.FC = () => {
   const navigate = useNavigate();
+  const { setWorkerProfile } = useAuth();
+  const { setWorkerProfileId, setHasWorkerProfile } = useAccount();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -59,11 +63,22 @@ const WorkerProfile: React.FC = () => {
 
       try {
         const res = await getWorkerByUserId(userId);
-        if (res?.worker?._id) {
-          const workerId = res.worker._id;
+        const worker = res?.worker || res?.data || res;
+        if (worker?._id) {
+          const workerId = worker._id;
           localStorage.setItem("workerId", workerId);
+          localStorage.setItem("@worker_id", workerId);
           localStorage.setItem(`worker_id_for_${userId}`, workerId);
-          const hasSkills = (res.totalSkills ?? 0) > 0 || (res.workerSkills?.length ?? 0) > 0;
+          setWorkerProfile(workerId, true);
+          setWorkerProfileId(workerId);
+          setHasWorkerProfile(true);
+          const skillsCount =
+            res?.totalSkills ??
+            res?.workerSkills?.length ??
+            worker?.workerSkills?.length ??
+            worker?.skills?.length ??
+            0;
+          const hasSkills = skillsCount > 0;
           navigate(hasSkills ? "/home" : "/add-skills", { replace: true });
           return;
         }
@@ -72,6 +87,7 @@ const WorkerProfile: React.FC = () => {
       setScreenState("idle");
     };
     checkWorker();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   /* ── Location ── */
@@ -137,7 +153,11 @@ const WorkerProfile: React.FC = () => {
 
       const workerId = res.worker._id;
       localStorage.setItem("workerId", workerId);
+      localStorage.setItem("@worker_id", workerId);
       localStorage.setItem(`worker_id_for_${userId}`, workerId);
+      setWorkerProfile(workerId, true);
+      setWorkerProfileId(workerId);
+      setHasWorkerProfile(true);
       navigate("/add-skills", { replace: true });
     } catch (e: any) {
       setError(e.message || "Something went wrong");

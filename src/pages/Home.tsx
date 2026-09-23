@@ -50,8 +50,8 @@ const resolveWorkerId = (user: any): string | null => {
 
 const HomePage: React.FC = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useAuth();
-    const { accountType } = useAccount();
+    const { isAuthenticated, user, setWorkerProfile } = useAuth();
+    const { accountType, workerProfileId, hasWorkerProfile, setWorkerProfileId, setHasWorkerProfile } = useAccount();
 
     const [showWelcome, setShowWelcome] = useState(false);
     const [userLocation, setUserLocation] = useState<{
@@ -76,9 +76,21 @@ const HomePage: React.FC = () => {
         const id = resolveWorkerId(user);
         if (id) {
             setWorkerId(id);
+            localStorage.setItem("workerId", id);
+            localStorage.setItem("@worker_id", id);
+            if (user?.workerId !== id) {
+                setWorkerProfile(id, true);
+            }
+            if (workerProfileId !== id) {
+                setWorkerProfileId(id);
+            }
+            if (!hasWorkerProfile) {
+                setHasWorkerProfile(true);
+            }
         } else {
             console.warn("⚠️ No workerId found in storage.");
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isWorker, user]);
 
     const saveAndSet = (city: string, lat: number, lng: number) => {
@@ -236,6 +248,7 @@ const HomePage: React.FC = () => {
             <>
                 <PromoSlides />
                 <Categories
+                    searchText={topSearchText}
                     onCategoryClick={() => {
                         if (!isAuthenticated) {
                             setShowWelcome(true);

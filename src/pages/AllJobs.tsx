@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { getNearbyJobs, JobDetail, API_BASE_URL } from "../services/api.service";
 import CategoriesData from "../data/categories.json";
-import { categories } from "../components/categories/Categories";
+import SubcategoriesData from "../data/subcategories.json";
 import typography from "../styles/typography";
 
 const BRAND = "#00598a";
@@ -20,13 +20,79 @@ interface AllJobsProps {
     workerId?: string;
 }
 
-const resolveCategoryName = (raw: string | undefined): string => {
-    if (!raw) return "—";
-    if (/^\d+$/.test(raw.trim())) {
-        const match = categories.find(c => String(c.id) === raw.trim());
-        return match?.name ?? raw;
+const normalize = (s?: string | null): string =>
+    (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+
+const CATEGORIES = CategoriesData.categories;
+
+// ── Subcategory → parent category lookup (built from subcategories.json) ──
+const SUBCAT_TO_CATEGORY: Record<string, string> = {};
+SubcategoriesData.subcategories.forEach((group: any) => {
+    const cat = CATEGORIES.find(c => String(c.id) === String(group.categoryId));
+    if (!cat) return;
+    (group.items || []).forEach((item: any) => {
+        const key = normalize(item.name);
+        if (key && !SUBCAT_TO_CATEGORY[key]) SUBCAT_TO_CATEGORY[key] = cat.name;
+    });
+});
+
+// ── Slug / short-name → canonical category name (job forms store these) ──
+const CATEGORY_ALIASES: Record<string, string> = {
+    "plumbing": "Plumbers & Home Repair",
+    "plumber": "Plumbers & Home Repair",
+    "home-personal": "Home & Personal Services",
+    "home personal": "Home & Personal Services",
+    "industrial": "Industrial & Local Services",
+    "daily wage": "Daily Wage Labour Hiring",
+    "business": "Business & Professional Services",
+    "business services": "Business & Professional Services",
+    "event": "Events & Entertainment",
+    "event services": "Events & Entertainment",
+    "wedding": "Wedding & Traditional Services",
+    "wedding services": "Wedding & Traditional Services",
+    "agriculture": "Agriculture & Farming Services",
+    "agriculture services": "Agriculture & Farming Services",
+    "corporate": "Corporate & Office Services",
+    "corporate services": "Corporate & Office Services",
+    "creative & art": "Creative & Art Services",
+    "tech & digital": "Tech & Digital Services",
+};
+
+const findCategoryName = (raw?: string): string | null => {
+    const norm = normalize(raw);
+    if (!norm) return null;
+
+    if (/^\d+$/.test(norm)) {
+        const found = CATEGORIES.find(c => String(c.id) === norm);
+        if (found) return found.name;
     }
-    return raw;
+    if (CATEGORY_ALIASES[norm]) return CATEGORY_ALIASES[norm];
+
+    const byName = CATEGORIES.find(c => normalize(c.name) === norm);
+    if (byName) return byName.name;
+
+    if (SUBCAT_TO_CATEGORY[norm]) return SUBCAT_TO_CATEGORY[norm];
+
+    return null;
+};
+
+const resolveCategoryName = (raw?: string | null, subcategory?: string | null): string => {
+    const direct = findCategoryName(raw);
+    if (direct) return direct;
+    const viaSubcategory = raw ? null : findCategoryName(subcategory);
+    if (viaSubcategory) return viaSubcategory;
+    const subNorm = normalize(subcategory);
+    if (subNorm && SUBCAT_TO_CATEGORY[subNorm]) return SUBCAT_TO_CATEGORY[subNorm];
+    const pretty = (raw || "").trim();
+    return pretty || "—";
+};
+
+const jobBelongsToCategory = (job: JobDetail, categoryName: string): boolean => {
+    const target = normalize(categoryName);
+    if (target === "all") return true;
+    if (normalize(resolveCategoryName(job.category, job.subcategory)) === target) return true;
+    const viaSubcategory = SUBCAT_TO_CATEGORY[normalize(job.subcategory)];
+    return !!viaSubcategory && normalize(viaSubcategory) === target;
 };
 
 const resolveImageUrl = (path: string): string | null => {
@@ -114,7 +180,7 @@ const JobCard: React.FC<{
     const locationStr = [job.area, job.city, job.state].filter(Boolean).join(", ") || "Nearby";
     const startDate = new Date(job.startDate);
     const endDate = new Date(job.endDate);
-    const categoryName = resolveCategoryName(job.category);
+    const categoryName = resolveCategoryName(job.category, job.subcategory);
     const subcategoryName = job.subcategory || "";
 
     return (
@@ -331,13 +397,13 @@ useEffect(() => {
 
     const filtered = jobs.filter(job => {
         const sl = searchText.toLowerCase();
-        const resolvedCat = resolveCategoryName(job.category);
+        const resolvedCat = resolveCategoryName(job.category, job.subcategory);
         const matchSearch = !sl
             || job.title.toLowerCase().includes(sl)
             || job.description.toLowerCase().includes(sl)
             || resolvedCat.toLowerCase().includes(sl)
             || (job.subcategory && job.subcategory.toLowerCase().includes(sl));
-        const matchCat = selectedCategory === "all" || resolvedCat === selectedCategory;
+        const matchCat = selectedCategory === "all" || jobBelongsToCategory(job, selectedCategory);
     const matchRadius =
     job.distance == null || Number(job.distance) <= selectedRadius;
         return matchSearch && matchCat && matchRadius;

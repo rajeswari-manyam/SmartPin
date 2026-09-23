@@ -29,6 +29,7 @@ import WeddingIcon from "../assets/icons/Wedding.png";
 
 interface CategoriesProps {
     onCategoryClick?: () => boolean;
+    searchText?: string;
 }
 
 interface Category {
@@ -66,9 +67,14 @@ const iconMap: Record<number, string> = {
 const BRAND_COLOR = "#00598a";
 const PAGE_BG_COLOR = "#F8FAFC";
 
-const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
+const Categories: React.FC<CategoriesProps> = ({ onCategoryClick, searchText }) => {
     const navigate = useNavigate();
     const categories: Category[] = categoryData.categories;
+
+    const searchTerm = (searchText ?? "").trim().toLowerCase();
+    const filteredCategories = searchTerm
+        ? categories.filter((cat) => cat.name.toLowerCase().includes(searchTerm))
+        : categories;
 
     const handleCategoryClick = (id: number) => {
         if (onCategoryClick && !onCategoryClick()) return;
@@ -94,7 +100,7 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
 
                 {/* Categories Grid */}
                 <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6">
-                    {categories.map((category) => (
+                    {filteredCategories.map((category) => (
                         <button
                             key={category.id}
                             onClick={() => handleCategoryClick(category.id)}
@@ -148,6 +154,18 @@ const Categories: React.FC<CategoriesProps> = ({ onCategoryClick }) => {
                         </button>
                     ))}
                 </div>
+
+                {/* No results */}
+                {filteredCategories.length === 0 && (
+                    <div className="text-center py-10 md:py-16">
+                        <p className={`${fontSize["xl"]} ${fontWeight.semibold} text-gray-700 mb-1`}>
+                            No categories found
+                        </p>
+                        <p className="text-sm text-gray-500">
+                            No results for "{searchText}". Try a different keyword.
+                        </p>
+                    </div>
+                )}
 
             </div>
         </div>

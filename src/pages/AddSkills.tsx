@@ -9,6 +9,7 @@ import SubCategoriesData from "../components/data/SubCategories.json";
 import typography from "../styles/typography";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
+import { useAccount } from "../context/AccountContext";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS — mirrors RN Colors
@@ -91,6 +92,7 @@ const inputCls =
 const AddSkillsScreen: React.FC = () => {
   const navigate     = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { setWorkerProfileId, setHasWorkerProfile } = useAccount();
 
   // ── Form state ──────────────────────────────────────────────────────────────
   const [selectedCategory,    setSelectedCategory]    = useState("");
@@ -251,6 +253,9 @@ const AddSkillsScreen: React.FC = () => {
 
       // Mirrors RN: AsyncStorage.setItem('workerSkillId', ...)
       localStorage.setItem("workerSkillId", res.skill._id);
+      localStorage.setItem("@worker_id", workerId);
+      setWorkerProfileId(workerId);
+      setHasWorkerProfile(true);
 
       setSuccessMessage("Skill added successfully!");
       setScreenState("success");

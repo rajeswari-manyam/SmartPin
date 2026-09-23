@@ -17,9 +17,27 @@ const languages = [
     { code: "as", name: "Assamese" },
 ];
 
+// Read the active language from the googtrans cookie (set by Google Translate)
+const getActiveLanguageCode = (): string => {
+    try {
+        const raw = document.cookie
+            .split("; ")
+            .find(row => row.startsWith("googtrans="));
+        if (!raw) return "en";
+        const value = decodeURIComponent(raw.split("=")[1] || "");
+        const parts = value.split("/").filter(Boolean);
+        return parts[parts.length - 1] || "en";
+    } catch {
+        return "en";
+    }
+};
+
 const LanguageSelector = () => {
     const [open, setOpen] = useState(false);
-    const [selectedLang, setSelectedLang] = useState("English");
+    const [selectedLang, setSelectedLang] = useState(() => {
+        const code = getActiveLanguageCode();
+        return languages.find(l => l.code === code)?.name || "English";
+    });
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -48,13 +66,22 @@ useEffect(() => {
   };
 }, []);
     const changeLanguage = (langCode: string, langName: string) => {
+        // 1) Try to trigger the widget live (works on first change)
         const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-        if (!select) return alert("Translator loading, please wait...");
+        if (select) {
+            select.value = langCode;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        }
 
-        select.value = langCode;
-        select.dispatchEvent(new Event("change", { bubbles: true }));
+        // 2) Persist the choice so the widget re-translates on every load.
+        //    The widget only honours programmatic changes once, so this
+        //    guarantees the language actually changes every time.
+        document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+        document.cookie = `googtrans=/en/${langCode}; path=/;`;
+
         setSelectedLang(langName);
         setOpen(false);
+        window.setTimeout(() => window.location.reload(), 300);
     };
 
     return (
