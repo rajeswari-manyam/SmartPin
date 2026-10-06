@@ -216,7 +216,7 @@ const UpdateJob: React.FC = () => {
             const fd = new FormData();
             fd.append("jobType", formData.jobType.trim());
             fd.append("description", formData.description.trim());
-            fd.append("category", categoryName);   // ✅ Send name, not id
+            fd.append("category", categoryName);   // Send name, not id
             fd.append("latitude", String(formData.latitude));
             fd.append("longitude", String(formData.longitude));
 

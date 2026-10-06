@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getWorkerWithSkills, getWorkerByUserId, deleteWorkerSkill } from "../services/api.service";
+  import { getWorkerWithSkills, deleteWorkerSkill } from "../services/api.service";
+import { resolveWorkerProfile, rememberCreatedWorker } from "../services/workerProfile.service";
 import {
     MoreVertical, Edit, Trash2, ImageIcon,
     CheckCircle, AlertCircle, X, ChevronLeft, ChevronRight,
@@ -427,36 +428,40 @@ const WorkerList: React.FC = () => {
         open: boolean; skillId: string; skillName: string; loading: boolean;
     }>({ open: false, skillId: "", skillName: "", loading: false });
 
-    /* ── Step 1: Resolve workerId ── */
+    /* ── Step 1: Resolve workerId ──
+     * The server is always consulted, matching mobile's
+     * `resolveWorkerIdForCurrentUser`. A stored id is treated as a cache of the
+     * last known answer, never as proof a profile exists: trusting it is what
+     * made a stale local value hide a missing profile, and skipping it made a
+     * valid profile look absent after a fresh login on a new device.
+     */
     useEffect(() => {
         const resolveWorkerId = async () => {
-            // 1️⃣ Direct hit — already stored
-            const direct = localStorage.getItem("workerId");
-            if (direct) { setResolvedWorkerId(direct); return; }
-
-            // 2️⃣ Keyed by userId — stored during previous session
             const userId = localStorage.getItem("userId");
-            if (userId) {
-                const keyed = localStorage.getItem(`worker_id_for_${userId}`);
-                if (keyed) { setResolvedWorkerId(keyed); return; }
+            const cached =
+                localStorage.getItem("@worker_id") ||
+                localStorage.getItem("workerId") ||
+                (userId ? localStorage.getItem(`worker_id_for_${userId}`) : null);
 
-                // 3️⃣ Fallback — fetch from API using userId
-                try {
-                    const res = await getWorkerByUserId(userId);
-                    const id = res?.worker?._id;
-                    if (id) {
-                        // Persist so next time it's instant
-                        localStorage.setItem("workerId", id);
-                        localStorage.setItem(`worker_id_for_${userId}`, id);
-                        setResolvedWorkerId(id);
-                        return;
-                    }
-                } catch { /* no profile yet */ }
+            const resolved = await resolveWorkerProfile(userId);
+
+            if (resolved.exists && resolved.workerId) {
+                setResolvedWorkerId(resolved.workerId);
+                return;
             }
 
-            // 4️⃣ Legacy key
-            const legacy = localStorage.getItem("@worker_id");
-            if (legacy) { setResolvedWorkerId(legacy); return; }
+            // No worker on the server. Only fall back to the cached id if it
+            // still resolves, so a deleted profile cannot be resurrected.
+            if (cached) {
+                try {
+                    const skillsRes = await getWorkerWithSkills(cached);
+                    if (skillsRes?.worker?._id) {
+                        if (userId) rememberCreatedWorker(userId, cached);
+                        setResolvedWorkerId(cached);
+                        return;
+                    }
+                } catch { /* genuinely gone */ }
+            }
 
             setResolvedWorkerId(null);
         };

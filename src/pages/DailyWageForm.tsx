@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { addLabour, updateLabour, getLabourById } from "../services/DailyWage.service";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
+import { X, Upload, MapPin, AlertTriangle, Check, Loader2, Info } from "lucide-react";
 import { useAccount } from "../context/AccountContext";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
@@ -13,8 +13,8 @@ const BRAND = '#00598a';
 const chargeTypeOptions = ['Per Day', 'Per Hour', 'Per Task', 'Fixed Rate'];
 
 const getDailyWageSubcategories = () => {
-    const dailyWageCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 18);
-    return dailyWageCategory
+ const dailyWageCategory = subcategoriesData.subcategories.find((cat: any) => cat.categoryId === 18);
+ return dailyWageCategory
         ? dailyWageCategory.items.map((item: any) => item.name)
         : ['Loading/Unloading Workers', 'Cleaning Helpers', 'Construction Labor', 'Garden Workers', 'Event Helpers', 'Watchmen'];
 };
@@ -34,10 +34,10 @@ const inputError =
 
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
+ backgroundRepeat: 'no-repeat' as const,
+ backgroundPosition: 'right 0.75rem center',
+ backgroundSize: '1.5em 1.5em',
+ paddingRight: '2.5rem',
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -48,9 +48,9 @@ const FieldLabel: React.FC<{ children: React.ReactNode; required?: boolean }> = 
 );
 
 const SectionCard: React.FC<{
-    title?: string;
-    children: React.ReactNode;
-    action?: React.ReactNode;
+ title?: string;
+ children: React.ReactNode;
+ action?: React.ReactNode;
 }> = ({ title, children, action }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 space-y-4">
         {title && (
@@ -64,17 +64,17 @@ const SectionCard: React.FC<{
 );
 
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    try {
+ try {
         const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
-        const response = await fetch(
+ const response = await fetch(
             `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`
         );
-        const data = await response.json();
-        if (data.status === 'OK' && data.results.length > 0) {
-            const location = data.results[0].geometry.location;
-            return { lat: location.lat, lng: location.lng };
+ const data = await response.json();
+ if (data.status === 'OK' && data.results.length > 0) {
+ const location = data.results[0].geometry.location;
+ return { lat: location.lat, lng: location.lng };
         }
-        return null;
+ return null;
     } catch { return null; }
 };
 
@@ -82,262 +82,262 @@ const geocodeAddress = async (address: string): Promise<{ lat: number; lng: numb
 // FIELD ERRORS
 // ============================================================================
 interface FieldErrors {
-    description?: string;
-    dailyWage?: string;
-    area?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    location?: string;
+ description?: string;
+ dailyWage?: string;
+ area?: string;
+ city?: string;
+ state?: string;
+ pincode?: string;
+ location?: string;
 }
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 const DailyWageForm: React.FC = () => {
-    const navigate = useNavigate();
+ const navigate = useNavigate();
 
-    const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+ const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+ const getSubcategoryFromUrl = () => {
+ const sub = new URLSearchParams(window.location.search).get('subcategory');
+ return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    const [editId] = useState<string | null>(getIdFromUrl());
-    const isEditMode = !!editId;
+ const [editId] = useState<string | null>(getIdFromUrl());
+ const isEditMode = !!editId;
 
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [locationWarning, setLocationWarning] = useState('');
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+ const [loading, setLoading] = useState(false);
+ const [loadingData, setLoadingData] = useState(false);
+ const [error, setError] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
+ const [locationWarning, setLocationWarning] = useState('');
+ const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-    const dailyWageCategories = getDailyWageSubcategories();
-    const subcategoryOptions = dailyWageCategories.map((name: string) => ({
-        name,
+ const dailyWageCategories = getDailyWageSubcategories();
+ const subcategoryOptions = dailyWageCategories.map((name: string) => ({
+ name,
         icon: SUBCATEGORY_ICONS[name],
     }));
 
     const defaultCategory = getSubcategoryFromUrl() || dailyWageCategories[0] || 'Loading/Unloading Workers';
-    const { setAccountType } = useAccount();
+ const { setAccountType } = useAccount();
 
-    const [formData, setFormData] = useState({
+ const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        name: '',
-        category: 'Daily Wage',
-        subCategory: defaultCategory,
-        email: '',
-        phone: '',
-        description: '',
-        dailyWage: '',
-        chargeType: chargeTypeOptions[0],
-        area: '',
-        city: '',
-        state: '',
-        pincode: '',
-        latitude: '',
-        longitude: '',
-        availability: true,
+ name: '',
+ category: 'Daily Wage',
+ subCategory: defaultCategory,
+ email: '',
+ phone: '',
+ description: '',
+ dailyWage: '',
+ chargeType: chargeTypeOptions[0],
+ area: '',
+ city: '',
+ state: '',
+ pincode: '',
+ latitude: '',
+ longitude: '',
+ availability: true,
     });
 
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+ const [selectedImages, setSelectedImages] = useState<File[]>([]);
+ const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+ const [existingImages, setExistingImages] = useState<string[]>([]);
+ const [locationLoading, setLocationLoading] = useState(false);
+ const isGPSDetected = useRef(false);
 
     // ── fetch for edit ────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!editId) return;
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-                const response = await getLabourById(editId);
-                if (!response || !response.success || !response.data) throw new Error('Service not found');
-                const data = response.data;
-                setFormData(prev => ({
+ useEffect(() => {
+ if (!editId) return;
+ const fetchData = async () => {
+ setLoadingData(true);
+ try {
+ const response = await getLabourById(editId);
+ if (!response || !response.success || !response.data) throw new Error('Service not found');
+ const data = response.data;
+ setFormData(prev => ({
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
                     category: data.category || 'Daily Wage',
-                    subCategory: data.subCategory || defaultCategory,
+ subCategory: data.subCategory || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
                     description: data.description || '',
                     dailyWage: data.dailyWage?.toString() || '',
-                    chargeType: data.chargeType || chargeTypeOptions[0],
+ chargeType: data.chargeType || chargeTypeOptions[0],
                     area: data.area || '',
                     city: data.city || '',
                     state: data.state || '',
                     pincode: data.pincode || '',
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
-                    availability: data.availability !== undefined ? data.availability : true,
+ availability: data.availability !== undefined ? data.availability : true,
                 }));
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+ if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                setError('Failed to load worker data');
+ setError('Failed to load worker data');
             } finally {
-                setLoadingData(false);
+ setLoadingData(false);
             }
         };
-        fetchData();
+ fetchData();
     }, [editId]);
 
     // ── Auto-geocode ──────────────────────────────────────────────────────────
-    useEffect(() => {
-        const detectCoordinates = async () => {
-            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
-            if (formData.area && !formData.latitude && !formData.longitude) {
-                const fullAddress = [formData.area, formData.city, formData.state, formData.pincode]
+ useEffect(() => {
+ const detectCoordinates = async () => {
+ if (isGPSDetected.current) { isGPSDetected.current = false; return; }
+ if (formData.area && !formData.latitude && !formData.longitude) {
+ const fullAddress = [formData.area, formData.city, formData.state, formData.pincode]
                     .filter(Boolean).join(', ');
-                if (fullAddress.trim()) {
-                    const coords = await geocodeAddress(fullAddress);
-                    if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
+ if (fullAddress.trim()) {
+ const coords = await geocodeAddress(fullAddress);
+ if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
                 }
             }
         };
-        const timer = setTimeout(detectCoordinates, 1000);
-        return () => clearTimeout(timer);
+ const timer = setTimeout(detectCoordinates, 1000);
+ return () => clearTimeout(timer);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors]) {
-            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+ const { name, value } = e.target;
+ setFormData(prev => ({ ...prev, [name]: value }));
+ if (fieldErrors[name as keyof FieldErrors]) {
+ setFieldErrors(prev => ({ ...prev, [name]: undefined }));
         }
     };
 
     // ── image helpers ─────────────────────────────────────────────────────────
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        const slots = 5 - (selectedImages.length + existingImages.length);
-        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
-        const valid = files.slice(0, slots).filter(f => {
-            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
-            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
-            return true;
+ const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const files = Array.from(e.target.files || []);
+ if (!files.length) return;
+ const slots = 5 - (selectedImages.length + existingImages.length);
+ if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+ const valid = files.slice(0, slots).filter(f => {
+ if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+ if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
+ return true;
         });
-        if (!valid.length) return;
-        const previews: string[] = [];
-        let loaded = 0;
-        valid.forEach(f => {
-            const r = new FileReader();
-            r.onloadend = () => {
-                previews.push(r.result as string);
-                if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
+ if (!valid.length) return;
+ const previews: string[] = [];
+ let loaded = 0;
+ valid.forEach(f => {
+ const r = new FileReader();
+ r.onloadend = () => {
+ previews.push(r.result as string);
+ if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
-            r.readAsDataURL(f);
+ r.readAsDataURL(f);
         });
-        setSelectedImages(p => [...p, ...valid]);
-        setError('');
+ setSelectedImages(p => [...p, ...valid]);
+ setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(p => p.filter((_, idx) => idx !== i));
-        setImagePreviews(p => p.filter((_, idx) => idx !== i));
+ const handleRemoveNewImage = (i: number) => {
+ setSelectedImages(p => p.filter((_, idx) => idx !== i));
+ setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
+ const handleRemoveExistingImage = (i: number) => setExistingImages(p => p.filter((_, idx) => idx !== i));
 
     // ── geolocation ───────────────────────────────────────────────────────────
-    const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
-        setFieldErrors(prev => ({ ...prev, location: undefined }));
-        if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); setLocationLoading(false); return; }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                isGPSDetected.current = true;
-                const lat = pos.coords.latitude.toString();
-                const lng = pos.coords.longitude.toString();
-                if (pos.coords.accuracy > 500)
-                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
-                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                    const data = await res.json();
-                    if (data.address) {
-                        setFormData(prev => ({
+ const getCurrentLocation = () => {
+ setLocationLoading(true);
+ setError('');
+ setLocationWarning('');
+ setFieldErrors(prev => ({ ...prev, location: undefined }));
+ if (!navigator.geolocation) { setError('Geolocation not supported by your browser'); setLocationLoading(false); return; }
+ navigator.geolocation.getCurrentPosition(
+ async (pos) => {
+ isGPSDetected.current = true;
+ const lat = pos.coords.latitude.toString();
+ const lng = pos.coords.longitude.toString();
+ if (pos.coords.accuracy > 500)
+ setLocationWarning(` Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
+ setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+ try {
+ const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+ const data = await res.json();
+ if (data.address) {
+ setFormData(prev => ({
                             ...prev, latitude: lat, longitude: lng,
-                            area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
-                            city: data.address.city || data.address.town || data.address.village || prev.city,
-                            state: data.address.state || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
+ area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
+ city: data.address.city || data.address.town || data.address.village || prev.city,
+ state: data.address.state || prev.state,
+ pincode: data.address.postcode || prev.pincode,
                         }));
                     }
                 } catch { }
-                setLocationLoading(false);
+ setLocationLoading(false);
             },
-            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
+ (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
     // ── submit ────────────────────────────────────────────────────────────────
-    const handleSubmit = async () => {
-        setError('');
-        setSuccessMessage('');
+ const handleSubmit = async () => {
+ setError('');
+ setSuccessMessage('');
 
-        const errors: FieldErrors = {};
-        if (!formData.description.trim()) errors.description = 'Description is required';
-        if (!formData.dailyWage.trim()) errors.dailyWage = 'Daily wage is required';
-        if (!formData.area.trim()) errors.area = 'Area is required';
-        if (!formData.city.trim()) errors.city = 'City is required';
-        if (!formData.state.trim()) errors.state = 'State is required';
-        if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
-        if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
+ const errors: FieldErrors = {};
+ if (!formData.description.trim()) errors.description = 'Description is required';
+ if (!formData.dailyWage.trim()) errors.dailyWage = 'Daily wage is required';
+ if (!formData.area.trim()) errors.area = 'Area is required';
+ if (!formData.city.trim()) errors.city = 'City is required';
+ if (!formData.state.trim()) errors.state = 'State is required';
+ if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
+ if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
 
-        if (Object.keys(errors).length > 0) {
-            setFieldErrors(errors);
-            setError('Please fix the errors below before submitting');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
+ if (Object.keys(errors).length > 0) {
+ setFieldErrors(errors);
+ setError('Please fix the errors below before submitting');
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+ return;
         }
 
-        setLoading(true);
-        try {
-            if (isEditMode && editId) {
-                const payload = {
-                    description: formData.description, category: formData.category, subCategory: formData.subCategory,
-                    dailyWage: formData.dailyWage, chargeType: formData.chargeType,
-                    latitude: formData.latitude, longitude: formData.longitude,
-                    area: formData.area, city: formData.city, state: formData.state, pincode: formData.pincode,
-                    name: formData.name || undefined, phone: formData.phone || undefined, email: formData.email || undefined,
-                    availability: formData.availability,
+ setLoading(true);
+ try {
+ if (isEditMode && editId) {
+ const payload = {
+ description: formData.description, category: formData.category, subCategory: formData.subCategory,
+ dailyWage: formData.dailyWage, chargeType: formData.chargeType,
+ latitude: formData.latitude, longitude: formData.longitude,
+ area: formData.area, city: formData.city, state: formData.state, pincode: formData.pincode,
+ name: formData.name || undefined, phone: formData.phone || undefined, email: formData.email || undefined,
+ availability: formData.availability,
                 };
-                const response = await updateLabour(editId, payload, selectedImages);
-                if (response.success) {
-                    setSuccessMessage('Worker updated successfully!');
-                    setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
+ const response = await updateLabour(editId, payload, selectedImages);
+ if (response.success) {
+ setSuccessMessage('Worker updated successfully!');
+ setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
                 } else throw new Error(response.message || 'Failed to update worker');
             } else {
-                const payload = {
-                    userId: formData.userId, description: formData.description,
-                    category: formData.category, subCategory: formData.subCategory,
-                    dailyWage: formData.dailyWage, chargeType: formData.chargeType,
-                    latitude: formData.latitude, longitude: formData.longitude,
-                    area: formData.area, city: formData.city, state: formData.state, pincode: formData.pincode,
-                    name: formData.name || undefined, phone: formData.phone || undefined, email: formData.email || undefined,
+ const payload = {
+ userId: formData.userId, description: formData.description,
+ category: formData.category, subCategory: formData.subCategory,
+ dailyWage: formData.dailyWage, chargeType: formData.chargeType,
+ latitude: formData.latitude, longitude: formData.longitude,
+ area: formData.area, city: formData.city, state: formData.state, pincode: formData.pincode,
+ name: formData.name || undefined, phone: formData.phone || undefined, email: formData.email || undefined,
                 };
-                const response = await addLabour(payload, selectedImages);
-                if (response.success) {
-                    setSuccessMessage('Worker created successfully!');
-                    setTimeout(() => { setAccountType("worker"); navigate('/my-business'); }, 1500);
+ const response = await addLabour(payload, selectedImages);
+ if (response.success) {
+ setSuccessMessage('Worker created successfully!');
+ setTimeout(() => { setAccountType("worker"); navigate('/my-business'); }, 1500);
                 } else throw new Error(response.message || 'Failed to create worker');
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
-            setLoading(false);
+ setLoading(false);
         }
     };
 
-    if (loadingData) {
-        return (
+ if (loadingData) {
+ return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
@@ -347,20 +347,20 @@ const DailyWageForm: React.FC = () => {
         );
     }
 
-    const totalImages = selectedImages.length + existingImages.length;
+ const totalImages = selectedImages.length + existingImages.length;
 
     // ============================================================================
     // RENDER
     // ============================================================================
-    return (
+ return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
                 <div className="max-w-5xl mx-auto flex items-center gap-3">
                     <button
-                        onClick={() => window.history.back()}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+ onClick={() => window.history.back()}
+ className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -383,7 +383,7 @@ const DailyWageForm: React.FC = () => {
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                         <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <div>
                                 <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
                                 <p className={`${typography.form.error} text-red-700`}>{error}</p>
@@ -395,7 +395,7 @@ const DailyWageForm: React.FC = () => {
                 {/* Success banner */}
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-600 text-lg">✓</span>
+                        <Check className="w-4 h-4 shrink-0" />
                         <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                     </div>
                 )}
@@ -406,25 +406,25 @@ const DailyWageForm: React.FC = () => {
                         <div>
                             <FieldLabel>Worker Name (Optional)</FieldLabel>
                             <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="Enter worker name"
-                                className={inputBase}
+ type="text"
+ name="name"
+ value={formData.name}
+ onChange={handleInputChange}
+ placeholder="Enter worker name"
+ className={inputBase}
                             />
                         </div>
                         <div>
                             <FieldLabel required>Worker Type</FieldLabel>
                             <IconSelect
-                                label=""
-                                value={formData.subCategory}
-                                placeholder="Select worker type"
-                                options={subcategoryOptions}
-                                onChange={(val) =>
-                                    setFormData(prev => ({ ...prev, subCategory: val }))
+ label=""
+ value={formData.subCategory}
+ placeholder="Select worker type"
+ options={subcategoryOptions}
+ onChange={(val) =>
+ setFormData(prev => ({ ...prev, subCategory: val }))
                                 }
-                                disabled={loading}
+ disabled={loading}
                             />
                         </div>
                     </div>
@@ -436,23 +436,23 @@ const DailyWageForm: React.FC = () => {
                         <div>
                             <FieldLabel>Phone</FieldLabel>
                             <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="Enter phone number"
-                                className={inputBase}
+ type="tel"
+ name="phone"
+ value={formData.phone}
+ onChange={handleInputChange}
+ placeholder="Enter phone number"
+ className={inputBase}
                             />
                         </div>
                         <div>
                             <FieldLabel>Email</FieldLabel>
                             <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="Enter email address"
-                                className={inputBase}
+ type="email"
+ name="email"
+ value={formData.email}
+ onChange={handleInputChange}
+ placeholder="Enter email address"
+ className={inputBase}
                             />
                         </div>
                     </div>
@@ -463,16 +463,16 @@ const DailyWageForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Description</FieldLabel>
                         <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Describe the work, skills, and experience..."
-                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
+ name="description"
+ value={formData.description}
+ onChange={handleInputChange}
+ rows={4}
+ placeholder="Describe the work, skills, and experience..."
+ className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
                         {fieldErrors.description && (
                             <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.description}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.description}
                             </p>
                         )}
                     </div>
@@ -484,29 +484,29 @@ const DailyWageForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Daily Wage (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="dailyWage"
-                                value={formData.dailyWage}
-                                onChange={handleInputChange}
-                                placeholder="Amount"
-                                min="0"
-                                step="50"
-                                className={fieldErrors.dailyWage ? inputError : inputBase}
+ type="number"
+ name="dailyWage"
+ value={formData.dailyWage}
+ onChange={handleInputChange}
+ placeholder="Amount"
+ min="0"
+ step="50"
+ className={fieldErrors.dailyWage ? inputError : inputBase}
                             />
                             {fieldErrors.dailyWage && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.dailyWage}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.dailyWage}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <select
-                                name="chargeType"
-                                value={formData.chargeType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
+ name="chargeType"
+ value={formData.chargeType}
+ onChange={handleInputChange}
+ className={inputBase + ' appearance-none bg-white'}
+ style={selectStyle}
                             >
                                 {chargeTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
@@ -516,16 +516,16 @@ const DailyWageForm: React.FC = () => {
                     {/* Availability toggle */}
                     <div className="flex items-center justify-between py-2 px-1">
                         <span className={`${typography.body.small} font-semibold text-gray-800`}>
-                            Currently Available
+ Currently Available
                         </span>
                         <button
-                            type="button"
-                            onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
-                            className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200"
-                            style={{ backgroundColor: formData.availability ? BRAND : '#d1d5db' }}
+ type="button"
+ onClick={() => setFormData(prev => ({ ...prev, availability: !prev.availability }))}
+ className="relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200"
+ style={{ backgroundColor: formData.availability ? BRAND : '#d1d5db' }}
                         >
                             <span
-                                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`}
+ className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform duration-200 ${formData.availability ? 'translate-x-6' : 'translate-x-1'}`}
                             />
                         </button>
                     </div>
@@ -533,17 +533,17 @@ const DailyWageForm: React.FC = () => {
 
                 {/* ─── 5. LOCATION ──────────────────────────────────────────── */}
                 <SectionCard
-                    title="Work Location"
-                    action={
+ title="Work Location"
+ action={
                         <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                            style={{ backgroundColor: BRAND }}
+ type="button"
+ onClick={getCurrentLocation}
+ disabled={locationLoading}
+ className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+ style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting...</>
                                 : <><MapPin className="w-4 h-4" /> Auto Detect</>
                             }
                         </button>
@@ -551,7 +551,7 @@ const DailyWageForm: React.FC = () => {
                 >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
@@ -561,26 +561,26 @@ const DailyWageForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input
-                                type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="e.g. Indiranagar"
-                                className={fieldErrors.area ? inputError : inputBase}
+ type="text" name="area" value={formData.area}
+ onChange={handleInputChange} placeholder="e.g. Indiranagar"
+ className={fieldErrors.area ? inputError : inputBase}
                             />
                             {fieldErrors.area && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.area}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input
-                                type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="e.g. Bangalore"
-                                className={fieldErrors.city ? inputError : inputBase}
+ type="text" name="city" value={formData.city}
+ onChange={handleInputChange} placeholder="e.g. Bangalore"
+ className={fieldErrors.city ? inputError : inputBase}
                             />
                             {fieldErrors.city && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.city}
                                 </p>
                             )}
                         </div>
@@ -591,26 +591,26 @@ const DailyWageForm: React.FC = () => {
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input
-                                type="text" name="state" value={formData.state}
-                                onChange={handleInputChange} placeholder="e.g. Karnataka"
-                                className={fieldErrors.state ? inputError : inputBase}
+ type="text" name="state" value={formData.state}
+ onChange={handleInputChange} placeholder="e.g. Karnataka"
+ className={fieldErrors.state ? inputError : inputBase}
                             />
                             {fieldErrors.state && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.state}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.state}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input
-                                type="text" name="pincode" value={formData.pincode}
-                                onChange={handleInputChange} placeholder="e.g. 560038" maxLength={6}
-                                className={fieldErrors.pincode ? inputError : inputBase}
+ type="text" name="pincode" value={formData.pincode}
+ onChange={handleInputChange} placeholder="e.g. 560038" maxLength={6}
+ className={fieldErrors.pincode ? inputError : inputBase}
                             />
                             {fieldErrors.pincode && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.pincode}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.pincode}
                                 </p>
                             )}
                         </div>
@@ -620,7 +620,7 @@ const DailyWageForm: React.FC = () => {
                     {fieldErrors.location && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-700 flex items-center gap-1.5">
-                                <span>⚠️</span> {fieldErrors.location}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.location}
                             </p>
                         </div>
                     )}
@@ -629,7 +629,7 @@ const DailyWageForm: React.FC = () => {
                     {!formData.latitude && !formData.longitude && (
                         <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
                             <p className={`${typography.body.small} text-amber-800`}>
-                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+                                <Info className="w-4 h-4 inline shrink-0 align-middle" /> <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -638,7 +638,7 @@ const DailyWageForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-semibold inline-flex items-center gap-1.5"><Check className="w-4 h-4" /> Location set: </span>
                                 <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
@@ -651,16 +651,16 @@ const DailyWageForm: React.FC = () => {
                 <SectionCard title="Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={totalImages >= 5}
+ type="file" accept="image/*" multiple
+ onChange={handleImageSelect}
+ className="hidden"
+ disabled={totalImages >= 5}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
+ className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
                                 ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                                 : 'hover:opacity-90 cursor-pointer'}`}
-                            style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
+ style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
@@ -681,36 +681,36 @@ const DailyWageForm: React.FC = () => {
                             {existingImages.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
+ className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveExistingImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span
-                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: BRAND }}
+ className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+ style={{ backgroundColor: BRAND }}
                                     >
-                                        Saved
+ Saved
                                     </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img src={preview} alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: BRAND }} />
+ className="w-full h-full object-cover rounded-xl border-2"
+ style={{ borderColor: BRAND }} />
                                     <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveNewImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
+ New
                                     </span>
                                 </div>
                             ))}
@@ -721,30 +721,30 @@ const DailyWageForm: React.FC = () => {
                 {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
-                        style={{ backgroundColor: BRAND }}
+ onClick={handleSubmit}
+ disabled={loading || !!successMessage}
+ type="button"
+ className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+ style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
                         ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                            <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4 shrink-0" /> Done</span>
                         ) : (
-                            isEditMode ? 'Update Worker' : 'Create Listing'
+ isEditMode ? 'Update Worker' : 'Create Listing'
                         )}
                     </button>
                     <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+ onClick={() => window.history.back()}
+ type="button"
+ disabled={loading}
+ className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Cancel
+ Cancel
                     </button>
                 </div>
 

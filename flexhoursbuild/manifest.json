@@ -1,0 +1,25 @@
+{
+  "short_name": "FlexHours",
+  "name": "FlexHours - Work, Hire, Anywhere",
+  "icons": [
+    {
+      "src": "assets/flexhours-logo.png",
+      "sizes": "1338x427",
+      "type": "image/png"
+    },
+    {
+      "src": "assets/flexhours-logo.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "assets/flexhours-logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#ffffff",
+  "background_color": "#ffffff"
+}

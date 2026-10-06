@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { addEventService, updateEventService, getEventServiceById } from "../services/EventWorker.service";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
+import { X, Upload, MapPin, AlertTriangle, Check, Loader2, Info } from "lucide-react";
 import { useAccount } from "../context/AccountContext";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
@@ -14,15 +14,15 @@ const CATEGORY_NAME = 'Event Services';
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "";
 
 const buildImageUrl = (path: string): string => {
-    if (!path) return "";
-    if (/^(https?:\/\/|blob:|data:)/i.test(path)) return path;
-    const clean = path.replace(/\\/g, "/");
-    return `${API_BASE_URL}/${clean.replace(/^\//, "")}`;
+ if (!path) return "";
+ if (/^(https?:\/\/|blob:|data:)/i.test(path)) return path;
+ const clean = path.replace(/\\/g, "/");
+ return `${API_BASE_URL}/${clean.replace(/^\//, "")}`;
 };
 
 const getEventSubcategories = () => {
-    const cat = subcategoriesData.subcategories.find(c => c.categoryId === 14);
-    return cat ? cat.items.map(i => i.name) : [];
+ const cat = subcategoriesData.subcategories.find(c => c.categoryId === 14);
+ return cat ? cat.items.map(i => i.name) : [];
 };
 
 const chargeTypeOptions = ['per event', 'per day', 'per hour', 'fixed rate'];
@@ -42,10 +42,10 @@ const inputError =
 
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
+ backgroundRepeat: 'no-repeat' as const,
+ backgroundPosition: 'right 0.75rem center',
+ backgroundSize: '1.5em 1.5em',
+ paddingRight: '2.5rem',
 };
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -68,121 +68,121 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 );
 
 const geocodeAddress = async (address: string): Promise<{ lat: number; lng: number } | null> => {
-    try {
+ try {
         const key = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
-        const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`);
-        const data = await res.json();
-        if (data.status === 'OK' && data.results.length > 0) {
-            const loc = data.results[0].geometry.location;
-            return { lat: loc.lat, lng: loc.lng };
+ const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${key}`);
+ const data = await res.json();
+ if (data.status === 'OK' && data.results.length > 0) {
+ const loc = data.results[0].geometry.location;
+ return { lat: loc.lat, lng: loc.lng };
         }
-        return null;
+ return null;
     } catch { return null; }
 };
 
 const resolveUserId = (): string => {
-    const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
-    for (const key of candidates) {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        if (raw.length > 10 && !raw.startsWith('{')) return raw;
-        try {
-            const parsed = JSON.parse(raw);
-            const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
-            if (id) return String(id);
+ const candidates = ['userId', 'user_id', 'uid', 'id', 'user', 'currentUser', 'loggedInUser', 'userData', 'userInfo', 'authUser'];
+ for (const key of candidates) {
+ const raw = localStorage.getItem(key);
+ if (!raw) continue;
+ if (raw.length > 10 && !raw.startsWith('{')) return raw;
+ try {
+ const parsed = JSON.parse(raw);
+ const id = parsed._id || parsed.id || parsed.userId || parsed.user_id || parsed.uid;
+ if (id) return String(id);
         } catch { }
     }
-    return '';
+ return '';
 };
 
 // ============================================================================
 // FIELD ERRORS
 // ============================================================================
 interface FieldErrors {
-    name?: string;
-    serviceCharge?: string;
-    description?: string;
-    area?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    location?: string;
+ name?: string;
+ serviceCharge?: string;
+ description?: string;
+ area?: string;
+ city?: string;
+ state?: string;
+ pincode?: string;
+ location?: string;
 }
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 const EventForm = () => {
-    const navigate = useNavigate();
+ const navigate = useNavigate();
 
-    const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+ const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+ const getSubcategoryFromUrl = () => {
+ const sub = new URLSearchParams(window.location.search).get('subcategory');
+ return sub ? sub.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    const [editId] = useState<string | null>(getIdFromUrl());
-    const isEditMode = !!editId;
+ const [editId] = useState<string | null>(getIdFromUrl());
+ const isEditMode = !!editId;
 
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [locationWarning, setLocationWarning] = useState('');
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-    const { setAccountType } = useAccount();
+ const [loading, setLoading] = useState(false);
+ const [loadingData, setLoadingData] = useState(false);
+ const [error, setError] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
+ const [locationWarning, setLocationWarning] = useState('');
+ const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+ const { setAccountType } = useAccount();
 
-    const eventCategories = getEventSubcategories();
-    const subcategoryOptions = eventCategories.map((name: string) => ({
-        name,
+ const eventCategories = getEventSubcategories();
+ const subcategoryOptions = eventCategories.map((name: string) => ({
+ name,
         icon: SUBCATEGORY_ICONS[name],
     }));
     const defaultCategory = getSubcategoryFromUrl() || eventCategories[0] || 'Party Decoration';
 
-    const [formData, setFormData] = useState({
-        userId: resolveUserId(),
-        name: '',
-        category: defaultCategory,
-        email: '',
-        phone: '',
-        description: '',
-        serviceCharge: '',
-        chargeType: chargeTypeOptions[0],
-        experience: '',
-        area: '',
-        city: '',
-        state: '',
-        pincode: '',
-        latitude: '',
-        longitude: '',
+ const [formData, setFormData] = useState({
+ userId: resolveUserId(),
+ name: '',
+ category: defaultCategory,
+ email: '',
+ phone: '',
+ description: '',
+ serviceCharge: '',
+ chargeType: chargeTypeOptions[0],
+ experience: '',
+ area: '',
+ city: '',
+ state: '',
+ pincode: '',
+ latitude: '',
+ longitude: '',
     });
 
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+ const [selectedImages, setSelectedImages] = useState<File[]>([]);
+ const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+ const [existingImages, setExistingImages] = useState<string[]>([]);
+ const [existingImageUrls, setExistingImageUrls] = useState<string[]>([]);
+ const [locationLoading, setLocationLoading] = useState(false);
+ const isGPSDetected = useRef(false);
 
     // ── fetch for edit ────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!editId) return;
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-                const response = await getEventServiceById(editId);
-                if (!response.success || !response.data) throw new Error('Service not found');
-                const data = response.data;
-                setFormData(prev => ({
+ useEffect(() => {
+ if (!editId) return;
+ const fetchData = async () => {
+ setLoadingData(true);
+ try {
+ const response = await getEventServiceById(editId);
+ if (!response.success || !response.data) throw new Error('Service not found');
+ const data = response.data;
+ setFormData(prev => ({
                     ...prev,
-                    userId: data.userId || prev.userId,
+ userId: data.userId || prev.userId,
                     name: data.name || '',
-                    category: data.category || defaultCategory,
+ category: data.category || defaultCategory,
                     email: data.email || '',
                     phone: data.phone || '',
                     description: data.description || data.bio || '',
                     serviceCharge: data.serviceCharge?.toString() || '',
-                    chargeType: data.chargeType || chargeTypeOptions[0],
+ chargeType: data.chargeType || chargeTypeOptions[0],
                     experience: data.experience?.toString() || '',
                     area: data.area || '',
                     city: data.city || '',
@@ -191,138 +191,138 @@ const EventForm = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-                if (data.images && Array.isArray(data.images)) {
-                    setExistingImages(data.images);
-                    setExistingImageUrls(data.images.map(buildImageUrl));
+ if (data.images && Array.isArray(data.images)) {
+ setExistingImages(data.images);
+ setExistingImageUrls(data.images.map(buildImageUrl));
                 }
             } catch (err) {
-                setError('Failed to load service data');
+ setError('Failed to load service data');
             } finally { setLoadingData(false); }
         };
-        fetchData();
+ fetchData();
     }, [editId]);
 
     // ── Auto-geocode ──────────────────────────────────────────────────────────
-    useEffect(() => {
-        const detect = async () => {
-            if (isGPSDetected.current) { isGPSDetected.current = false; return; }
-            if (formData.area && !formData.latitude && !formData.longitude) {
-                const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
-                const coords = await geocodeAddress(addr);
-                if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
+ useEffect(() => {
+ const detect = async () => {
+ if (isGPSDetected.current) { isGPSDetected.current = false; return; }
+ if (formData.area && !formData.latitude && !formData.longitude) {
+ const addr = [formData.area, formData.city, formData.state, formData.pincode].filter(Boolean).join(', ');
+ const coords = await geocodeAddress(addr);
+ if (coords) setFormData(prev => ({ ...prev, latitude: coords.lat.toString(), longitude: coords.lng.toString() }));
             }
         };
-        const t = setTimeout(detect, 1000);
-        return () => clearTimeout(t);
+ const t = setTimeout(detect, 1000);
+ return () => clearTimeout(t);
     }, [formData.area, formData.city, formData.state, formData.pincode]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors]) {
-            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+ const { name, value } = e.target;
+ setFormData(prev => ({ ...prev, [name]: value }));
+ if (fieldErrors[name as keyof FieldErrors]) {
+ setFieldErrors(prev => ({ ...prev, [name]: undefined }));
         }
     };
 
     // ── image helpers ─────────────────────────────────────────────────────────
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        const slots = 5 - (selectedImages.length + existingImages.length);
-        if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
-        const valid = files.slice(0, slots).filter(f => {
-            if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
-            if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
-            return true;
+ const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const files = Array.from(e.target.files || []);
+ if (!files.length) return;
+ const slots = 5 - (selectedImages.length + existingImages.length);
+ if (slots <= 0) { setError('Maximum 5 images allowed'); return; }
+ const valid = files.slice(0, slots).filter(f => {
+ if (!f.type.startsWith('image/')) { setError(`${f.name} is not a valid image`); return false; }
+ if (f.size > 5 * 1024 * 1024) { setError(`${f.name} exceeds 5 MB`); return false; }
+ return true;
         });
-        if (!valid.length) return;
-        const previews: string[] = [];
-        let loaded = 0;
-        valid.forEach(f => {
-            const r = new FileReader();
-            r.onloadend = () => {
-                previews.push(r.result as string);
-                if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
+ if (!valid.length) return;
+ const previews: string[] = [];
+ let loaded = 0;
+ valid.forEach(f => {
+ const r = new FileReader();
+ r.onloadend = () => {
+ previews.push(r.result as string);
+ if (++loaded === valid.length) setImagePreviews(p => [...p, ...previews]);
             };
-            r.readAsDataURL(f);
+ r.readAsDataURL(f);
         });
-        setSelectedImages(p => [...p, ...valid]);
-        setError('');
+ setSelectedImages(p => [...p, ...valid]);
+ setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages(p => p.filter((_, idx) => idx !== i));
-        setImagePreviews(p => p.filter((_, idx) => idx !== i));
+ const handleRemoveNewImage = (i: number) => {
+ setSelectedImages(p => p.filter((_, idx) => idx !== i));
+ setImagePreviews(p => p.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) => {
-        setExistingImages(p => p.filter((_, idx) => idx !== i));
-        setExistingImageUrls(p => p.filter((_, idx) => idx !== i));
+ const handleRemoveExistingImage = (i: number) => {
+ setExistingImages(p => p.filter((_, idx) => idx !== i));
+ setExistingImageUrls(p => p.filter((_, idx) => idx !== i));
     };
 
     // ── geolocation ───────────────────────────────────────────────────────────
-    const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        setLocationWarning('');
-        setFieldErrors(prev => ({ ...prev, location: undefined }));
-        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                isGPSDetected.current = true;
-                const lat = pos.coords.latitude.toString();
-                const lng = pos.coords.longitude.toString();
-                if (pos.coords.accuracy > 500)
-                    setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
-                setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                    const data = await res.json();
-                    if (data.address) {
-                        setFormData(prev => ({
+ const getCurrentLocation = () => {
+ setLocationLoading(true);
+ setError('');
+ setLocationWarning('');
+ setFieldErrors(prev => ({ ...prev, location: undefined }));
+ if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
+ navigator.geolocation.getCurrentPosition(
+ async (pos) => {
+ isGPSDetected.current = true;
+ const lat = pos.coords.latitude.toString();
+ const lng = pos.coords.longitude.toString();
+ if (pos.coords.accuracy > 500)
+ setLocationWarning(` Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
+ setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+ try {
+ const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+ const data = await res.json();
+ if (data.address) {
+ setFormData(prev => ({
                             ...prev, latitude: lat, longitude: lng,
-                            area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
-                            city: data.address.city || data.address.town || data.address.village || prev.city,
-                            state: data.address.state || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
+ area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
+ city: data.address.city || data.address.town || data.address.village || prev.city,
+ state: data.address.state || prev.state,
+ pincode: data.address.postcode || prev.pincode,
                         }));
                     }
                 } catch { }
-                setLocationLoading(false);
+ setLocationLoading(false);
             },
-            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
+ (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
     // ── submit ────────────────────────────────────────────────────────────────
-    const handleSubmit = async () => {
-        setError('');
-        setSuccessMessage('');
+ const handleSubmit = async () => {
+ setError('');
+ setSuccessMessage('');
 
-        const errors: FieldErrors = {};
-        if (!formData.name.trim()) errors.name = 'Service / business name is required';
-        if (!formData.serviceCharge.trim()) errors.serviceCharge = 'Service charge is required';
-        if (!formData.description.trim()) errors.description = 'Description is required';
-        if (!formData.area.trim()) errors.area = 'Area is required';
-        if (!formData.city.trim()) errors.city = 'City is required';
-        if (!formData.state.trim()) errors.state = 'State is required';
-        if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
-        if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
+ const errors: FieldErrors = {};
+ if (!formData.name.trim()) errors.name = 'Service / business name is required';
+ if (!formData.serviceCharge.trim()) errors.serviceCharge = 'Service charge is required';
+ if (!formData.description.trim()) errors.description = 'Description is required';
+ if (!formData.area.trim()) errors.area = 'Area is required';
+ if (!formData.city.trim()) errors.city = 'City is required';
+ if (!formData.state.trim()) errors.state = 'State is required';
+ if (!formData.pincode.trim()) errors.pincode = 'PIN code is required';
+ if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
 
-        if (Object.keys(errors).length > 0) {
-            setFieldErrors(errors);
-            setError('Please fix the errors below before submitting');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
+ if (Object.keys(errors).length > 0) {
+ setFieldErrors(errors);
+ setError('Please fix the errors below before submitting');
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+ return;
         }
 
-        setLoading(true);
-        try {
-            let uid = formData.userId;
-            if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
-            if (!uid) throw new Error('User not logged in. Please log out and log back in.');
+ setLoading(true);
+ try {
+ let uid = formData.userId;
+ if (!uid) { uid = resolveUserId(); if (uid) setFormData(prev => ({ ...prev, userId: uid })); }
+ if (!uid) throw new Error('User not logged in. Please log out and log back in.');
 
-            const fd = new FormData();
+ const fd = new FormData();
             fd.append('userId', uid);
             fd.append('name', formData.name.trim());
             fd.append('category', formData.category);
@@ -340,27 +340,27 @@ const EventForm = () => {
             fd.append('longitude', formData.longitude);
 
             selectedImages.forEach(f => fd.append('images', f, f.name));
-            if (isEditMode && existingImages.length > 0)
+ if (isEditMode && existingImages.length > 0)
                 fd.append('existingImages', JSON.stringify(existingImages));
 
-            if (isEditMode && editId) {
-                const res = await updateEventService(editId, fd);
+ if (isEditMode && editId) {
+ const res = await updateEventService(editId, fd);
                 if (!res.success) throw new Error(res.message || 'Failed to update service');
-                setSuccessMessage('Service updated successfully!');
+ setSuccessMessage('Service updated successfully!');
             } else {
-                const res = await addEventService(fd);
+ const res = await addEventService(fd);
                 if (!res.success) throw new Error(res.message || 'Failed to create service');
-                setSuccessMessage('Service created successfully!');
+ setSuccessMessage('Service created successfully!');
             }
 
-            setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
+ setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally { setLoading(false); }
     };
 
     // ── loading screen ────────────────────────────────────────────────────────
-    if (loadingData) return (
+ if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
@@ -369,12 +369,12 @@ const EventForm = () => {
         </div>
     );
 
-    const totalImages = selectedImages.length + existingImages.length;
+ const totalImages = selectedImages.length + existingImages.length;
 
     // ============================================================================
     // RENDER
     // ============================================================================
-    return (
+ return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
@@ -402,7 +402,7 @@ const EventForm = () => {
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                         <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <div>
                                 <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
                                 <p className={`${typography.form.error} text-red-700`}>{error}</p>
@@ -414,7 +414,7 @@ const EventForm = () => {
                 {/* Success banner */}
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-600 text-lg">✓</span>
+                        <Check className="w-4 h-4 shrink-0" />
                         <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                     </div>
                 )}
@@ -425,33 +425,33 @@ const EventForm = () => {
                         <div>
                             <FieldLabel required>Service / Business Name</FieldLabel>
                             <input
-                                type="text"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="e.g. DJ Services, Party Decoration"
-                                className={fieldErrors.name ? inputError : inputBase}
+ type="text"
+ name="name"
+ value={formData.name}
+ onChange={handleInputChange}
+ placeholder="e.g. DJ Services, Party Decoration"
+ className={fieldErrors.name ? inputError : inputBase}
                             />
                             {fieldErrors.name && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.name}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.name}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>Category</FieldLabel>
                             <IconSelect
-                                label=""
-                                value={formData.category}
-                                placeholder="Select category"
-                                options={subcategoryOptions}
-                                onChange={(val) =>
-                                    setFormData(prev => ({ ...prev, category: val }))
+ label=""
+ value={formData.category}
+ placeholder="Select category"
+ options={subcategoryOptions}
+ onChange={(val) =>
+ setFormData(prev => ({ ...prev, category: val }))
                                 }
-                                disabled={loading}
+ disabled={loading}
                             />
                             <p className={`${typography.body.xs} text-gray-400 mt-1`}>
-                                Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
+ Parent: <span className="font-medium text-gray-500">{CATEGORY_NAME}</span>
                             </p>
                         </div>
                     </div>
@@ -463,23 +463,23 @@ const EventForm = () => {
                         <div>
                             <FieldLabel>Phone</FieldLabel>
                             <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="Enter phone number"
-                                className={inputBase}
+ type="tel"
+ name="phone"
+ value={formData.phone}
+ onChange={handleInputChange}
+ placeholder="Enter phone number"
+ className={inputBase}
                             />
                         </div>
                         <div>
                             <FieldLabel>Email</FieldLabel>
                             <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="Enter email address"
-                                className={inputBase}
+ type="email"
+ name="email"
+ value={formData.email}
+ onChange={handleInputChange}
+ placeholder="Enter email address"
+ className={inputBase}
                             />
                         </div>
                     </div>
@@ -487,28 +487,28 @@ const EventForm = () => {
                         <div>
                             <FieldLabel required>Service Charge (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="serviceCharge"
-                                value={formData.serviceCharge}
-                                onChange={handleInputChange}
-                                placeholder="5000"
-                                min="0"
-                                className={fieldErrors.serviceCharge ? inputError : inputBase}
+ type="number"
+ name="serviceCharge"
+ value={formData.serviceCharge}
+ onChange={handleInputChange}
+ placeholder="5000"
+ min="0"
+ className={fieldErrors.serviceCharge ? inputError : inputBase}
                             />
                             {fieldErrors.serviceCharge && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.serviceCharge}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.serviceCharge}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>Charge Type</FieldLabel>
                             <select
-                                name="chargeType"
-                                value={formData.chargeType}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
+ name="chargeType"
+ value={formData.chargeType}
+ onChange={handleInputChange}
+ className={inputBase + ' appearance-none bg-white'}
+ style={selectStyle}
                             >
                                 {chargeTypeOptions.map(t => (
                                     <option key={t} value={t}>{t.replace(/\b\w/g, c => c.toUpperCase())}</option>
@@ -520,13 +520,13 @@ const EventForm = () => {
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
                             <input
-                                type="number"
-                                name="experience"
-                                value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="e.g. 5"
-                                min="0"
-                                className={inputBase}
+ type="number"
+ name="experience"
+ value={formData.experience}
+ onChange={handleInputChange}
+ placeholder="e.g. 5"
+ min="0"
+ className={inputBase}
                             />
                         </div>
                         <div className="hidden md:block" />
@@ -538,16 +538,16 @@ const EventForm = () => {
                     <div>
                         <FieldLabel required>Description</FieldLabel>
                         <textarea
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            rows={4}
-                            placeholder="Describe your event service, expertise, and what makes you special..."
-                            className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
+ name="description"
+ value={formData.description}
+ onChange={handleInputChange}
+ rows={4}
+ placeholder="Describe your event service, expertise, and what makes you special..."
+ className={(fieldErrors.description ? inputError : inputBase) + ' resize-none'}
                         />
                         {fieldErrors.description && (
                             <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.description}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.description}
                             </p>
                         )}
                     </div>
@@ -555,17 +555,17 @@ const EventForm = () => {
 
                 {/* ─── 4. LOCATION ──────────────────────────────────────────── */}
                 <SectionCard
-                    title="Location Details"
-                    action={
+ title="Location Details"
+ action={
                         <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                            style={{ backgroundColor: BRAND }}
+ type="button"
+ onClick={getCurrentLocation}
+ disabled={locationLoading}
+ className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+ style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting...</>
                                 : <><MapPin className="w-4 h-4" /> Auto Detect</>
                             }
                         </button>
@@ -573,7 +573,7 @@ const EventForm = () => {
                 >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
@@ -583,26 +583,26 @@ const EventForm = () => {
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input
-                                type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="Area name"
-                                className={fieldErrors.area ? inputError : inputBase}
+ type="text" name="area" value={formData.area}
+ onChange={handleInputChange} placeholder="Area name"
+ className={fieldErrors.area ? inputError : inputBase}
                             />
                             {fieldErrors.area && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.area}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input
-                                type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="City"
-                                className={fieldErrors.city ? inputError : inputBase}
+ type="text" name="city" value={formData.city}
+ onChange={handleInputChange} placeholder="City"
+ className={fieldErrors.city ? inputError : inputBase}
                             />
                             {fieldErrors.city && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.city}
                                 </p>
                             )}
                         </div>
@@ -613,26 +613,26 @@ const EventForm = () => {
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input
-                                type="text" name="state" value={formData.state}
-                                onChange={handleInputChange} placeholder="State"
-                                className={fieldErrors.state ? inputError : inputBase}
+ type="text" name="state" value={formData.state}
+ onChange={handleInputChange} placeholder="State"
+ className={fieldErrors.state ? inputError : inputBase}
                             />
                             {fieldErrors.state && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.state}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.state}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input
-                                type="text" name="pincode" value={formData.pincode}
-                                onChange={handleInputChange} placeholder="PIN code" maxLength={6}
-                                className={fieldErrors.pincode ? inputError : inputBase}
+ type="text" name="pincode" value={formData.pincode}
+ onChange={handleInputChange} placeholder="PIN code" maxLength={6}
+ className={fieldErrors.pincode ? inputError : inputBase}
                             />
                             {fieldErrors.pincode && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.pincode}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.pincode}
                                 </p>
                             )}
                         </div>
@@ -642,7 +642,7 @@ const EventForm = () => {
                     {fieldErrors.location && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-700 flex items-center gap-1.5">
-                                <span>⚠️</span> {fieldErrors.location}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.location}
                             </p>
                         </div>
                     )}
@@ -651,7 +651,7 @@ const EventForm = () => {
                     {!formData.latitude && !formData.longitude && (
                         <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
                             <p className={`${typography.body.small} text-amber-800`}>
-                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+                                <Info className="w-4 h-4 inline shrink-0 align-middle" /> <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -660,7 +660,7 @@ const EventForm = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-semibold inline-flex items-center gap-1.5"><Check className="w-4 h-4" /> Location set: </span>
                                 <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
@@ -673,16 +673,16 @@ const EventForm = () => {
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={totalImages >= 5}
+ type="file" accept="image/*" multiple
+ onChange={handleImageSelect}
+ className="hidden"
+ disabled={totalImages >= 5}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
+ className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${totalImages >= 5
                                 ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                                 : 'hover:opacity-90 cursor-pointer'}`}
-                            style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
+ style={totalImages < 5 ? { borderColor: BRAND, backgroundColor: '#f0f7fb' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
@@ -703,47 +703,47 @@ const EventForm = () => {
                             {existingImageUrls.map((url, i) => (
                                 <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img
-                                        src={url}
-                                        alt={`Saved ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
-                                        onError={(e) => {
-                                            const t = e.target as HTMLImageElement;
-                                            t.onerror = null;
+ src={url}
+ alt={`Saved ${i + 1}`}
+ className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+ onError={(e) => {
+ const t = e.target as HTMLImageElement;
+ t.onerror = null;
                                             t.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23e8f2f8'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='32'%3E🎉%3C/text%3E%3C/svg%3E";
                                         }}
                                     />
                                     <button
-                                        type="button"
-                                        onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveExistingImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span
-                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: BRAND }}
+ className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+ style={{ backgroundColor: BRAND }}
                                     >
-                                        Saved
+ Saved
                                     </span>
                                 </div>
                             ))}
                             {imagePreviews.map((preview, i) => (
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img
-                                        src={preview}
-                                        alt={`New ${i + 1}`}
-                                        className="w-full h-full object-cover rounded-xl border-2"
-                                        style={{ borderColor: BRAND }}
+ src={preview}
+ alt={`New ${i + 1}`}
+ className="w-full h-full object-cover rounded-xl border-2"
+ style={{ borderColor: BRAND }}
                                     />
                                     <button
-                                        type="button"
-                                        onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveNewImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
+ New
                                     </span>
                                 </div>
                             ))}
@@ -754,30 +754,30 @@ const EventForm = () => {
                 {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
-                        style={{ backgroundColor: BRAND }}
+ onClick={handleSubmit}
+ disabled={loading || !!successMessage}
+ type="button"
+ className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+ style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
                         ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                            <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4 shrink-0" /> Done</span>
                         ) : (
-                            isEditMode ? 'Update Service' : 'Add Service'
+ isEditMode ? 'Update Service' : 'Add Service'
                         )}
                     </button>
                     <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+ onClick={() => window.history.back()}
+ type="button"
+ disabled={loading}
+ className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Cancel
+ Cancel
                     </button>
                 </div>
 

@@ -1,0 +1,21 @@
+{
+  "files": {
+    "main.css": "/static/css/main.9356a135.css",
+    "main.js": "/static/js/main.bb49fdf9.js",
+    "static/js/453.042f6385.chunk.js": "/static/js/453.042f6385.chunk.js",
+    "static/media/flexhourslogo.png": "/static/media/flexhourslogo.d617af1ceaf96c1bbc4d.png",
+    "static/media/Promoslides.png": "/static/media/Promoslides.a4525e6b5d740c153d35.png",
+    "static/media/Customer.jpeg": "/static/media/Customer.c06e704a2aa406f4d2cb.jpeg",
+    "static/media/mobile.jpeg": "/static/media/mobile.47d405738a1ef701ab8d.jpeg",
+    "static/media/Voice.png": "/static/media/Voice.0a44fc6f1cf057e93860.png",
+    "static/media/user.jpeg": "/static/media/user.42e72f4769295932ce71.jpeg",
+    "index.html": "/index.html",
+    "main.9356a135.css.map": "/static/css/main.9356a135.css.map",
+    "main.bb49fdf9.js.map": "/static/js/main.bb49fdf9.js.map",
+    "453.042f6385.chunk.js.map": "/static/js/453.042f6385.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.9356a135.css",
+    "static/js/main.bb49fdf9.js"
+  ]
+}

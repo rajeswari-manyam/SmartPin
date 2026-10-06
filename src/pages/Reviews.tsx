@@ -2,14 +2,15 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import {
-    getReviews,
-    addReview,
-    updateReview,
-    deleteReview,
-    ReviewData,
-    API_BASE_URL,
-} from "../services/api.service";
+  import {
+      getReviews,
+      addReview,
+      updateReview,
+      deleteReview,
+      getWorkerById,
+      getWorkerByUserId,
+      ReviewData,
+  } from "../services/api.service";
 
 import RatingSummary from "../components/Reviews/RatingSummary";
 import UserReviewCard from "../components/Reviews/UserReviewCard";
@@ -38,17 +39,17 @@ const Reviews: React.FC = () => {
         const resolve = async () => {
             if (!workerParamId) { setResolving(false); return; }
             setResolving(true);
-            try {
-                const r = await fetch(`${API_BASE_URL}/getWorkerById/${workerParamId}`);
-                const j = await r.json();
-                if (j.success && j.data?._id) { setActualWorkerId(j.data._id); setResolving(false); return; }
-            } catch { }
-            try {
-                const r = await fetch(`${API_BASE_URL}/getWorkerByUserId/${workerParamId}`);
-                const j = await r.json();
-                const w = j?.worker || j?.data || j;
-                if (w?._id) { setActualWorkerId(w._id); setResolving(false); return; }
-            } catch { }
+              try {
+                  // Both service calls now carry the bearer token and reuse the
+                  // mobile fallback chains, instead of unauthenticated fetches.
+                  const j = await getWorkerById(workerParamId);
+                  if (j.success && j.data?._id) { setActualWorkerId(j.data._id); setResolving(false); return; }
+              } catch { }
+              try {
+                  const j = await getWorkerByUserId(workerParamId);
+                  const w = j?.worker || j?.data || j;
+                  if (w?._id) { setActualWorkerId(w._id); setResolving(false); return; }
+              } catch { }
             setActualWorkerId(workerParamId);
             setResolving(false);
         };

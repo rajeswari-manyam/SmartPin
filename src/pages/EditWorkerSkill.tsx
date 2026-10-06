@@ -3,20 +3,19 @@ import { useNavigate, useParams } from "react-router-dom";
 import Button from "../components/ui/Buttons";
 import ServiceChargesSection from "../components/WorkerProfile/ServiceCharges";
 import {
-  getWorkerSkillById,
-  updateWorkerSkill,
-  deleteWorkerSkill,
-  UpdateWorkerSkillPayload,
+ getWorkerSkillById,
+ updateWorkerSkill,
+ deleteWorkerSkill,
+ UpdateWorkerSkillPayload,
 } from "../services/api.service";
 import SubCategoriesData from "../data/subcategories.json";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
 import { categories } from "../components/categories/Categories";
-import {
-  ArrowLeft, Trash2, Loader2, ImagePlus, X,
-  Upload, CheckCircle, AlertCircle, MapPin
-} from "lucide-react";
+import { ArrowLeft, Trash2, Loader2, ImagePlus, X, Upload, CheckCircle, AlertCircle, MapPin, Wrench, AlertTriangle } from "lucide-react";
 import typography from "../styles/typography";
+import LocationPicker, { EMPTY_LOCATION } from "../components/LocationPicker";
+import type { LocationPickerValue } from "../types/location.types";
 
 /* ─── Types ─── */
 interface SubCategory { name: string; icon: string; }
@@ -26,26 +25,26 @@ const subcategoryGroups: SubCategoryGroup[] = SubCategoriesData.subcategories ||
 
 // ── Resolve category name (DB) → id (UI) ─────────────────────────────────────
 const resolveCategoryId = (categoryValue: string): string => {
-  if (!categoryValue) return "";
-  const byName = categories.find(c => c.name.toLowerCase() === categoryValue.toLowerCase());
-  if (byName) return byName.id;
-  const byId = categories.find(c => c.id === categoryValue);
-  if (byId) return byId.id;
-  return "";
+ if (!categoryValue) return "";
+ const byName = categories.find(c => c.name.toLowerCase() === categoryValue.toLowerCase());
+ if (byName) return byName.id;
+ const byId = categories.find(c => c.id === categoryValue);
+ if (byId) return byId.id;
+ return "";
 };
 
 // ── Resolve category id → display name ───────────────────────────────────────
 const getCategoryName = (categoryId: string): string =>
-  categories.find(c => c.id === categoryId)?.name || categoryId;
+ categories.find(c => c.id === categoryId)?.name || categoryId;
 
 /* ─── Toast ─── */
 type ToastType = "success" | "error";
 const Toast: React.FC<{ message: string; type: ToastType; onDismiss: () => void }> = ({ message, type, onDismiss }) => {
-  useEffect(() => {
-    const t = setTimeout(onDismiss, 3500);
-    return () => clearTimeout(t);
+ useEffect(() => {
+ const t = setTimeout(onDismiss, 3500);
+ return () => clearTimeout(t);
   }, [onDismiss]);
-  return (
+ return (
     <div className={`flex items-start gap-2 p-3 rounded-xl text-sm shadow mb-4 border
       ${type === "success" ? "bg-green-50 border-green-300 text-green-800" : "bg-red-50 border-red-300 text-red-800"}`}>
       {type === "success"
@@ -59,159 +58,192 @@ const Toast: React.FC<{ message: string; type: ToastType; onDismiss: () => void 
 
 /* ─── Component ─── */
 const EditSkillScreen: React.FC = () => {
-  const navigate = useNavigate();
-  const { skillId } = useParams<{ skillId: string }>();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+ const navigate = useNavigate();
+ const { skillId } = useParams<{ skillId: string }>();
+ const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Form state ───────────────────────────────────────────────────────────
-  const [selectedCategory, setSelectedCategory] = useState("");   // category id
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [skills, setSkills] = useState("");
-  const [chargeType, setChargeType] = useState<"hourly" | "daily" | "fixed">("hourly");
-  const [chargeAmount, setChargeAmount] = useState("");
+ const [selectedCategory, setSelectedCategory] = useState("");   // category id
+ const [selectedSubcategory, setSelectedSubcategory] = useState("");
+ const [skills, setSkills] = useState("");
+ const [chargeType, setChargeType] = useState<"hourly" | "daily" | "fixed">("hourly");
+ const [chargeAmount, setChargeAmount] = useState("");
+
+  // ── Service location (map picker) ─────────────────────────────────────────
+ const [location, setLocation] = useState<LocationPickerValue>(EMPTY_LOCATION);
+ const [locationError, setLocationError] = useState("");
 
   // ── UI state ─────────────────────────────────────────────────────────────
-  const [loading, setLoading] = useState(false);
-  const [fetchLoading, setFetchLoading] = useState(true);
-  const [originalSkill, setOriginalSkill] = useState<any>(null);
-  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
+ const [loading, setLoading] = useState(false);
+ const [fetchLoading, setFetchLoading] = useState(true);
+ const [originalSkill, setOriginalSkill] = useState<any>(null);
+ const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // ── Images ───────────────────────────────────────────────────────────────
-  const [newImages, setNewImages] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<string[]>([]);
+ const [newImages, setNewImages] = useState<File[]>([]);
+ const [newPreviews, setNewPreviews] = useState<string[]>([]);
+ const [existingImages, setExistingImages] = useState<string[]>([]);
 
   // ── Filtered subcategories based on selected category id ─────────────────
-  const getFilteredSubcategories = (): SubCategory[] => {
-    if (!selectedCategory) return [];
-    const group = subcategoryGroups.find(g => String(g.categoryId) === selectedCategory);
-    return group?.items || [];
+ const getFilteredSubcategories = (): SubCategory[] => {
+ if (!selectedCategory) return [];
+ const group = subcategoryGroups.find(g => String(g.categoryId) === selectedCategory);
+ return group?.items || [];
   };
-  const filteredSubcategories = getFilteredSubcategories();
+ const filteredSubcategories = getFilteredSubcategories();
 
-  const showToast = (message: string, type: ToastType) => setToast({ message, type });
+ const showToast = (message: string, type: ToastType) => setToast({ message, type });
 
   // ── Fetch skill data ──────────────────────────────────────────────────────
-  useEffect(() => {
-    const fetchSkillData = async () => {
-      if (!skillId) { setFetchLoading(false); return; }
-      try {
-        const response = await getWorkerSkillById(skillId);
-        if (response.success && response.workerSkill) {
-          const skill: any = response.workerSkill;
-          setOriginalSkill(skill);
+ useEffect(() => {
+ const fetchSkillData = async () => {
+ if (!skillId) { setFetchLoading(false); return; }
+ try {
+ const response = await getWorkerSkillById(skillId);
+ if (response.success && response.workerSkill) {
+ const skill: any = response.workerSkill;
+ setOriginalSkill(skill);
 
           // Resolve category name → id
-          const catName = Array.isArray(skill.category) ? skill.category[0] : skill.category;
-          const resolvedId = resolveCategoryId(catName);
-          setSelectedCategory(resolvedId);
+ const catName = Array.isArray(skill.category) ? skill.category[0] : skill.category;
+ const resolvedId = resolveCategoryId(catName);
+ setSelectedCategory(resolvedId);
           setSelectedSubcategory(skill.subCategory || "");
           setSkills(skill.skill || "");
-          setChargeAmount(String(skill.serviceCharge));
-          setChargeType(skill.chargeType === "hour" ? "hourly" : skill.chargeType === "day" ? "daily" : "fixed");
+ setChargeAmount(String(skill.serviceCharge));
+ setChargeType(skill.chargeType === "hour" ? "hourly" : skill.chargeType === "day" ? "daily" : "fixed");
 
-          const imgs = (skill.images || []).filter((img: string) => img && img.trim() !== "");
-          setExistingImages(imgs);
+ const imgs = (skill.images || []).filter((img: string) => img && img.trim() !== "");
+ setExistingImages(imgs);
+
+          // Seed the picker with the skill's stored location so editing an
+          // existing skill starts from the same point on the map.
+ setLocation({
+ address:
+ skill.address ||
+              [skill.area, skill.city, skill.state, skill.pincode].filter(Boolean).join(", ") ||
+              "",
+            area: skill.area || "",
+            city: skill.city || "",
+            state: skill.state || "",
+            pincode: skill.pincode || "",
+ latitude: Number(skill.latitude) || 0,
+ longitude: Number(skill.longitude) || 0,
+          });
         }
       } catch {
-        showToast("Failed to load skill data", "error");
+ showToast("Failed to load skill data", "error");
       } finally {
-        setFetchLoading(false);
+ setFetchLoading(false);
       }
     };
-    fetchSkillData();
+ fetchSkillData();
   }, [skillId]);
 
   // ── Clear subcategory if category changes ────────────────────────────────
-  useEffect(() => {
-    if (selectedCategory && selectedSubcategory) {
-      const isValid = getFilteredSubcategories().some(s => s.name === selectedSubcategory);
-      if (!isValid) setSelectedSubcategory("");
+ useEffect(() => {
+ if (selectedCategory && selectedSubcategory) {
+ const isValid = getFilteredSubcategories().some(s => s.name === selectedSubcategory);
+ if (!isValid) setSelectedSubcategory("");
     }
   }, [selectedCategory]);
 
   // ── Image helpers ─────────────────────────────────────────────────────────
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    const combined = [...newImages, ...files].slice(0, 5);
-    setNewImages(combined);
-    Promise.all(
-      combined.map(f => new Promise<string>(resolve => {
-        const r = new FileReader();
-        r.onload = () => resolve(r.result as string);
-        r.readAsDataURL(f);
+ const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const files = Array.from(e.target.files || []);
+ if (!files.length) return;
+ const combined = [...newImages, ...files].slice(0, 5);
+ setNewImages(combined);
+ Promise.all(
+ combined.map(f => new Promise<string>(resolve => {
+ const r = new FileReader();
+ r.onload = () => resolve(r.result as string);
+ r.readAsDataURL(f);
       }))
     ).then(setNewPreviews);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+ if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const removeNewImage = (index: number) => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
-    setNewPreviews(prev => prev.filter((_, i) => i !== index));
+ const removeNewImage = (index: number) => {
+ setNewImages(prev => prev.filter((_, i) => i !== index));
+ setNewPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   // ── Update ────────────────────────────────────────────────────────────────
-  const handleUpdate = async () => {
-    setToast(null);
-    if (!skillId) return;
-    if (!selectedCategory || !selectedSubcategory || !chargeAmount) {
-      showToast("Please fill all required fields.", "error");
-      return;
+ const handleUpdate = async () => {
+ setToast(null);
+ if (!skillId) return;
+ if (!selectedCategory || !selectedSubcategory || !chargeAmount) {
+ showToast("Please fill all required fields.", "error");
+ return;
     }
 
-    // ✅ Resolve category id → name before sending to backend
-    const categoryName = getCategoryName(selectedCategory);
+    // The skill keeps its original point unless the user re-picks one, so
+    // missing coordinates here mean the picker was cleared.
+ if (location.latitude === 0 || location.longitude === 0) {
+ setLocationError("Please confirm the service location on the map.");
+ return;
+    }
+ setLocationError("");
 
-    const payload: UpdateWorkerSkillPayload = {
-      category: categoryName,
-      subCategory: selectedSubcategory,
+    // ✅ Resolve category id → name before sending to backend
+ const categoryName = getCategoryName(selectedCategory);
+
+ const payload: UpdateWorkerSkillPayload = {
+ category: categoryName,
+ subCategory: selectedSubcategory,
       skill: skills || "General",
-      serviceCharge: Number(chargeAmount),
-      chargeType: chargeType === "hourly" ? "hour" : chargeType === "daily" ? "day" : "fixed",
+ serviceCharge: Number(chargeAmount),
+ chargeType: chargeType === "hourly" ? "hour" : chargeType === "daily" ? "day" : "fixed",
+ area: location.area || undefined,
+ city: location.city || undefined,
+ state: location.state || undefined,
+ pincode: location.pincode || undefined,
+ latitude: location.latitude,
+ longitude: location.longitude,
     };
 
-    setLoading(true);
-    try {
-      const res = await updateWorkerSkill(skillId, payload);
-      if (!res || !res.success) {
-        showToast("Failed to update skill. Please try again.", "error");
-        setLoading(false);
-        return;
+ setLoading(true);
+ try {
+ const res = await updateWorkerSkill(skillId, payload);
+ if (!res || !res.success) {
+ showToast("Failed to update skill. Please try again.", "error");
+ setLoading(false);
+ return;
       }
-      showToast("Skill updated successfully!", "success");
-      setTimeout(() => navigate("/my-skills"), 800);
+ showToast("Skill updated successfully!", "success");
+ setTimeout(() => navigate("/my-skills"), 800);
     } catch (error: any) {
-      let msg = "Failed to update skill. Please try again.";
-      if (error.message?.includes("Failed to fetch")) msg = "Unable to connect to server.";
-      showToast(msg, "error");
-      setLoading(false);
+ let msg = "Failed to update skill. Please try again.";
+ if (error.message?.includes("Failed to fetch")) msg = "Unable to connect to server.";
+ showToast(msg, "error");
+ setLoading(false);
     }
   };
 
   // ── Delete ────────────────────────────────────────────────────────────────
-  const handleDelete = async () => {
-    if (!skillId) return;
-    if (!window.confirm("Delete this skill? This cannot be undone.")) return;
-    setLoading(true);
-    try {
-      const res = await deleteWorkerSkill(skillId);
-      if (res.success) {
-        showToast("Skill deleted!", "success");
-        setTimeout(() => navigate("/my-skills"), 800);
+ const handleDelete = async () => {
+ if (!skillId) return;
+ if (!window.confirm("Delete this skill? This cannot be undone.")) return;
+ setLoading(true);
+ try {
+ const res = await deleteWorkerSkill(skillId);
+ if (res.success) {
+ showToast("Skill deleted!", "success");
+ setTimeout(() => navigate("/my-skills"), 800);
       } else {
-        showToast("Failed to delete skill", "error");
-        setLoading(false);
+ showToast("Failed to delete skill", "error");
+ setLoading(false);
       }
     } catch {
-      showToast("Failed to delete skill. Please try again.", "error");
-      setLoading(false);
+ showToast("Failed to delete skill. Please try again.", "error");
+ setLoading(false);
     }
   };
 
   // ── Loading screen ────────────────────────────────────────────────────────
-  if (fetchLoading) {
-    return (
+ if (fetchLoading) {
+ return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-blue-600 mx-auto mb-3" />
@@ -222,16 +254,16 @@ const EditSkillScreen: React.FC = () => {
   }
 
   // ── Main UI ───────────────────────────────────────────────────────────────
-  return (
+ return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
         <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-8">
           <button
-            onClick={() => navigate(-1)}
-            className="p-2 sm:p-3 rounded-full hover:bg-white transition"
-            disabled={loading}
+ onClick={() => navigate(-1)}
+ className="p-2 sm:p-3 rounded-full hover:bg-white transition"
+ disabled={loading}
           >
             <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
@@ -248,9 +280,9 @@ const EditSkillScreen: React.FC = () => {
               {existingImages.length > 0 ? (
                 <div>
                   <img
-                    src={existingImages[0]}
-                    alt="Skill"
-                    className="w-full h-48 sm:h-64 object-cover"
+ src={existingImages[0]}
+ alt="Skill"
+ className="w-full h-48 sm:h-64 object-cover"
                   />
                   {existingImages.length > 1 && (
                     <div className="grid grid-cols-4 gap-1 p-1">
@@ -269,7 +301,7 @@ const EditSkillScreen: React.FC = () => {
                 </div>
               ) : (
                 <div className="w-full h-32 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                  <span className="text-4xl">🔧</span>
+                  <Wrench className="w-10 h-10" />
                 </div>
               )}
 
@@ -321,13 +353,13 @@ const EditSkillScreen: React.FC = () => {
                     </div>
                     {originalSkill.latitude && originalSkill.longitude && (
                       <button
-                        onClick={() =>
-                          window.open(
+ onClick={() =>
+ window.open(
                             `https://www.google.com/maps/search/?api=1&query=${originalSkill.latitude},${originalSkill.longitude}`,
                             "_blank"
                           )
                         }
-                        className="mt-2 w-full py-2 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-xs font-medium"
+ className="mt-2 w-full py-2 flex items-center justify-center gap-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-xs font-medium"
                       >
                         <MapPin size={13} /> View on Google Maps
                       </button>
@@ -341,7 +373,7 @@ const EditSkillScreen: React.FC = () => {
           {/* ── RIGHT: Edit form ── */}
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg p-4 sm:p-6">
             <h2 className={`${typography.heading.h5} mb-4 sm:mb-6 text-gray-800`}>
-              Update Skill Information
+ Update Skill Information
             </h2>
 
             {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
@@ -351,19 +383,19 @@ const EditSkillScreen: React.FC = () => {
               {/* ── Category — IconSelect (same as UpdateJob) ── */}
               <div>
                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
-                  Category *
+ Category *
                 </label>
                 <IconSelect
-                  label=""
-                  value={selectedCategory}
-                  placeholder="Select Category"
-                  options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
-                  onChange={(val) => setSelectedCategory(val)}
-                  disabled={loading}
+ label=""
+ value={selectedCategory}
+ placeholder="Select Category"
+ options={categories.map(c => ({ id: c.id, name: c.name, icon: c.icon }))}
+ onChange={(val) => setSelectedCategory(val)}
+ disabled={loading}
                 />
                 {selectedCategory && (
                   <p className="mt-1 text-xs text-gray-400">
-                    Will save as:{" "}
+ Will save as:{" "}
                     <span className="font-semibold text-gray-600">{getCategoryName(selectedCategory)}</span>
                   </p>
                 )}
@@ -372,51 +404,61 @@ const EditSkillScreen: React.FC = () => {
               {/* ── Subcategory — IconSelect (same as UpdateJob) ── */}
               <div>
                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
-                  Subcategory *
+ Subcategory *
                 </label>
                 <IconSelect
-                  label=""
-                  value={selectedSubcategory}
-                  placeholder={
-                    selectedCategory
+ label=""
+ value={selectedSubcategory}
+ placeholder={
+ selectedCategory
                       ? filteredSubcategories.length === 0
                         ? "No subcategories available"
                         : "Select Subcategory"
                       : "Select category first"
                   }
-                  options={filteredSubcategories.map(s => ({
-                    name: s.name,
+ options={filteredSubcategories.map(s => ({
+ name: s.name,
                     icon: SUBCATEGORY_ICONS[s.name],
                   }))}
-                  onChange={(val) => setSelectedSubcategory(val)}
-                  disabled={loading || !selectedCategory || filteredSubcategories.length === 0}
+ onChange={(val) => setSelectedSubcategory(val)}
+ disabled={loading || !selectedCategory || filteredSubcategories.length === 0}
                 />
               </div>
 
               {/* Skills Description */}
               <div>
                 <label className={`block ${typography.form.label} mb-2 text-gray-700`}>
-                  Skills Description
+ Skills Description
                 </label>
                 <textarea
-                  className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none ${typography.form.input}`}
-                  placeholder="e.g., Residential Cleaning, Commercial Cleaning"
-                  value={skills}
-                  onChange={e => setSkills(e.target.value)}
-                  disabled={loading}
-                  rows={3}
+ className={`w-full p-2.5 sm:p-3 border border-gray-300 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none ${typography.form.input}`}
+ placeholder="e.g., Residential Cleaning, Commercial Cleaning"
+ value={skills}
+ onChange={e => setSkills(e.target.value)}
+ disabled={loading}
+ rows={3}
                 />
               </div>
 
               {/* Service Charges */}
               <div>
                 <ServiceChargesSection
-                  chargeType={chargeType}
-                  chargeAmount={chargeAmount}
-                  onChargeTypeChange={setChargeType}
-                  onChargeAmountChange={setChargeAmount}
-                  onVoiceClick={() => { }}
-                  isListening={false}
+ chargeType={chargeType}
+ chargeAmount={chargeAmount}
+ onChargeTypeChange={setChargeType}
+ onChargeAmountChange={setChargeAmount}
+ onVoiceClick={() => { }}
+ isListening={false}
+                />
+              </div>
+
+              {/* Service Location */}
+              <div>
+                <LocationPicker
+ value={location}
+ onLocationChange={setLocation}
+ title="Service Location"
+ error={locationError}
                 />
               </div>
 
@@ -432,15 +474,15 @@ const EditSkillScreen: React.FC = () => {
                     {newPreviews.map((preview, index) => (
                       <div key={index} className="relative group aspect-square">
                         <img
-                          src={preview}
-                          alt={`New ${index + 1}`}
-                          className="w-full h-full object-cover rounded-xl border border-gray-200"
+ src={preview}
+ alt={`New ${index + 1}`}
+ className="w-full h-full object-cover rounded-xl border border-gray-200"
                         />
                         <button
-                          type="button"
-                          onClick={() => removeNewImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
-                          disabled={loading}
+ type="button"
+ onClick={() => removeNewImage(index)}
+ className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition"
+ disabled={loading}
                         >
                           <X size={11} />
                         </button>
@@ -448,10 +490,10 @@ const EditSkillScreen: React.FC = () => {
                     ))}
                     {newImages.length < 5 && (
                       <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center text-blue-400 hover:border-blue-500 transition disabled:opacity-50"
-                        disabled={loading}
+ type="button"
+ onClick={() => fileInputRef.current?.click()}
+ className="aspect-square border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center text-blue-400 hover:border-blue-500 transition disabled:opacity-50"
+ disabled={loading}
                       >
                         <ImagePlus size={18} />
                         <span className="text-xs mt-1">Add</span>
@@ -460,10 +502,10 @@ const EditSkillScreen: React.FC = () => {
                   </div>
                 ) : (
                   <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full border-2 border-dashed border-gray-300 rounded-xl py-5 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition disabled:opacity-50"
-                    disabled={loading}
+ type="button"
+ onClick={() => fileInputRef.current?.click()}
+ className="w-full border-2 border-dashed border-gray-300 rounded-xl py-5 flex flex-col items-center justify-center text-gray-400 hover:border-blue-400 hover:text-blue-500 transition disabled:opacity-50"
+ disabled={loading}
                   >
                     <Upload size={24} className="mb-1.5" />
                     <span className="text-sm font-medium">Upload Work Photos</span>
@@ -472,13 +514,13 @@ const EditSkillScreen: React.FC = () => {
                 )}
 
                 <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleImageSelect}
-                  disabled={loading}
+ ref={fileInputRef}
+ type="file"
+ accept="image/*"
+ multiple
+ className="hidden"
+ onChange={handleImageSelect}
+ disabled={loading}
                 />
               </div>
 
@@ -495,25 +537,25 @@ const EditSkillScreen: React.FC = () => {
                 </Button>
 
                 <button
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition text-sm font-medium"
+ onClick={handleDelete}
+ disabled={loading}
+ className="w-full px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 transition text-sm font-medium"
                 >
                   <Trash2 size={15} /> Delete Skill
                 </button>
 
                 <button
-                  onClick={() => navigate("/my-skills")}
-                  disabled={loading}
-                  className="w-full px-4 py-2.5 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition text-sm"
+ onClick={() => navigate("/my-skills")}
+ disabled={loading}
+ className="w-full px-4 py-2.5 text-gray-600 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 transition text-sm"
                 >
-                  Cancel
+ Cancel
                 </button>
               </div>
 
               <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <p className="text-xs text-yellow-800">
-                  <span className="font-semibold">⚠️ Note:</span> Deleting this skill permanently removes it from your profile.
+                  <span className="font-semibold inline-flex items-center gap-1.5"><AlertTriangle className="w-4 h-4" /> Note:</span> Deleting this skill permanently removes it from your profile.
                 </p>
               </div>
 

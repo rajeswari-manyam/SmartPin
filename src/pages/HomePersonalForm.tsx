@@ -1,16 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-    createJob,
-    updateJob,
-    getJobById,
-    CreateJobPayload,
+ createJob,
+ updateJob,
+ getJobById,
+ CreateJobPayload,
 } from '../services/api.service';
 import typography from '../styles/typography';
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
+import { X, Upload, AlertTriangle, Check, Loader2 } from "lucide-react";
 import IconSelect from '../components/common/IconDropDown';
 import { SUBCATEGORY_ICONS } from '../assets/subcategoryIcons';
+import LocationPicker, { EMPTY_LOCATION } from '../components/LocationPicker';
+import type { LocationPickerValue } from '../types/location.types';
 
 const BRAND = '#00598a';
 const BRAND_DARK = '#004a73';
@@ -19,13 +21,17 @@ const BRAND_LIGHT_BG = '#e8f2f8';
 const BRAND_LIGHT_BORDER = '#b3d4e8';
 
 const getHomeSubcategories = () => {
-    const homeCategory = subcategoriesData.subcategories.find(
-        (cat: any) => cat.categoryId === 10
+ const homeCategory = subcategoriesData.subcategories.find(
+ (cat: any) => cat.categoryId === 10
     );
-    return homeCategory
+ return homeCategory
         ? homeCategory.items.map((item: any) => item.name)
         : ['Maid Services', 'Cook', 'Electrician', 'Carpenter', 'Plumber'];
 };
+
+// Location is owned by <LocationPicker />: it geocodes the typed address and
+// reverse-geocodes GPS / map points, so this form never geocodes on its own and
+// can never keep coordinates that belong to a previous address.
 
 const inputBase =
     `w-full px-4 py-3 border border-gray-300 rounded-xl ` +
@@ -60,71 +66,88 @@ const TwoCol: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // COMPONENT
 // ============================================================================
 const HomePersonalForm = () => {
-    const navigate = useNavigate();
+ const navigate = useNavigate();
 
-    const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub
+ const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+ const getSubcategoryFromUrl = () => {
+ const sub = new URLSearchParams(window.location.search).get('subcategory');
+ return sub
             ? sub.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
             : null;
     };
 
-    const [editId] = useState<string | null>(getIdFromUrl());
-    const isEditMode = !!editId;
+ const [editId] = useState<string | null>(getIdFromUrl());
+ const isEditMode = !!editId;
 
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
+ const [loading, setLoading] = useState(false);
+ const [loadingData, setLoadingData] = useState(false);
+ const [error, setError] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
 
-    const homeSubcategories = getHomeSubcategories();
+ const homeSubcategories = getHomeSubcategories();
 
     // ── Build icon-aware options for IconSelect (same pattern as ArtForm) ────
-    const subcategoryOptions = homeSubcategories.map((name: string) => ({
-        name,
+ const subcategoryOptions = homeSubcategories.map((name: string) => ({
+ name,
         icon: SUBCATEGORY_ICONS[name],
     }));
 
     const defaultType = getSubcategoryFromUrl() || homeSubcategories[0] || 'Maid Services';
 
-    const [formData, setFormData] = useState({
+ const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
         name: localStorage.getItem('userName') || '',
-        phone: '',
-        serviceName: '',
-        serviceType: defaultType,
-        specializations: '',
-        servicecharges: '',
-        area: '',
-        city: '',
-        state: '',
-        pincode: '',
-        latitude: '',
-        longitude: '',
+ phone: '',
+ serviceName: '',
+ serviceType: defaultType,
+ specializations: '',
+ servicecharges: '',
+ area: '',
+ city: '',
+ state: '',
+ pincode: '',
+ latitude: '',
+ longitude: '',
     });
 
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
+ const [selectedImages, setSelectedImages] = useState<File[]>([]);
+ const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+ const [existingImages, setExistingImages] = useState<string[]>([]);
+    // Single source of truth for the service location. Coordinates are 0 until a
+    // point is actually resolved, so a stale pin can never be submitted.
+ const [location, setLocation] = useState<LocationPickerValue>(EMPTY_LOCATION);
+ const [locationError, setLocationError] = useState('');
 
     // ── fetch for edit ────────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!editId) return;
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-                const response = await getJobById(editId);
-                if (!response.job) throw new Error('Service not found');
-                const data = response.job;
-                setFormData((prev) => ({
+ useEffect(() => {
+ if (!editId) return;
+ const fetchData = async () => {
+ setLoadingData(true);
+ try {
+ const response = await getJobById(editId);
+ if (!response.job) throw new Error('Service not found');
+ const data = response.job;
+
+ setLocation({
+ address:
+ (data as any).address ||
+                        [data.area, data.city, data.state, data.pincode].filter(Boolean).join(', ') ||
+                        '',
+                    area: data.area || '',
+                    city: data.city || '',
+                    state: data.state || '',
+                    pincode: data.pincode || '',
+ latitude: Number(data.latitude) || 0,
+ longitude: Number(data.longitude) || 0,
+                });
+
+ setFormData((prev) => ({
                     ...prev,
-                    userId: prev.userId,
+ userId: prev.userId,
                     phone: data.phone || '',
                     serviceName: data.title || '',
-                    serviceType: data.subcategory || defaultType,
-                    specializations: Array.isArray(data.description)
+ serviceType: data.subcategory || defaultType,
+ specializations: Array.isArray(data.description)
                         ? data.description.join(', ')
                         : (data.description || ''),
                     servicecharges: data.servicecharges?.toString() || '',
@@ -135,149 +158,134 @@ const HomePersonalForm = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                 }));
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+ if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                setError('Failed to load service data');
+ setError('Failed to load service data');
             } finally {
-                setLoadingData(false);
+ setLoadingData(false);
             }
         };
-        fetchData();
+ fetchData();
     }, [editId]);
 
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+ const handleInputChange = (
+ e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
     ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+ const { name, value } = e.target;
+ setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     // ── image helpers ─────────────────────────────────────────────────────────
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
-        const validFiles = files.slice(0, availableSlots).filter((file) => {
-            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
-            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
-            return true;
+ const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const files = Array.from(e.target.files || []);
+ if (!files.length) return;
+ const availableSlots = 5 - (selectedImages.length + existingImages.length);
+ if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
+ const validFiles = files.slice(0, availableSlots).filter((file) => {
+ if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+ if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
+ return true;
         });
-        if (!validFiles.length) return;
-        const newPreviews: string[] = [];
-        validFiles.forEach((file) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (newPreviews.length === validFiles.length)
-                    setImagePreviews((prev) => [...prev, ...newPreviews]);
+ if (!validFiles.length) return;
+ const newPreviews: string[] = [];
+ validFiles.forEach((file) => {
+ const reader = new FileReader();
+ reader.onloadend = () => {
+ newPreviews.push(reader.result as string);
+ if (newPreviews.length === validFiles.length)
+ setImagePreviews((prev) => [...prev, ...newPreviews]);
             };
-            reader.readAsDataURL(file);
+ reader.readAsDataURL(file);
         });
-        setSelectedImages((prev) => [...prev, ...validFiles]);
-        setError('');
+ setSelectedImages((prev) => [...prev, ...validFiles]);
+ setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
-        setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
+ const handleRemoveNewImage = (i: number) => {
+ setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
+ setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) =>
-        setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
+ const handleRemoveExistingImage = (i: number) =>
+ setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
 
-    // ── geolocation ───────────────────────────────────────────────────────────
-    const getCurrentLocation = () => {
-        setLocationLoading(true);
-        setError('');
-        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const lat = pos.coords.latitude.toString();
-                const lng = pos.coords.longitude.toString();
-                setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-                try {
-                    const res = await fetch(
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
-                    );
-                    const data = await res.json();
-                    if (data.address) {
-                        setFormData((prev) => ({
-                            ...prev,
-                            area: data.address.suburb || data.address.neighbourhood || prev.area,
-                            city: data.address.city || data.address.town || prev.city,
-                            state: data.address.state || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
-                        }));
-                    }
-                } catch (e) { console.error(e); }
-                setLocationLoading(false);
-            },
-            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
-            { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-        );
+    // ── handlers ──────────────────────────────────────────────────────────────
+ const handleLocationChange = (next: LocationPickerValue) => {
+ setLocation(next);
+ setFormData((prev) => ({
+            ...prev,
+ area: next.area,
+ city: next.city,
+ state: next.state,
+ pincode: next.pincode,
+ latitude: next.latitude ? String(next.latitude) : '',
+ longitude: next.longitude ? String(next.longitude) : '',
+        }));
+ if (locationError) setLocationError('');
     };
 
     // ── submit ────────────────────────────────────────────────────────────────
-    const handleSubmit = async () => {
-        setLoading(true);
-        setError('');
-        setSuccessMessage('');
-        try {
-            if (!formData.serviceName.trim())
-                throw new Error('Service provider name is required.');
-            if (!formData.phone.trim())
-                throw new Error('Phone number is required.');
-            if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim()))
-                throw new Error('Please enter a valid phone number.');
-            if (!formData.specializations.trim())
-                throw new Error('Specializations are required.');
-            if (!formData.servicecharges)
-                throw new Error('Service charges are required.');
-            if (!formData.latitude || !formData.longitude)
-                throw new Error('Please provide a valid location.');
+ const handleSubmit = async () => {
+ setLoading(true);
+ setError('');
+ setSuccessMessage('');
+ try {
+ if (!formData.serviceName.trim())
+ throw new Error('Service provider name is required.');
+ if (!formData.phone.trim())
+ throw new Error('Phone number is required.');
+ if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim()))
+ throw new Error('Please enter a valid phone number.');
+ if (!formData.specializations.trim())
+ throw new Error('Specializations are required.');
+ if (!formData.servicecharges)
+ throw new Error('Service charges are required.');
+ if (!formData.latitude || !formData.longitude)
+ throw new Error('Please pick the service location on the map.');
+ if (!formData.area.trim())
+ throw new Error('Please enter the service area.');
 
-            const payload: CreateJobPayload & { phone?: string } = {
-                userId: formData.userId,
-                name: formData.name,
-                phone: formData.phone.trim(),
-                title: formData.serviceName,
-                description: formData.specializations,
-                category: 'home-personal',
-                subcategory: formData.serviceType,
-                jobType: 'FULL_TIME',
-                servicecharges: formData.servicecharges,
-                startDate: new Date().toISOString().split('T')[0],
-                endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                area: formData.area,
-                city: formData.city,
-                state: formData.state,
-                pincode: formData.pincode,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
-                images: selectedImages,
+ const payload: CreateJobPayload & { phone?: string } = {
+ userId: formData.userId,
+ name: formData.name,
+ phone: formData.phone.trim(),
+ title: formData.serviceName,
+ description: formData.specializations,
+ category: 'home-personal',
+ subcategory: formData.serviceType,
+ jobType: 'FULL_TIME',
+ servicecharges: formData.servicecharges,
+ startDate: new Date().toISOString().split('T')[0],
+ endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+ area: formData.area,
+ city: formData.city,
+ state: formData.state,
+ pincode: formData.pincode,
+ latitude: formData.latitude,
+ longitude: formData.longitude,
+ images: selectedImages,
             };
 
-            if (isEditMode && editId) {
-                await updateJob(editId, payload);
-                setSuccessMessage('Service updated successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+ if (isEditMode && editId) {
+ await updateJob(editId, payload);
+ setSuccessMessage('Service updated successfully!');
+ setTimeout(() => navigate('/listed-jobs'), 1500);
             } else {
-                await createJob(payload as CreateJobPayload);
-                setSuccessMessage('Service created successfully!');
-                setTimeout(() => navigate('/listed-jobs'), 1500);
+ await createJob(payload as CreateJobPayload);
+ setSuccessMessage('Service created successfully!');
+ setTimeout(() => navigate('/listed-jobs'), 1500);
             }
         } catch (err: any) {
             setError(err.message || 'Failed to submit form');
         } finally {
-            setLoading(false);
+ setLoading(false);
         }
     };
 
-    const handleCancel = () => window.history.back();
+ const handleCancel = () => window.history.back();
 
     // ── loading screen ────────────────────────────────────────────────────────
-    if (loadingData) {
-        return (
+ if (loadingData) {
+ return (
             <div className="min-h-screen flex items-center justify-center p-4">
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
@@ -287,25 +295,25 @@ const HomePersonalForm = () => {
         );
     }
 
-    const safeSpecializations = Array.isArray(formData.specializations)
+ const safeSpecializations = Array.isArray(formData.specializations)
         ? (formData.specializations as string[]).join(', ')
         : (typeof formData.specializations === 'string' ? formData.specializations : '');
 
-    const totalImages = selectedImages.length + existingImages.length;
-    const maxImagesReached = totalImages >= 5;
+ const totalImages = selectedImages.length + existingImages.length;
+ const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER
     // ============================================================================
-    return (
+ return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
             <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-8 py-4 shadow-sm">
                 <div className="max-w-6xl mx-auto flex items-center gap-3">
                     <button
-                        onClick={handleCancel}
-                        className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
+ onClick={handleCancel}
+ className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition"
                     >
                         <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -330,7 +338,7 @@ const HomePersonalForm = () => {
                 {error && (
                     <div className={`p-4 bg-red-50 border border-red-200 rounded-xl ${typography.form.error}`}>
                         <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <div className="flex-1">
                                 <p className="font-semibold text-red-800 mb-1">Error</p>
                                 <p className="text-red-700">{error}</p>
@@ -341,7 +349,7 @@ const HomePersonalForm = () => {
                 {successMessage && (
                     <div className={`p-4 bg-green-50 border border-green-200 rounded-xl ${typography.body.small} text-green-700`}>
                         <div className="flex items-start gap-2">
-                            <span className="text-green-600 mt-0.5">✓</span>
+                            <Check className="w-4 h-4 shrink-0" />
                             <p>{successMessage}</p>
                         </div>
                     </div>
@@ -353,12 +361,12 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Service Provider Name</FieldLabel>
                             <input
-                                type="text"
-                                name="serviceName"
-                                value={formData.serviceName}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Professional Maid Services"
-                                className={inputBase}
+ type="text"
+ name="serviceName"
+ value={formData.serviceName}
+ onChange={handleInputChange}
+ placeholder="e.g., Professional Maid Services"
+ className={inputBase}
                             />
                         </div>
 
@@ -366,17 +374,17 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Service Type</FieldLabel>
                             <IconSelect
-                                label=""
-                                value={formData.serviceType}
-                                placeholder="Select service type"
-                                options={subcategoryOptions}
-                                onChange={(val) =>
-                                    setFormData((prev) => ({ ...prev, serviceType: val }))
+ label=""
+ value={formData.serviceType}
+ placeholder="Select service type"
+ options={subcategoryOptions}
+ onChange={(val) =>
+ setFormData((prev) => ({ ...prev, serviceType: val }))
                                 }
-                                disabled={loading}
+ disabled={loading}
                             />
                             <p className={`${typography.body.small} text-gray-400 mt-1`}>
-                                Category: <span className="font-medium text-gray-500">Home &amp; Personal</span>
+ Category: <span className="font-medium text-gray-500">Home &amp; Personal</span>
                             </p>
                         </div>
                     </TwoCol>
@@ -388,12 +396,12 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Phone Number</FieldLabel>
                             <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="Enter phone number"
-                                className={inputBase}
+ type="tel"
+ name="phone"
+ value={formData.phone}
+ onChange={handleInputChange}
+ placeholder="Enter phone number"
+ className={inputBase}
                             />
                         </div>
                         {/* Empty right column for balance */}
@@ -407,50 +415,50 @@ const HomePersonalForm = () => {
                         <div>
                             <FieldLabel required>Your Specializations</FieldLabel>
                             <textarea
-                                name="specializations"
-                                value={safeSpecializations}
-                                onChange={handleInputChange}
-                                rows={4}
-                                placeholder="e.g., Experienced in residential cleaning, deep cleaning, laundry, dishwashing, floor care"
-                                className={inputBase + ' resize-none'}
+ name="specializations"
+ value={safeSpecializations}
+ onChange={handleInputChange}
+ rows={4}
+ placeholder="e.g., Experienced in residential cleaning, deep cleaning, laundry, dishwashing, floor care"
+ className={inputBase + ' resize-none'}
                             />
                             <p className={`${typography.misc.caption} mt-2`}>
-                                💡 List all your skills and specializations, separated by commas
+                                � List all your skills and specializations, separated by commas
                             </p>
                         </div>
                         <div>
                             <FieldLabel required>Service Charges (₹)</FieldLabel>
                             <input
-                                type="number"
-                                name="servicecharges"
-                                value={formData.servicecharges}
-                                onChange={handleInputChange}
-                                placeholder="e.g., 500"
-                                min="1"
-                                step="0.01"
-                                className={inputBase}
+ type="number"
+ name="servicecharges"
+ value={formData.servicecharges}
+ onChange={handleInputChange}
+ placeholder="e.g., 500"
+ min="1"
+ step="0.01"
+ className={inputBase}
                             />
                             <p className={`${typography.misc.caption} mt-2`}>
-                                💡 Your hourly or daily rate in rupees
+                                � Your hourly or daily rate in rupees
                             </p>
 
                             {/* Skill chips preview */}
                             {safeSpecializations && safeSpecializations.trim() && (
                                 <div className="mt-4">
                                     <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                        Listed Skills ({safeSpecializations.split(',').filter(s => s.trim()).length}):
+ Listed Skills ({safeSpecializations.split(',').filter(s => s.trim()).length}):
                                     </p>
                                     <div className="flex flex-wrap gap-2">
                                         {safeSpecializations.split(',').map((s, i) => {
-                                            const trimmed = s.trim();
-                                            if (!trimmed) return null;
-                                            return (
+ const trimmed = s.trim();
+ if (!trimmed) return null;
+ return (
                                                 <span
-                                                    key={i}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
-                                                    style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
+ key={i}
+ className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium"
+ style={{ backgroundColor: BRAND_LIGHT_BG, color: BRAND }}
                                                 >
-                                                    <span>✓</span>
+                                                    <Check className="w-4 h-4 shrink-0" />
                                                     {trimmed}
                                                 </span>
                                             );
@@ -463,93 +471,13 @@ const HomePersonalForm = () => {
                 </SectionCard>
 
                 {/* ─── ROW 4: LOCATION ─── */}
-                <SectionCard
-                    title="Location Details"
-                    action={
-                        <button
-                            type="button"
-                            onClick={getCurrentLocation}
-                            disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white
-                                bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
-                                transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            {locationLoading
-                                ? <><span className="animate-spin mr-1">⌛</span>Detecting...</>
-                                : <><MapPin className="w-4 h-4 inline mr-1" />Auto Detect</>
-                            }
-                        </button>
-                    }
-                >
-                    {/* Area + City */}
-                    <TwoCol>
-                        <div>
-                            <FieldLabel required>Area</FieldLabel>
-                            <input
-                                type="text"
-                                name="area"
-                                value={formData.area}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Madhapur"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>City</FieldLabel>
-                            <input
-                                type="text"
-                                name="city"
-                                value={formData.city}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Hyderabad"
-                                className={inputBase}
-                            />
-                        </div>
-                    </TwoCol>
-
-                    {/* State + PIN */}
-                    <TwoCol>
-                        <div>
-                            <FieldLabel required>State</FieldLabel>
-                            <input
-                                type="text"
-                                name="state"
-                                value={formData.state}
-                                onChange={handleInputChange}
-                                placeholder="e.g., Telangana"
-                                className={inputBase}
-                            />
-                        </div>
-                        <div>
-                            <FieldLabel required>PIN Code</FieldLabel>
-                            <input
-                                type="text"
-                                name="pincode"
-                                value={formData.pincode}
-                                onChange={handleInputChange}
-                                placeholder="e.g., 500016"
-                                className={inputBase}
-                            />
-                        </div>
-                    </TwoCol>
-
-                    {/* Tip box */}
-                    <div className="rounded-xl p-3" style={{ backgroundColor: BRAND_LIGHT_BG, border: `1px solid ${BRAND_LIGHT_BORDER}` }}>
-                        <p className={`${typography.body.small}`} style={{ color: BRAND }}>
-                            📍 <span className="font-medium">Tip:</span> Click "Auto Detect" to get your current location, or enter your address manually above.
-                        </p>
-                    </div>
-
-                    {formData.latitude && formData.longitude && (
-                        <div className="bg-green-50 border border-green-200 rounded-xl p-3">
-                            <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location detected: </span>
-                                <span className="font-mono text-xs ml-1">
-                                    {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
-                                </span>
-                            </p>
-                        </div>
-                    )}
+                <SectionCard title="Location Details">
+                    <LocationPicker
+ value={location}
+ onLocationChange={handleLocationChange}
+ title=""
+ error={locationError}
+                    />
                 </SectionCard>
 
                 {/* ─── ROW 5: PHOTOS ─── */}
@@ -558,24 +486,24 @@ const HomePersonalForm = () => {
                         {/* Upload zone */}
                         <label className={`block ${maxImagesReached ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                             <input
-                                type="file"
-                                accept="image/*"
-                                multiple
-                                onChange={handleImageSelect}
-                                className="hidden"
-                                disabled={maxImagesReached}
+ type="file"
+ accept="image/*"
+ multiple
+ onChange={handleImageSelect}
+ className="hidden"
+ disabled={maxImagesReached}
                             />
                             <div
-                                className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
-                                style={{
-                                    borderColor: maxImagesReached ? '#d1d5db' : BRAND,
-                                    backgroundColor: maxImagesReached ? '#f9fafb' : BRAND_LIGHT_BG,
-                                    minHeight: '180px',
+ className="border-2 border-dashed rounded-2xl p-10 text-center transition h-full flex items-center justify-center"
+ style={{
+ borderColor: maxImagesReached ? '#d1d5db' : BRAND,
+ backgroundColor: maxImagesReached ? '#f9fafb' : BRAND_LIGHT_BG,
+ minHeight: '180px',
                                 }}
                             >
                                 <div className="flex flex-col items-center gap-3">
                                     <div className="w-16 h-16 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: 'rgba(0,89,138,0.12)' }}>
+ style={{ backgroundColor: 'rgba(0,89,138,0.12)' }}>
                                         <Upload className="w-8 h-8" style={{ color: BRAND }} />
                                     </div>
                                     <div>
@@ -585,7 +513,7 @@ const HomePersonalForm = () => {
                                                 : `Add Photos (${5 - totalImages} slots left)`}
                                         </p>
                                         <p className={`${typography.body.small} text-gray-500 mt-1`}>
-                                            Maximum 5 images · 5 MB each
+ Maximum 5 images · 5 MB each
                                         </p>
                                     </div>
                                 </div>
@@ -598,39 +526,39 @@ const HomePersonalForm = () => {
                                 {existingImages.map((url, i) => (
                                     <div key={`ex-${i}`} className="relative aspect-square group">
                                         <img
-                                            src={url}
-                                            alt={`Saved ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
+ src={url}
+ alt={`Saved ${i + 1}`}
+ className="w-full h-full object-cover rounded-xl border-2 border-gray-200"
                                         />
                                         <button
-                                            type="button"
-                                            onClick={() => handleRemoveExistingImage(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveExistingImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
                                         <span className="absolute bottom-2 left-2 text-white text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: BRAND }}>
-                                            Saved
+ Saved
                                         </span>
                                     </div>
                                 ))}
                                 {imagePreviews.map((preview, i) => (
                                     <div key={`new-${i}`} className="relative aspect-square group">
                                         <img
-                                            src={preview}
-                                            alt={`Preview ${i + 1}`}
-                                            className="w-full h-full object-cover rounded-xl border-2"
-                                            style={{ borderColor: BRAND }}
+ src={preview}
+ alt={`Preview ${i + 1}`}
+ className="w-full h-full object-cover rounded-xl border-2"
+ style={{ borderColor: BRAND }}
                                         />
                                         <button
-                                            type="button"
-                                            onClick={() => handleRemoveNewImage(i)}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button"
+ onClick={() => handleRemoveNewImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
                                         <span className="absolute bottom-2 left-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full">
-                                            New
+ New
                                         </span>
                                         <span className="absolute top-2 right-2 bg-black/50 text-white text-xs px-1.5 py-0.5 rounded">
                                             {(selectedImages[i]?.size / 1024 / 1024).toFixed(1)}MB
@@ -640,11 +568,11 @@ const HomePersonalForm = () => {
                             </div>
                         ) : (
                             <div
-                                className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
-                                style={{ minHeight: '180px' }}
+ className="flex items-center justify-center border-2 border-dashed border-gray-200 rounded-2xl text-center"
+ style={{ minHeight: '180px' }}
                             >
                                 <p className={`${typography.body.small} text-gray-400`}>
-                                    Uploaded images will appear here
+ Uploaded images will appear here
                                 </p>
                             </div>
                         )}
@@ -654,35 +582,35 @@ const HomePersonalForm = () => {
                 {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8 justify-end">
                     <button
-                        onClick={handleCancel}
-                        type="button"
-                        disabled={loading}
-                        className={`px-10 py-3.5 rounded-xl font-semibold
-                            text-[#00598a] bg-white border-2 border-[#00598a]
-                            hover:bg-[#00598a] hover:text-white
-                            active:bg-[#004a73] active:text-white
-                            transition-all ${typography.body.base}
+ onClick={handleCancel}
+ type="button"
+ disabled={loading}
+ className={`px-10 py-3.5 rounded-xl font-semibold
+ text-[#00598a] bg-white border-2 border-[#00598a]
+ hover:bg-[#00598a] hover:text-white
+ active:bg-[#004a73] active:text-white
+ transition-all ${typography.body.base}
                             ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Cancel
+ Cancel
                     </button>
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        type="button"
-                        className={`px-10 py-3.5 rounded-xl font-semibold text-white
-                            transition-all shadow-md hover:shadow-lg
-                            bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
+ onClick={handleSubmit}
+ disabled={loading}
+ type="button"
+ className={`px-10 py-3.5 rounded-xl font-semibold text-white
+ transition-all shadow-md hover:shadow-lg
+ bg-[#00598a] hover:bg-[#004a73] active:bg-[#003d5c]
                             ${typography.body.base}
                             ${loading ? 'cursor-not-allowed opacity-70' : ''}`}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
                         ) : (
-                            isEditMode ? 'Update Service' : 'Create Service'
+ isEditMode ? 'Update Service' : 'Create Service'
                         )}
                     </button>
                 </div>

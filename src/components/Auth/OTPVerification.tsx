@@ -65,8 +65,12 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const [showFirstTimeModal, setShowFirstTimeModal] = useState(false);
 
     const userIdRef = useRef<string>("");
-    const [userId, setUserId] = useState<string>("");
+    // The id is persisted to storage and read back on every request, so it is
+  // not held in component state.
+  const [, setUserId] = useState<string>("");
     const isFirstLoginRef = useRef(false);
+    /** True when the server already had a worker document for this user. */
+    const hasExistingWorkerRef = useRef(false);
 
     const existingCoordsRef = useRef<{ lat: number | null; lng: number | null }>({
         lat: null, lng: null,
@@ -184,14 +188,26 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
             ]);
 
             const userData = userRes.status === "fulfilled" ? userRes.value?.data : null;
-            const workerData = workerRes.status === "fulfilled" ? workerRes.value?.data : null;
+            // `getWorkerByUserId` returns the worker document under `.worker`
+            // (and mirrors it on `.data` for older callers). Reading only
+            // `.data` used to make an already-registered worker look like a
+            // brand-new user on every single login, which is why the "Create
+            // Profile" prompt kept reappearing after it had been completed.
+            const workerResValue = workerRes.status === "fulfilled" ? workerRes.value : null;
+            const workerData = workerResValue?.worker || workerResValue?.data || null;
 
             // ── WORKER PATH ───────────────────────────────────────────────────
             if (workerData?._id) {
                 console.log("👷 Existing worker found:", workerData._id);
+                hasExistingWorkerRef.current = true;
 
                 localStorage.setItem("role", "WORKER");
                 localStorage.setItem("workerId", workerData._id);
+                // Mirrors mobile, which keeps the worker id under a single
+                // `@worker_id` key so the rest of the app resolves it the same
+                // way on every launch.
+                localStorage.setItem("@worker_id", workerData._id);
+                if (uid) localStorage.setItem(`worker_id_for_${uid}`, workerData._id);
                 localStorage.setItem("userName", workerData.name || userData?.name || "Worker");
                 localStorage.setItem(`isFirstTimeUser_${uid}`, "false");
                 isFirstLoginRef.current = false;
@@ -330,6 +346,15 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({
     const handleSuccessContinue = () => {
         onClose?.();
         onContinue?.();
+
+        // A registered worker skips onboarding entirely and goes straight to
+        // their skills. Sending everyone to /home put a returning worker on the
+        // customer home screen, where the worker flow looked unstarted.
+        if (!isFirstLoginRef.current && hasExistingWorkerRef.current) {
+            navigate("/my-skills", { replace: true });
+            return;
+        }
+
         if (isFirstLoginRef.current) {
             navigate("/role-selection", { replace: true });
         } else {

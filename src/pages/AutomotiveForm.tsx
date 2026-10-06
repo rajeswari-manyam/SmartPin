@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createAutomotive, updateAutomotive, getAutomotiveById, CreateAutomotiveData } from "../services/AutomotiveServcie.service";
 import typography from "../styles/typography";
 import subcategoriesData from '../data/subcategories.json';
-import { X, Upload, MapPin } from 'lucide-react';
+import { X, Upload, MapPin, AlertTriangle, Check, Loader2, Info } from "lucide-react";
 import { useAccount } from "../context/AccountContext";
 import IconSelect from "../components/common/IconDropDown";
 import { SUBCATEGORY_ICONS } from "../assets/subcategoryIcons";
@@ -15,10 +15,10 @@ const availabilityOptions = ['Full Time', 'Part Time', 'On Demand', '24/7', 'Wee
 
 // ── Pull automotive subcategories from JSON (categoryId 9) ──────────────────
 const getAutomotiveSubcategories = () => {
-    const automotiveCategory = subcategoriesData.subcategories.find(
-        (cat: any) => cat.categoryId === 9
+ const automotiveCategory = subcategoriesData.subcategories.find(
+ (cat: any) => cat.categoryId === 9
     );
-    return automotiveCategory ? automotiveCategory.items.map((item: any) => item.name) : [];
+ return automotiveCategory ? automotiveCategory.items.map((item: any) => item.name) : [];
 };
 
 // ============================================================================
@@ -38,10 +38,10 @@ const inputError =
 
 const selectStyle = {
     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat' as const,
-    backgroundPosition: 'right 0.75rem center',
-    backgroundSize: '1.5em 1.5em',
-    paddingRight: '2.5rem',
+ backgroundRepeat: 'no-repeat' as const,
+ backgroundPosition: 'right 0.75rem center',
+ backgroundSize: '1.5em 1.5em',
+ paddingRight: '2.5rem',
 };
 
 // ============================================================================
@@ -69,90 +69,90 @@ const SectionCard: React.FC<{ title?: string; children: React.ReactNode; action?
 // FIELD ERRORS
 // ============================================================================
 interface FieldErrors {
-    name?: string;
-    phone?: string;
-    email?: string;
-    services?: string;
-    experience?: string;
-    priceRange?: string;
-    area?: string;
-    city?: string;
-    state?: string;
-    pincode?: string;
-    location?: string;
+ name?: string;
+ phone?: string;
+ email?: string;
+ services?: string;
+ experience?: string;
+ priceRange?: string;
+ area?: string;
+ city?: string;
+ state?: string;
+ pincode?: string;
+ location?: string;
 }
 
 // ============================================================================
 // COMPONENT
 // ============================================================================
 const AutomotiveForm: React.FC = () => {
-    const navigate = useNavigate();
+ const navigate = useNavigate();
 
-    const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
-    const getSubcategoryFromUrl = () => {
-        const sub = new URLSearchParams(window.location.search).get('subcategory');
-        return sub ? sub.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
+ const getIdFromUrl = () => new URLSearchParams(window.location.search).get('id');
+ const getSubcategoryFromUrl = () => {
+ const sub = new URLSearchParams(window.location.search).get('subcategory');
+ return sub ? sub.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : null;
     };
 
-    const [editId] = useState<string | null>(getIdFromUrl());
-    const isEditMode = !!editId;
+ const [editId] = useState<string | null>(getIdFromUrl());
+ const isEditMode = !!editId;
 
-    const [loading, setLoading] = useState(false);
-    const [loadingData, setLoadingData] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [locationWarning, setLocationWarning] = useState('');
-    const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+ const [loading, setLoading] = useState(false);
+ const [loadingData, setLoadingData] = useState(false);
+ const [error, setError] = useState('');
+ const [successMessage, setSuccessMessage] = useState('');
+ const [locationWarning, setLocationWarning] = useState('');
+ const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
     // ── businessTypes and subcategoryOptions declared together ───────────────
-    const businessTypes = getAutomotiveSubcategories();
-    const subcategoryOptions = businessTypes.map((name: string) => ({
-        name,
+ const businessTypes = getAutomotiveSubcategories();
+ const subcategoryOptions = businessTypes.map((name: string) => ({
+ name,
         icon: SUBCATEGORY_ICONS[name],
     }));
 
     const defaultType = getSubcategoryFromUrl() || businessTypes[0] || 'Car Service Center';
-    const { setAccountType } = useAccount();
+ const { setAccountType } = useAccount();
 
-    const [formData, setFormData] = useState({
+ const [formData, setFormData] = useState({
         userId: localStorage.getItem('userId') || '',
-        name: '',
-        businessType: defaultType,
-        email: '',
-        phone: '',
-        description: '',
-        services: '',
-        priceRange: '',
-        area: '',
-        city: '',
-        state: '',
-        pincode: '',
-        latitude: '',
-        longitude: '',
-        experience: '',
-        availability: availabilityOptions[0],
+ name: '',
+ businessType: defaultType,
+ email: '',
+ phone: '',
+ description: '',
+ services: '',
+ priceRange: '',
+ area: '',
+ city: '',
+ state: '',
+ pincode: '',
+ latitude: '',
+ longitude: '',
+ experience: '',
+ availability: availabilityOptions[0],
     });
 
-    const [selectedImages, setSelectedImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [existingImages, setExistingImages] = useState<string[]>([]);
-    const [locationLoading, setLocationLoading] = useState(false);
-    const isGPSDetected = useRef(false);
+ const [selectedImages, setSelectedImages] = useState<File[]>([]);
+ const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+ const [existingImages, setExistingImages] = useState<string[]>([]);
+ const [locationLoading, setLocationLoading] = useState(false);
+ const isGPSDetected = useRef(false);
 
     // ── fetch for edit ───────────────────────────────────────────────────────
-    useEffect(() => {
-        if (!editId) return;
-        const fetchData = async () => {
-            setLoadingData(true);
-            try {
-                const response = await getAutomotiveById(editId);
-                const data = response.data;
-                if (!data) throw new Error('Service not found');
-                setFormData((prev) => ({
+ useEffect(() => {
+ if (!editId) return;
+ const fetchData = async () => {
+ setLoadingData(true);
+ try {
+ const response = await getAutomotiveById(editId);
+ const data = response.data;
+ if (!data) throw new Error('Service not found');
+ setFormData((prev) => ({
                     ...prev,
                     userId: data.userId || '',
                     name: data.name || '',
-                    businessType: data.businessType || defaultType,
+ businessType: data.businessType || defaultType,
                     email: data.email || '',
                     phone: data.phone || '',
                     description: data.description || '',
@@ -165,92 +165,92 @@ const AutomotiveForm: React.FC = () => {
                     latitude: data.latitude?.toString() || '',
                     longitude: data.longitude?.toString() || '',
                     experience: data.experience?.toString() || '',
-                    availability: data.availability || availabilityOptions[0],
+ availability: data.availability || availabilityOptions[0],
                 }));
-                if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
+ if (data.images && Array.isArray(data.images)) setExistingImages(data.images);
             } catch (err) {
-                setError('Failed to load service data');
+ setError('Failed to load service data');
             } finally {
-                setLoadingData(false);
+ setLoadingData(false);
             }
         };
-        fetchData();
+ fetchData();
     }, [editId]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
-        if (fieldErrors[name as keyof FieldErrors]) {
-            setFieldErrors(prev => ({ ...prev, [name]: undefined }));
+ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+ const { name, value } = e.target;
+ setFormData((prev) => ({ ...prev, [name]: value }));
+ if (fieldErrors[name as keyof FieldErrors]) {
+ setFieldErrors(prev => ({ ...prev, [name]: undefined }));
         }
     };
 
     // ── image helpers ────────────────────────────────────────────────────────
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        const availableSlots = 5 - (selectedImages.length + existingImages.length);
-        if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
-        const validFiles = files.slice(0, availableSlots).filter((file) => {
-            if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
-            if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
-            return true;
+ const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+ const files = Array.from(e.target.files || []);
+ if (!files.length) return;
+ const availableSlots = 5 - (selectedImages.length + existingImages.length);
+ if (availableSlots <= 0) { setError('Maximum 5 images allowed'); return; }
+ const validFiles = files.slice(0, availableSlots).filter((file) => {
+ if (!file.type.startsWith('image/')) { setError(`${file.name} is not a valid image`); return false; }
+ if (file.size > 5 * 1024 * 1024) { setError(`${file.name} exceeds 5 MB`); return false; }
+ return true;
         });
-        if (!validFiles.length) return;
-        const newPreviews: string[] = [];
-        let loaded = 0;
-        validFiles.forEach((file) => {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                newPreviews.push(reader.result as string);
-                if (++loaded === validFiles.length) setImagePreviews((prev) => [...prev, ...newPreviews]);
+ if (!validFiles.length) return;
+ const newPreviews: string[] = [];
+ let loaded = 0;
+ validFiles.forEach((file) => {
+ const reader = new FileReader();
+ reader.onloadend = () => {
+ newPreviews.push(reader.result as string);
+ if (++loaded === validFiles.length) setImagePreviews((prev) => [...prev, ...newPreviews]);
             };
-            reader.readAsDataURL(file);
+ reader.readAsDataURL(file);
         });
-        setSelectedImages((prev) => [...prev, ...validFiles]);
-        setError('');
+ setSelectedImages((prev) => [...prev, ...validFiles]);
+ setError('');
     };
 
-    const handleRemoveNewImage = (i: number) => {
-        setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
-        setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
+ const handleRemoveNewImage = (i: number) => {
+ setSelectedImages((prev) => prev.filter((_, idx) => idx !== i));
+ setImagePreviews((prev) => prev.filter((_, idx) => idx !== i));
     };
-    const handleRemoveExistingImage = (i: number) => setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
+ const handleRemoveExistingImage = (i: number) => setExistingImages((prev) => prev.filter((_, idx) => idx !== i));
 
     // ── GPS location ─────────────────────────────────────────────────────────
-    const getCurrentLocation = () => {
-        setLocationLoading(true); setError(''); setLocationWarning('');
-        setFieldErrors(prev => ({ ...prev, location: undefined }));
-        if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                isGPSDetected.current = true;
-                const lat = pos.coords.latitude.toString();
-                const lng = pos.coords.longitude.toString();
-                if (pos.coords.accuracy > 500) setLocationWarning(`⚠️ Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
-                setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                    const data = await res.json();
-                    if (data.address) {
-                        setFormData((prev) => ({
+ const getCurrentLocation = () => {
+ setLocationLoading(true); setError(''); setLocationWarning('');
+ setFieldErrors(prev => ({ ...prev, location: undefined }));
+ if (!navigator.geolocation) { setError('Geolocation not supported'); setLocationLoading(false); return; }
+ navigator.geolocation.getCurrentPosition(
+ async (pos) => {
+ isGPSDetected.current = true;
+ const lat = pos.coords.latitude.toString();
+ const lng = pos.coords.longitude.toString();
+ if (pos.coords.accuracy > 500) setLocationWarning(` Low accuracy (~${Math.round(pos.coords.accuracy)}m). Please verify.`);
+ setFormData((prev) => ({ ...prev, latitude: lat, longitude: lng }));
+ try {
+ const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+ const data = await res.json();
+ if (data.address) {
+ setFormData((prev) => ({
                             ...prev, latitude: lat, longitude: lng,
-                            area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
-                            city: data.address.city || data.address.town || data.address.village || prev.city,
-                            state: data.address.state || prev.state,
-                            pincode: data.address.postcode || prev.pincode,
+ area: data.address.suburb || data.address.neighbourhood || data.address.road || prev.area,
+ city: data.address.city || data.address.town || data.address.village || prev.city,
+ state: data.address.state || prev.state,
+ pincode: data.address.postcode || prev.pincode,
                         }));
                     }
                 } catch (e) { console.error(e); }
-                setLocationLoading(false);
+ setLocationLoading(false);
             },
-            (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
+ (err) => { setError(`Location error: ${err.message}`); setLocationLoading(false); },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
-    const safeServices =
-        typeof formData.services === 'string'
+ const safeServices =
+ typeof formData.services === 'string'
             ? formData.services
             : Array.isArray(formData.services)
                 ? (formData.services as string[]).join(', ')
@@ -259,88 +259,88 @@ const AutomotiveForm: React.FC = () => {
     // ============================================================================
     // SUBMIT
     // ============================================================================
-    const handleSubmit = async () => {
-        setError(''); setSuccessMessage('');
+ const handleSubmit = async () => {
+ setError(''); setSuccessMessage('');
 
-        const errors: FieldErrors = {};
-        if (!formData.name.trim()) errors.name = 'Business name is required';
-        if (!formData.phone.trim()) {
-            errors.phone = 'Phone number is required';
+ const errors: FieldErrors = {};
+ if (!formData.name.trim()) errors.name = 'Business name is required';
+ if (!formData.phone.trim()) {
+ errors.phone = 'Phone number is required';
         } else if (!/^[0-9+\-\s]{7,15}$/.test(formData.phone.trim())) {
-            errors.phone = 'Please enter a valid phone number';
+ errors.phone = 'Please enter a valid phone number';
         }
-        if (!formData.email.trim()) {
-            errors.email = 'Email address is required';
+ if (!formData.email.trim()) {
+ errors.email = 'Email address is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-            errors.email = 'Please enter a valid email address';
+ errors.email = 'Please enter a valid email address';
         }
-        if (!safeServices.trim()) errors.services = 'Please add at least one service';
-        if (!formData.area.trim()) errors.area = 'Area is required';
-        if (!formData.city.trim()) errors.city = 'City is required';
-        if (!formData.state.trim()) errors.state = 'State is required';
-        if (!formData.pincode.trim()) {
-            errors.pincode = 'PIN code is required';
+ if (!safeServices.trim()) errors.services = 'Please add at least one service';
+ if (!formData.area.trim()) errors.area = 'Area is required';
+ if (!formData.city.trim()) errors.city = 'City is required';
+ if (!formData.state.trim()) errors.state = 'State is required';
+ if (!formData.pincode.trim()) {
+ errors.pincode = 'PIN code is required';
         } else if (!/^\d{6}$/.test(formData.pincode.trim())) {
-            errors.pincode = 'PIN code must be exactly 6 digits';
+ errors.pincode = 'PIN code must be exactly 6 digits';
         }
-        if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
+ if (!formData.latitude || !formData.longitude) errors.location = 'Please provide a valid location';
 
-        if (Object.keys(errors).length > 0) {
-            setFieldErrors(errors);
-            setError('Please fix the errors below before submitting');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            return;
-        }
-
-        const parsedLat = parseFloat(formData.latitude);
-        const parsedLng = parseFloat(formData.longitude);
-        if (isNaN(parsedLat) || isNaN(parsedLng)) {
-            setError('Invalid location coordinates. Please re-detect.');
-            return;
+ if (Object.keys(errors).length > 0) {
+ setFieldErrors(errors);
+ setError('Please fix the errors below before submitting');
+ window.scrollTo({ top: 0, behavior: 'smooth' });
+ return;
         }
 
-        const servicesArray = safeServices.split(',').map((s) => s.trim()).filter(Boolean);
+ const parsedLat = parseFloat(formData.latitude);
+ const parsedLng = parseFloat(formData.longitude);
+ if (isNaN(parsedLat) || isNaN(parsedLng)) {
+ setError('Invalid location coordinates. Please re-detect.');
+ return;
+        }
 
-        const payload: CreateAutomotiveData = {
-            userId: formData.userId,
-            name: formData.name.trim(),
-            businessType: formData.businessType,
-            phone: formData.phone.trim(),
-            email: formData.email.trim(),
-            services: servicesArray,
-            experience: formData.experience.trim(),
-            availability: formData.availability,
-            area: formData.area.trim(),
-            city: formData.city.trim(),
-            state: formData.state.trim(),
-            pincode: formData.pincode.trim(),
-            latitude: parsedLat.toString(),
-            longitude: parsedLng.toString(),
-            priceRange: formData.priceRange.trim(),
-            description: formData.description.trim(),
-            images: selectedImages,
+ const servicesArray = safeServices.split(',').map((s) => s.trim()).filter(Boolean);
+
+ const payload: CreateAutomotiveData = {
+ userId: formData.userId,
+ name: formData.name.trim(),
+ businessType: formData.businessType,
+ phone: formData.phone.trim(),
+ email: formData.email.trim(),
+ services: servicesArray,
+ experience: formData.experience.trim(),
+ availability: formData.availability,
+ area: formData.area.trim(),
+ city: formData.city.trim(),
+ state: formData.state.trim(),
+ pincode: formData.pincode.trim(),
+ latitude: parsedLat.toString(),
+ longitude: parsedLng.toString(),
+ priceRange: formData.priceRange.trim(),
+ description: formData.description.trim(),
+ images: selectedImages,
         };
 
-        setLoading(true);
-        try {
-            if (isEditMode && editId) {
-                await updateAutomotive(editId, payload);
-                setSuccessMessage('Service updated successfully!');
+ setLoading(true);
+ try {
+ if (isEditMode && editId) {
+ await updateAutomotive(editId, payload);
+ setSuccessMessage('Service updated successfully!');
             } else {
-                await createAutomotive(payload);
-                setSuccessMessage('Service created successfully!');
+ await createAutomotive(payload);
+ setSuccessMessage('Service created successfully!');
             }
-            setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
+ setTimeout(() => { setAccountType("worker"); navigate("/my-business"); }, 1500);
         } catch (err: any) {
-            console.error('❌ Submit error:', err);
+ console.error(' Submit error:', err);
             setError(err.message || 'Failed to submit form. Please try again.');
         } finally {
-            setLoading(false);
+ setLoading(false);
         }
     };
 
     // ── Loading screen ────────────────────────────────────────────────────────
-    if (loadingData) return (
+ if (loadingData) return (
         <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
             <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto mb-4" style={{ borderColor: BRAND }} />
@@ -349,13 +349,13 @@ const AutomotiveForm: React.FC = () => {
         </div>
     );
 
-    const totalImages = selectedImages.length + existingImages.length;
-    const maxImagesReached = totalImages >= 5;
+ const totalImages = selectedImages.length + existingImages.length;
+ const maxImagesReached = totalImages >= 5;
 
     // ============================================================================
     // RENDER
     // ============================================================================
-    return (
+ return (
         <div className="min-h-screen bg-gray-50">
 
             {/* ── Sticky Header ── */}
@@ -383,7 +383,7 @@ const AutomotiveForm: React.FC = () => {
                 {error && (
                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                         <div className="flex items-start gap-2">
-                            <span className="text-red-600 mt-0.5">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <div>
                                 <p className="font-semibold text-red-800 mb-1">Please fix the following</p>
                                 <p className={`${typography.form.error} text-red-700`}>{error}</p>
@@ -395,7 +395,7 @@ const AutomotiveForm: React.FC = () => {
                 {/* Success banner */}
                 {successMessage && (
                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-                        <span className="text-green-600 text-lg">✓</span>
+                        <Check className="w-4 h-4 shrink-0" />
                         <p className={`${typography.body.small} text-green-700 font-medium`}>{successMessage}</p>
                     </div>
                 )}
@@ -407,14 +407,14 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Business Name</FieldLabel>
                             <input
-                                type="text" name="name" value={formData.name}
-                                onChange={handleInputChange}
-                                placeholder="e.g., SpeedPro Auto Services"
-                                className={fieldErrors.name ? inputError : inputBase}
+ type="text" name="name" value={formData.name}
+ onChange={handleInputChange}
+ placeholder="e.g., SpeedPro Auto Services"
+ className={fieldErrors.name ? inputError : inputBase}
                             />
                             {fieldErrors.name && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.name}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.name}
                                 </p>
                             )}
                         </div>
@@ -423,14 +423,14 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Business Type</FieldLabel>
                             <IconSelect
-                                label=""
-                                value={formData.businessType}
-                                placeholder="Select business type"
-                                options={subcategoryOptions}
-                                onChange={(val) =>
-                                    setFormData(prev => ({ ...prev, businessType: val }))
+ label=""
+ value={formData.businessType}
+ placeholder="Select business type"
+ options={subcategoryOptions}
+ onChange={(val) =>
+ setFormData(prev => ({ ...prev, businessType: val }))
                                 }
-                                disabled={loading}
+ disabled={loading}
                             />
                         </div>
                     </div>
@@ -442,28 +442,28 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Phone</FieldLabel>
                             <input
-                                type="tel" name="phone" value={formData.phone}
-                                onChange={handleInputChange}
-                                placeholder="e.g., 9876543210"
-                                className={fieldErrors.phone ? inputError : inputBase}
+ type="tel" name="phone" value={formData.phone}
+ onChange={handleInputChange}
+ placeholder="e.g., 9876543210"
+ className={fieldErrors.phone ? inputError : inputBase}
                             />
                             {fieldErrors.phone && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.phone}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.phone}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>Email</FieldLabel>
                             <input
-                                type="email" name="email" value={formData.email}
-                                onChange={handleInputChange}
-                                placeholder="e.g., contact@autobusiness.com"
-                                className={fieldErrors.email ? inputError : inputBase}
+ type="email" name="email" value={formData.email}
+ onChange={handleInputChange}
+ placeholder="e.g., contact@autobusiness.com"
+ className={fieldErrors.email ? inputError : inputBase}
                             />
                             {fieldErrors.email && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.email}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.email}
                                 </p>
                             )}
                         </div>
@@ -476,19 +476,19 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel>Experience (years)</FieldLabel>
                             <input
-                                type="number" name="experience" value={formData.experience}
-                                onChange={handleInputChange}
-                                placeholder="Years of experience" min="0"
-                                className={inputBase}
+ type="number" name="experience" value={formData.experience}
+ onChange={handleInputChange}
+ placeholder="Years of experience" min="0"
+ className={inputBase}
                             />
                         </div>
                         <div>
                             <FieldLabel>Price Range (₹)</FieldLabel>
                             <input
-                                type="text" name="priceRange" value={formData.priceRange}
-                                onChange={handleInputChange}
-                                placeholder="e.g., 500-5000"
-                                className={inputBase}
+ type="text" name="priceRange" value={formData.priceRange}
+ onChange={handleInputChange}
+ placeholder="e.g., 500-5000"
+ className={inputBase}
                             />
                         </div>
                     </div>
@@ -496,10 +496,10 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel>Availability</FieldLabel>
                             <select
-                                name="availability" value={formData.availability}
-                                onChange={handleInputChange}
-                                className={inputBase + ' appearance-none bg-white'}
-                                style={selectStyle}
+ name="availability" value={formData.availability}
+ onChange={handleInputChange}
+ className={inputBase + ' appearance-none bg-white'}
+ style={selectStyle}
                             >
                                 {availabilityOptions.map((option) => (
                                     <option key={option} value={option}>{option}</option>
@@ -516,18 +516,18 @@ const AutomotiveForm: React.FC = () => {
                     <div>
                         <FieldLabel required>Available Services</FieldLabel>
                         <textarea
-                            name="services" value={safeServices}
-                            onChange={handleInputChange} rows={3}
-                            placeholder="Oil Change, Tyre Rotation, Engine Tuning, Brake Repair, AC Service"
-                            className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
+ name="services" value={safeServices}
+ onChange={handleInputChange} rows={3}
+ placeholder="Oil Change, Tyre Rotation, Engine Tuning, Brake Repair, AC Service"
+ className={(fieldErrors.services ? inputError : inputBase) + ' resize-none'}
                         />
                         {fieldErrors.services ? (
                             <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                <span>⚠️</span> {fieldErrors.services}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.services}
                             </p>
                         ) : (
                             <p className={`${typography.body.xs} text-gray-400 mt-1`}>
-                                💡 Separate each service with a comma
+                                � Separate each service with a comma
                             </p>
                         )}
                     </div>
@@ -535,16 +535,16 @@ const AutomotiveForm: React.FC = () => {
                     {safeServices && safeServices.trim() && (
                         <div className="mt-1">
                             <p className={`${typography.body.small} font-medium text-gray-700 mb-2`}>
-                                Selected Services ({safeServices.split(',').filter((s) => s.trim()).length}):
+ Selected Services ({safeServices.split(',').filter((s) => s.trim()).length}):
                             </p>
                             <div className="flex flex-wrap gap-2">
                                 {safeServices.split(',').map((s, i) => {
-                                    const trimmed = s.trim();
-                                    if (!trimmed) return null;
-                                    return (
+ const trimmed = s.trim();
+ if (!trimmed) return null;
+ return (
                                         <span key={i}
-                                            className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full ${typography.misc.badge} text-white`}
-                                            style={{ backgroundColor: BRAND }}>
+ className={`inline-flex items-center gap-1.5 pl-3.5 pr-2.5 py-2 rounded-full ${typography.misc.badge} text-white`}
+ style={{ backgroundColor: BRAND }}>
                                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
@@ -562,25 +562,25 @@ const AutomotiveForm: React.FC = () => {
                     <div>
                         <FieldLabel>Description</FieldLabel>
                         <textarea
-                            name="description" value={formData.description}
-                            onChange={handleInputChange} rows={4}
-                            placeholder="Tell customers about your business, specializations, and what makes you stand out..."
-                            className={inputBase + ' resize-none'}
+ name="description" value={formData.description}
+ onChange={handleInputChange} rows={4}
+ placeholder="Tell customers about your business, specializations, and what makes you stand out..."
+ className={inputBase + ' resize-none'}
                         />
                     </div>
                 </SectionCard>
 
                 {/* ─── 6. LOCATION ─────────────────────────────────────────── */}
                 <SectionCard
-                    title="Location Details"
-                    action={
+ title="Location Details"
+ action={
                         <button
-                            type="button" onClick={getCurrentLocation} disabled={locationLoading}
-                            className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-                            style={{ backgroundColor: BRAND }}
+ type="button" onClick={getCurrentLocation} disabled={locationLoading}
+ className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+ style={{ backgroundColor: BRAND }}
                         >
                             {locationLoading
-                                ? <><span className="animate-spin text-sm">⌛</span> Detecting...</>
+                                ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting...</>
                                 : <><MapPin className="w-4 h-4" /> Auto Detect</>
                             }
                         </button>
@@ -588,7 +588,7 @@ const AutomotiveForm: React.FC = () => {
                 >
                     {locationWarning && (
                         <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 flex items-start gap-2">
-                            <span className="text-yellow-600 mt-0.5 shrink-0">⚠️</span>
+                            <AlertTriangle className="w-4 h-4 shrink-0" />
                             <p className={`${typography.body.small} text-yellow-800`}>{locationWarning}</p>
                         </div>
                     )}
@@ -598,22 +598,22 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel required>Area</FieldLabel>
                             <input type="text" name="area" value={formData.area}
-                                onChange={handleInputChange} placeholder="e.g., Jubilee Hills"
-                                className={fieldErrors.area ? inputError : inputBase} />
+ onChange={handleInputChange} placeholder="e.g., Jubilee Hills"
+ className={fieldErrors.area ? inputError : inputBase} />
                             {fieldErrors.area && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.area}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.area}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>City</FieldLabel>
                             <input type="text" name="city" value={formData.city}
-                                onChange={handleInputChange} placeholder="e.g., Hyderabad"
-                                className={fieldErrors.city ? inputError : inputBase} />
+ onChange={handleInputChange} placeholder="e.g., Hyderabad"
+ className={fieldErrors.city ? inputError : inputBase} />
                             {fieldErrors.city && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.city}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.city}
                                 </p>
                             )}
                         </div>
@@ -624,22 +624,22 @@ const AutomotiveForm: React.FC = () => {
                         <div>
                             <FieldLabel required>State</FieldLabel>
                             <input type="text" name="state" value={formData.state}
-                                onChange={handleInputChange} placeholder="e.g., Telangana"
-                                className={fieldErrors.state ? inputError : inputBase} />
+ onChange={handleInputChange} placeholder="e.g., Telangana"
+ className={fieldErrors.state ? inputError : inputBase} />
                             {fieldErrors.state && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.state}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.state}
                                 </p>
                             )}
                         </div>
                         <div>
                             <FieldLabel required>PIN Code</FieldLabel>
                             <input type="text" name="pincode" value={formData.pincode}
-                                onChange={handleInputChange} placeholder="e.g., 500033" maxLength={6}
-                                className={fieldErrors.pincode ? inputError : inputBase} />
+ onChange={handleInputChange} placeholder="e.g., 500033" maxLength={6}
+ className={fieldErrors.pincode ? inputError : inputBase} />
                             {fieldErrors.pincode && (
                                 <p className="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                    <span>⚠️</span> {fieldErrors.pincode}
+                                    <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.pincode}
                                 </p>
                             )}
                         </div>
@@ -649,7 +649,7 @@ const AutomotiveForm: React.FC = () => {
                     {fieldErrors.location && (
                         <div className="bg-red-50 border border-red-200 rounded-xl p-3">
                             <p className="text-sm text-red-700 flex items-center gap-1.5">
-                                <span>⚠️</span> {fieldErrors.location}
+                                <AlertTriangle className="w-4 h-4 shrink-0" /> {fieldErrors.location}
                             </p>
                         </div>
                     )}
@@ -658,7 +658,7 @@ const AutomotiveForm: React.FC = () => {
                     {!formData.latitude && !formData.longitude && (
                         <div className="rounded-xl p-3 bg-amber-50 border border-amber-200">
                             <p className={`${typography.body.small} text-amber-800`}>
-                                💡 <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
+                                <Info className="w-4 h-4 inline shrink-0 align-middle" /> <span className="font-medium">Tip:</span> Use auto-detect to fill location automatically from your device GPS.
                             </p>
                         </div>
                     )}
@@ -667,7 +667,7 @@ const AutomotiveForm: React.FC = () => {
                     {formData.latitude && formData.longitude && (
                         <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                             <p className={`${typography.body.small} text-green-800`}>
-                                <span className="font-semibold">✓ Location set: </span>
+                                <span className="font-semibold inline-flex items-center gap-1.5"><Check className="w-4 h-4" /> Location set: </span>
                                 <span className="font-mono text-xs ml-1">
                                     {parseFloat(formData.latitude).toFixed(6)}, {parseFloat(formData.longitude).toFixed(6)}
                                 </span>
@@ -680,16 +680,16 @@ const AutomotiveForm: React.FC = () => {
                 <SectionCard title="Portfolio Photos (Optional)">
                     <label className="cursor-pointer block">
                         <input
-                            type="file" accept="image/*" multiple
-                            onChange={handleImageSelect}
-                            className="hidden"
-                            disabled={maxImagesReached}
+ type="file" accept="image/*" multiple
+ onChange={handleImageSelect}
+ className="hidden"
+ disabled={maxImagesReached}
                         />
                         <div
-                            className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
+ className={`border-2 border-dashed rounded-2xl p-8 text-center transition ${maxImagesReached
                                 ? 'border-gray-200 bg-gray-50 cursor-not-allowed'
                                 : 'hover:opacity-90 cursor-pointer'}`}
-                            style={!maxImagesReached ? { borderColor: '#00598a', backgroundColor: '#f0f7fb' } : {}}
+ style={!maxImagesReached ? { borderColor: '#00598a', backgroundColor: '#f0f7fb' } : {}}
                         >
                             <div className="flex flex-col items-center gap-3">
                                 <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: '#e0eff7' }}>
@@ -711,16 +711,16 @@ const AutomotiveForm: React.FC = () => {
                                 <div key={`ex-${i}`} className="relative aspect-square group">
                                     <img src={url} alt={`Saved ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2 border-gray-200" />
                                     <button
-                                        type="button" onClick={() => handleRemoveExistingImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button" onClick={() => handleRemoveExistingImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span
-                                        className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
-                                        style={{ backgroundColor: BRAND }}
+ className={`absolute bottom-2 left-2 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}
+ style={{ backgroundColor: BRAND }}
                                     >
-                                        Saved
+ Saved
                                     </span>
                                 </div>
                             ))}
@@ -728,13 +728,13 @@ const AutomotiveForm: React.FC = () => {
                                 <div key={`new-${i}`} className="relative aspect-square group">
                                     <img src={preview} alt={`New ${i + 1}`} className="w-full h-full object-cover rounded-xl border-2" style={{ borderColor: BRAND }} />
                                     <button
-                                        type="button" onClick={() => handleRemoveNewImage(i)}
-                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
+ type="button" onClick={() => handleRemoveNewImage(i)}
+ className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-lg hover:bg-red-600 transition opacity-0 group-hover:opacity-100"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
                                     <span className={`absolute bottom-2 left-2 bg-green-600 text-white ${typography.fontSize.xs} px-2 py-0.5 rounded-full`}>
-                                        New
+ New
                                     </span>
                                 </div>
                             ))}
@@ -745,30 +745,30 @@ const AutomotiveForm: React.FC = () => {
                 {/* ── Action Buttons ── */}
                 <div className="flex gap-4 pt-2 pb-8">
                     <button
-                        onClick={handleSubmit}
-                        disabled={loading || !!successMessage}
-                        type="button"
-                        className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
-                        style={{ backgroundColor: BRAND }}
+ onClick={handleSubmit}
+ disabled={loading || !!successMessage}
+ type="button"
+ className={`flex-1 px-6 py-3.5 rounded-xl font-semibold text-white transition-all shadow-md hover:shadow-lg ${typography.body.base} ${loading || successMessage ? 'opacity-70 cursor-not-allowed' : 'hover:opacity-90'}`}
+ style={{ backgroundColor: BRAND }}
                     >
                         {loading ? (
                             <span className="flex items-center justify-center gap-2">
-                                <span className="animate-spin">⏳</span>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                                 {isEditMode ? 'Updating...' : 'Creating...'}
                             </span>
                         ) : successMessage ? (
-                            <span className="flex items-center justify-center gap-2"><span>✓</span> Done</span>
+                            <span className="flex items-center justify-center gap-2"><Check className="w-4 h-4 shrink-0" /> Done</span>
                         ) : (
-                            isEditMode ? 'Update Service' : 'Create Service'
+ isEditMode ? 'Update Service' : 'Create Service'
                         )}
                     </button>
                     <button
-                        onClick={() => window.history.back()}
-                        type="button"
-                        disabled={loading}
-                        className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+ onClick={() => window.history.back()}
+ type="button"
+ disabled={loading}
+ className={`px-8 py-3.5 rounded-xl font-medium text-gray-700 bg-white border-2 border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-all ${typography.body.base} ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
-                        Cancel
+ Cancel
                     </button>
                 </div>
 

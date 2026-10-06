@@ -10,11 +10,13 @@ import {
     getJobById,
     removeEnquiry,
     ConfirmedWorkers,
-    getReviews,
-    getWorkerAverageRating,
-    ReviewData,
-    API_BASE_URL,
-} from "../services/api.service";
+      getReviews,
+      getWorkerAverageRating,
+      getWorkerByUserId,
+      ReviewData,
+      API_BASE_URL,
+      authedFetch,
+  } from "../services/api.service";
 
 import typography from "../styles/typography";
 
@@ -375,30 +377,30 @@ const enrichWorker = async (
         console.log("getWorkerById failed for id:", id, "— treating as userId");
     }
 
-    // STEP 1b: If id was a userId, resolve real workerId
-    if (!resolvedWorkerId) {
-        try {
-            const res = await fetch(`${API_BASE_URL}/getWorkerByUserId/${id}`);
-            if (res.ok) {
-                const json = await res.json();
-                const w = json?.worker || json?.data || json;
-                if (w?._id) {
-                    resolvedWorkerId = w._id;
-                    resolvedUserId = id;
-                    name = name || w.name || "";
-                    phone = phone || w.phone || "";
-                    profilePic = profilePic || resolveImageUrl(w.profilePic);
-                    area = area || w.area || "";
-                    city = city || w.city || "";
-                    state = state || w.state || "";
-                    isActive = w.isActive ?? true;
-                    console.log("✅ Resolved workerId from userId:", resolvedWorkerId);
-                }
-            }
-        } catch {
-            console.log("getWorkerByUserId fetch failed for id:", id);
-        }
-    }
+      // STEP 1b: If id was a userId, resolve real workerId
+      if (!resolvedWorkerId) {
+          try {
+              // Routed through the shared service so the bearer token is
+              // attached and the worker-by-userId fallback chain is reused,
+              // matching the mobile app.
+              const json = await getWorkerByUserId(id);
+              const w = json?.worker || json?.data || json;
+              if (w?._id) {
+                  resolvedWorkerId = w._id;
+                  resolvedUserId = id;
+                  name = name || w.name || "";
+                  phone = phone || w.phone || "";
+                  profilePic = profilePic || resolveImageUrl(w.profilePic);
+                  area = area || w.area || "";
+                  city = city || w.city || "";
+                  state = state || w.state || "";
+                  isActive = w.isActive ?? true;
+                  console.log("? Resolved workerId from userId:", resolvedWorkerId);
+              }
+          } catch {
+              console.log("getWorkerByUserId fetch failed for id:", id);
+          }
+      }
 
     // STEP 2: getWorkerWithSkills — skills, categories, subCategories, serviceCharge
     if (resolvedWorkerId) {
@@ -518,7 +520,7 @@ const JobApplicantsPage: React.FC = () => {
                     }
                 } catch { /* non-critical */ }
 
-                const rawRes = await fetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
+                const rawRes = await authedFetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
                     method: "GET", redirect: "follow",
                 });
                 const rawJson = await rawRes.json();

@@ -1,7 +1,20 @@
 import axios from "axios";
+import { getAuthToken } from "./authToken";
 
 export const API_BASE_URL =
     process.env.REACT_APP_API_BASE_URL || "";
+
+/**
+ * `fetch` with the bearer token attached, for pages that need a one-off request
+ * rather than a service wrapper. Prefer the exported service functions.
+ */
+export const authedFetch: typeof fetch = (input, init) => {
+    const token = getAuthToken();
+    if (!token) return fetch(input, init);
+    const headers = new Headers((init?.headers as HeadersInit) || {});
+    if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${token}`);
+    return fetch(input, { ...init, headers });
+};
 
 const API_FORM = axios.create({
     baseURL: API_BASE_URL,
@@ -13,6 +26,40 @@ const API_FORM = axios.create({
 const API_MULTIPART = axios.create({
     baseURL: API_BASE_URL,
 });
+
+/**
+ * Attaches the bearer token to every request.
+ *
+ * The mobile app sends `Authorization: Bearer <token>` on all worker calls
+ * (`getAuthToken()` in `workerApi.tsx`). Without this the backend treats worker
+ * profile and skill writes as anonymous, which is why the web flow could save a
+ * worker locally but not reliably on the server.
+ *
+ * The multipart instance must not have a default Content-Type - the browser has
+ * to add its own `multipart/form-data; boundary=...` or the file part breaks.
+ */
+const attachAuth = API_MULTIPART;
+[API_FORM, attachAuth].forEach((instance) => {
+    instance.interceptors.request.use((config) => {
+        const token = getAuthToken();
+        if (token) {
+            config.headers.set("Authorization", `Bearer ${token}`);
+        }
+        return config;
+    });
+});
+
+
+/**
+ * Guards optional coordinates before they are appended to a request.
+ *
+ * `LocationPicker` uses `0` as its "nothing selected" sentinel, so a zero here
+ * means the address was never resolved to a real point and must not be sent as
+ * a location. A point on the exact equator/prime meridian is the only real
+ * address this rejects.
+ */
+const isFiniteNumber = (value?: number | null): value is number =>
+    typeof value === "number" && isFinite(value) && value !== 0;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH — Email-based OTP login (no phone login)
@@ -54,7 +101,7 @@ export const registerWithOtp = async (params: RegisterWithOtpParams): Promise<Ap
         formData.append("latitude", params.latitude.toString());
         formData.append("longitude", params.longitude.toString());
 
-        const response = await fetch(`${API_BASE_URL}/register`, {
+        const response = await authedFetch(`${API_BASE_URL}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
@@ -85,7 +132,7 @@ export const verifyOtp = async (params: VerifyOtpParams): Promise<ApiResponse> =
             formData.append("fcmToken", params.fcmToken);
         }
 
-        const response = await fetch(`${API_BASE_URL}/verify-otp`, {
+        const response = await authedFetch(`${API_BASE_URL}/verify-otp`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
@@ -109,7 +156,7 @@ export const resendOtp = async (email: string): Promise<ApiResponse> => {
         const formData = new URLSearchParams();
         formData.append("email", email);
 
-        const response = await fetch(`${API_BASE_URL}/resend-otp`, {
+        const response = await authedFetch(`${API_BASE_URL}/resend-otp`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
@@ -208,7 +255,7 @@ export const updateJob = async (jobId: string, payload: any) => {
         payload.images.forEach((image: File) => formData.append("images", image));
     }
 
-    const response = await fetch(`${API_BASE_URL}/updateJob/${jobId}`, {
+    const response = await authedFetch(`${API_BASE_URL}/updateJob/${jobId}`, {
         method: "PUT",
         body: formData,
     });
@@ -226,7 +273,7 @@ export const getUserJobs = async (userId: string) => {
 };
 
 export const getNearbyJobs = async (latitude: number, longitude: number) => {
-    const res = await fetch(
+    const res = await authedFetch(
         `${API_BASE_URL}/getNearbyJobs?latitude=${latitude}&longitude=${longitude}`,
         { method: "GET", redirect: "follow" }
     );
@@ -268,7 +315,7 @@ export const getNearbyJobsForWorker = async (
     workerId: string
 ): Promise<NearbyJobsForWorkerResponse> => {
     try {
-        const response = await fetch(
+        const response = await authedFetch(
             `${API_BASE_URL}/getNearbyJobsWorker/${workerId}`,
             { method: "GET", redirect: "follow" }
         );
@@ -303,7 +350,7 @@ export const getNearbyWorkers = async (
         `&category=${encodeURIComponent(category.trim())}` +
         `&subcategory=${encodeURIComponent(subcategory.trim())}`;
 
-    const response = await fetch(url, {
+    const response = await authedFetch(url, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
     });
@@ -359,9 +406,61 @@ export interface Worker {
     __v?: number;
 }
 
+/**
+ * Reads a worker by worker id, with the same tiered fallbacks as mobile
+ * `getWorkerById`:
+ *   1. `GET /getWorkerById/:id`
+ *   2. the supplied id may actually be a user id, so try `getWorkerByUserId`
+ *   3. scan `getAllWorkers` locally as a last resort
+ *
+ * Step 2 matters because the web app persisted the *user* id in some code
+ * paths and the *worker* id in others.
+ */
 export const getWorkerById = async (workerId: string): Promise<{ success: boolean; data: Worker }> => {
-    const response = await axios.get(`${API_BASE_URL}/getWorkerById/${workerId}`);
-    return response.data;
+    if (!workerId) throw new Error("Worker ID is required");
+
+    const wrap = (worker: any) => ({ success: true, data: worker as Worker });
+
+    // 1) Dedicated endpoint.
+    try {
+        const response = await API_MULTIPART.get(`/getWorkerById/${workerId}`);
+        const worker = response.data?.data || response.data?.worker || response.data;
+        if (worker && (worker._id || worker.userId)) return wrap(worker);
+    } catch {
+        // Fall through.
+    }
+
+    // 2) The id may be a user id.
+    try {
+        const found = await getWorkerByUserId(workerId);
+        const worker = found?.worker || found?.data || found;
+        if (worker && (worker._id || worker.userId)) return wrap(worker);
+    } catch {
+        // Fall through.
+    }
+
+    // 3) Local scan.
+    try {
+        const response = await API_MULTIPART.get(`/getAllWorkers`);
+        const json = response.data;
+        const workers: any[] = Array.isArray(json)
+            ? json
+            : Array.isArray(json?.workers)
+              ? json.workers
+              : Array.isArray(json?.data)
+                ? json.data
+                : [];
+
+        const readUserId = (w: any): string | null =>
+            typeof w?.userId === "object" ? w.userId?._id ?? null : w?.userId ?? null;
+
+        const match = workers.find((w) => w?._id === workerId || readUserId(w) === workerId);
+        if (match) return wrap(match);
+    } catch {
+        // Fall through.
+    }
+
+    throw new Error("Worker not found");
 };
 
 export interface CreateWorkerBasePayload {
@@ -386,6 +485,7 @@ export interface WorkerResponse {
         name: string;
         phone?: string;
         profilePic?: string;
+        area?: string;
         city: string;
         state?: string;
         pincode?: string;
@@ -398,23 +498,48 @@ export const createWorkerBase = async (
     payload: CreateWorkerBasePayload
 ): Promise<WorkerResponse> => {
     try {
-        const formData = new FormData();
-        formData.append("userId", payload.userId);
-        formData.append("name", payload.name);
-        formData.append("city", payload.city);
-        if (payload.area) formData.append("area", payload.area);
-        if (payload.state) formData.append("state", payload.state);
-        if (payload.pincode) formData.append("pincode", payload.pincode);
-        if (payload.phone) formData.append("phone", payload.phone);
-        if (payload.latitude !== undefined) formData.append("latitude", String(payload.latitude));
-        if (payload.longitude !== undefined) formData.append("longitude", String(payload.longitude));
-        if (payload.profilePic) formData.append("profilePic", payload.profilePic);
+        // The mobile app (`createWorkers` in workerApi.tsx) only switches to
+        // multipart when a profile picture is actually attached; otherwise it
+        // posts `application/x-www-form-urlencoded`. Sending multipart for a
+        // file-less profile is the one thing that made this endpoint behave
+        // differently from mobile, so the two encodings are now chosen the
+        // same way.
+        const hasProfilePic = payload.profilePic instanceof File && payload.profilePic.size > 0;
 
-        const res = await API_MULTIPART.post("/createworkers", formData, {
-            headers: { "Content-Type": "multipart/form-data" },
-        });
+        const fields: Record<string, string> = {
+            userId: String(payload.userId ?? ""),
+            name: String(payload.name ?? ""),
+            city: String(payload.city ?? ""),
+            area: String(payload.area ?? ""),
+            state: String(payload.state ?? ""),
+            pincode: String(payload.pincode ?? ""),
+            phone: String(payload.phone ?? ""),
+            latitude: isFiniteNumber(payload.latitude) ? String(payload.latitude) : "",
+            longitude: isFiniteNumber(payload.longitude) ? String(payload.longitude) : "",
+        };
+
+        let res: { data: WorkerResponse; status: number };
+        if (hasProfilePic) {
+            const formData = new FormData();
+            Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+            formData.append("profilePic", payload.profilePic as File);
+            res = await API_MULTIPART.post("/createworkers", formData);
+        } else {
+            res = await API_FORM.post("/createworkers", new URLSearchParams(fields).toString());
+        }
+
         return res.data;
     } catch (err: any) {
+        // Mobile treats 409 as "already registered" and recovers by looking the
+        // existing worker up, rather than surfacing a hard failure. That keeps a
+        // double-submit or a re-run onboarding from stranding the user.
+        if (err?.response?.status === 409) {
+            const existing = await getWorkerByUserId(payload.userId)
+                .then((worker) => worker as unknown as WorkerResponse)
+                .catch(() => null);
+            if (existing) return existing;
+        }
+
         const message =
             err?.response?.data?.message || err?.message || "Failed to create worker profile";
         throw new Error(message);
@@ -429,6 +554,18 @@ export interface AddWorkerSkillPayload {
     serviceCharge: number;
     chargeType: "hour" | "day" | "fixed";
     images?: File[];
+    /**
+     * Service location chosen in the location picker. The WorkerSkill model
+     * already stores/returns all of these (see `AddWorkerSkillResponse.skill`),
+     * so they are sent per skill instead of being inherited from the worker
+     * profile. Omitted keys are simply not appended to the request.
+     */
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export interface AddWorkerSkillResponse {
@@ -459,26 +596,46 @@ export const addWorkerSkill = async (
     payload: AddWorkerSkillPayload
 ): Promise<AddWorkerSkillResponse> => {
     try {
-        const formData = new FormData();
-        formData.append("workerId", payload.workerId);
         const categoryString = Array.isArray(payload.category)
             ? payload.category.join(",")
             : payload.category;
-        formData.append("category", categoryString);
-        formData.append("subCategory", payload.subCategory);
-        formData.append("skill", payload.skill);
-        formData.append("serviceCharge", String(payload.serviceCharge));
-        formData.append("chargeType", payload.chargeType);
-        if (payload.images?.length) {
-            payload.images.forEach((file) => formData.append("images", file));
+
+        // Mirrors mobile `addWorkerSkills`: urlencoded for a text-only skill,
+        // multipart only when images are attached.
+        const hasImages = Array.isArray(payload.images) && payload.images.length > 0;
+        const fields: Record<string, string> = {
+            workerId: String(payload.workerId ?? ""),
+            category: String(categoryString ?? ""),
+            subCategory: String(payload.subCategory ?? ""),
+            skill: String(payload.skill ?? ""),
+            serviceCharge: String(payload.serviceCharge ?? ""),
+            chargeType: String(payload.chargeType ?? ""),
+            area: String(payload.area ?? ""),
+            city: String(payload.city ?? ""),
+            state: String(payload.state ?? ""),
+            pincode: String(payload.pincode ?? ""),
+            latitude: isFiniteNumber(payload.latitude) ? String(payload.latitude) : "",
+            longitude: isFiniteNumber(payload.longitude) ? String(payload.longitude) : "",
+        };
+
+        let response: Response;
+        if (hasImages) {
+            const formData = new FormData();
+            Object.entries(fields).forEach(([key, value]) => formData.append(key, value));
+            (payload.images as File[]).forEach((file) => formData.append("images", file));
+            response = await authedFetch(`${API_BASE_URL}/addworkerSkill`, {
+                method: "POST",
+                body: formData,
+            });
+        } else {
+            response = await authedFetch(`${API_BASE_URL}/addworkerSkill`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(fields).toString(),
+            });
         }
 
-        const response = await fetch(`${API_BASE_URL}/addworkerSkill`, {
-            method: "POST",
-            body: formData,
-        });
-
-        if (!response.ok) {
+        if (!response.ok && response.status !== 201) {
             const errorText = await response.text();
             throw new Error(`HTTP error! status: ${response.status}. ${errorText}`);
         }
@@ -557,13 +714,138 @@ export const createWorkerComplete = async (
     }
 };
 
-export const getWorkerByUserId = async (userId: string) => {
-    const res = await fetch(`${API_BASE_URL}/getWorkerByUserId/${userId}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-    });
-    if (!res.ok) throw new Error("Worker not found");
-    return res.json();
+/**
+ * Reads a worker document by the owning user id.
+ *
+ * Kept in parity with mobile `getWorkerByUserId` (workerApi.tsx), which uses
+ * two strategies:
+ *   A. `GET /getWorkerByUserId/:userId`
+ *   B. `GET /getAllWorkers` and match `userId` locally
+ *
+ * Strategy B matters because the dedicated endpoint is not reliably available
+ * on the backend; without it, a worker who already has a profile was reported
+ * as "not found" and onboarding restarted from scratch.
+ *
+ * `userId` on a worker document may be a string or a populated object, so both
+ * shapes are compared.
+ *
+ * The resolved worker is returned in a normalised envelope that exposes the
+ * document as BOTH `worker` and `data`. The backend's own shape has drifted
+ * between these two over time, and callers were reading different keys for the
+ * same value - which made an existing worker look absent on login and restarted
+ * profile creation. Reading either key now always works.
+ */
+export interface WorkerByUserIdResponse {
+    success: boolean;
+    worker: any;
+    /** Alias of `worker`; the backend has used both keys historically. */
+    data: any;
+    totalSkills?: number;
+    workerSkills?: any[];
+}
+
+const wrapWorker = (
+    worker: any,
+    extra?: Partial<WorkerByUserIdResponse>
+): WorkerByUserIdResponse => ({
+    success: true,
+    worker,
+    data: worker,
+    ...extra,
+});
+
+/**
+ * Reads a previously stored worker id, without trusting it as proof the worker
+ * still exists. Local storage is only ever used to *seed* a server lookup, so a
+ * cleared profile cannot be resurrected from a stale key.
+ */
+const readCachedWorkerId = (userId: string): string | null => {
+    try {
+        if (typeof window === "undefined" || !window.localStorage) return null;
+        const direct = window.localStorage.getItem("@worker_id") || window.localStorage.getItem("workerId");
+        if (direct) return direct;
+        return window.localStorage.getItem(`worker_id_for_${userId}`);
+    } catch {
+        return null;
+    }
+};
+
+export const getWorkerByUserId = async (userId: string): Promise<WorkerByUserIdResponse> => {
+    if (!userId) throw new Error("User ID is required");
+
+    const readWorkerId = (worker: any): string | null => {
+        if (!worker) return null;
+        if (typeof worker.userId === "object") return worker.userId?._id ?? null;
+        return worker.userId ?? null;
+    };
+
+    // ── Strategy A: dedicated endpoint ──────────────────────────────────────
+    try {
+        const res = await authedFetch(`${API_BASE_URL}/getWorkerByUserId/${userId}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (res.ok) {
+            const text = await res.text();
+            if (text.trim()) {
+                const json = JSON.parse(text);
+                const worker = json?.data || json?.worker || json;
+                if (worker?._id) {
+                    return wrapWorker(worker, {
+                        totalSkills: json?.totalSkills,
+                        workerSkills: json?.workerSkills,
+                    });
+                }
+            }
+        }
+    } catch {
+        // Fall through to strategy B.
+    }
+
+    // ── Strategy A': the skills endpoint, for the case where the dedicated
+    // lookup is unavailable but the worker record itself is still reachable.
+    // Only used to learn the worker id, never as a source of profile data.
+    try {
+        const cached = readCachedWorkerId(userId);
+        if (cached) {
+            const res = await authedFetch(
+                `${API_BASE_URL}/getWorkerWithSkills?workerId=${encodeURIComponent(cached)}`,
+                { method: "GET", headers: { "Content-Type": "application/json" } }
+            );
+            if (res.ok) {
+                const json = await res.json();
+                const worker = json?.worker;
+                if (worker?._id) return wrapWorker(worker, { workerSkills: json?.workerSkills });
+            }
+        }
+    } catch {
+        // Fall through to strategy B.
+    }
+
+    // ── Strategy B: scan getAllWorkers ──────────────────────────────────────
+    try {
+        const res = await authedFetch(`${API_BASE_URL}/getAllWorkers`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (res.ok) {
+            const json = await res.json();
+            const workers: any[] = Array.isArray(json)
+                ? json
+                : Array.isArray(json?.workers)
+                  ? json.workers
+                  : Array.isArray(json?.data)
+                    ? json.data
+                    : [];
+
+            const match = workers.find((w) => readWorkerId(w) === userId);
+            if (match?._id) return wrapWorker(match);
+        }
+    } catch {
+        // Fall through to the not-found error.
+    }
+
+    throw new Error("WORKER_NOT_FOUND");
 };
 
 export interface WorkerSkillDetail {
@@ -650,7 +932,7 @@ export const getWorkersWithSkills = async (): Promise<{
     count: number;
     workers: WorkerListItem[];
 }> => {
-    const response = await fetch(`${API_BASE_URL}/getWorkersWithSkills`);
+    const response = await authedFetch(`${API_BASE_URL}/getWorkersWithSkills`);
     if (!response.ok) throw new Error("Failed to fetch workers");
     return response.json();
 };
@@ -683,7 +965,7 @@ export interface WorkerSkillResponse {
 
 export const getWorkerSkillById = async (skillId: string): Promise<WorkerSkillResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getWorkerSkillById/${skillId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getWorkerSkillById/${skillId}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
         });
@@ -701,6 +983,13 @@ export interface UpdateWorkerSkillPayload {
     skill?: string;
     serviceCharge?: number;
     chargeType?: "hour" | "day" | "fixed";
+    /** Service location - see `AddWorkerSkillPayload` for details. */
+    area?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export const updateWorkerSkill = async (
@@ -720,8 +1009,14 @@ export const updateWorkerSkill = async (
         if (payload.serviceCharge !== undefined)
             formData.append("serviceCharge", String(payload.serviceCharge));
         if (payload.chargeType) formData.append("chargeType", payload.chargeType);
+        if (payload.area) formData.append("area", payload.area);
+        if (payload.city) formData.append("city", payload.city);
+        if (payload.state) formData.append("state", payload.state);
+        if (payload.pincode) formData.append("pincode", payload.pincode);
+        if (isFiniteNumber(payload.latitude)) formData.append("latitude", String(payload.latitude));
+        if (isFiniteNumber(payload.longitude)) formData.append("longitude", String(payload.longitude));
 
-        const response = await fetch(`${API_BASE_URL}/updateWorkerSkillById/${skillId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/updateWorkerSkillById/${skillId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData.toString(),
@@ -739,7 +1034,7 @@ export const deleteWorkerSkill = async (
     skillId: string
 ): Promise<{ success: boolean; message: string }> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/deleteWorkerSkill/${skillId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/deleteWorkerSkill/${skillId}`, {
             method: "DELETE",
         });
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -852,7 +1147,7 @@ export const createBooking = async (
         if (payload.months) formData.append("months", String(payload.months));
         if (payload.remarks) formData.append("remarks", payload.remarks);
 
-        const response = await fetch(`${API_BASE_URL}/createBooking`, {
+        const response = await authedFetch(`${API_BASE_URL}/createBooking`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
@@ -902,7 +1197,7 @@ export const createTicket = async (payload: CreateTicketPayload): Promise<Ticket
         formData.append("description", payload.description);
         formData.append("priority", payload.priority);
 
-        const response = await fetch(`${API_BASE_URL}/create`, {
+        const response = await authedFetch(`${API_BASE_URL}/create`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: formData,
@@ -936,7 +1231,7 @@ export const getTicketsByUserId = async (
     userRole: "User" | "Worker"
 ): Promise<GetTicketsResponse> => {
     try {
-        const response = await fetch(
+        const response = await authedFetch(
             `${API_BASE_URL}/getTicketById/${userId}?raisedById=${userId}&raisedByRole=${userRole}`
         );
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -992,7 +1287,7 @@ export const getAllDataByUserId = async (
     userId: string
 ): Promise<GetAllDataByUserIdResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getAllDataByUserId/${userId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getAllDataByUserId/${userId}`, {
             method: "GET",
             redirect: "follow",
         });
@@ -1023,7 +1318,7 @@ export const removeEnquiry = async (
         urlencoded.append("workerId", workerId);
         urlencoded.append("jobId", jobId);
 
-        const response = await fetch(`${API_BASE_URL}/removeEnquiry`, {
+        const response = await authedFetch(`${API_BASE_URL}/removeEnquiry`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: urlencoded,
@@ -1047,7 +1342,7 @@ export const sendEnquiryToJob = async (
         urlencoded.append("jobId", jobId);
         urlencoded.append("workerId", workerId);
 
-        const response = await fetch(`${API_BASE_URL}/sendEnquiryjob`, {
+        const response = await authedFetch(`${API_BASE_URL}/sendEnquiryjob`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: urlencoded,
@@ -1099,7 +1394,7 @@ export const getConfirmedWorkers = async (
     jobId: string
 ): Promise<GetConfirmedWorkersResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
             method: "GET",
             redirect: "follow",
         });
@@ -1158,7 +1453,7 @@ export const checkJobApplication = async (
     workerId: string
 ): Promise<boolean> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
             method: "GET",
             redirect: "follow",
         });
@@ -1186,7 +1481,7 @@ export const checkJobApplication = async (
 
 export const getConfirmedWorkersCount = async (jobId: string): Promise<number> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getConfirmedWorkers/${jobId}`, {
             method: "GET",
             redirect: "follow",
         });
@@ -1244,7 +1539,7 @@ export const getAllNotifications = async (
     id: string
 ): Promise<NotificationsResponse> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/getAllNotifications/${role}/${id}`, {
+        const response = await authedFetch(`${API_BASE_URL}/getAllNotifications/${role}/${id}`, {
             method: "GET",
             redirect: "follow",
         });
@@ -1260,7 +1555,7 @@ export const getUnreadNotifications = async (
     role: "User" | "Worker",
     id: string
 ): Promise<NotificationsResponse> => {
-    const response = await fetch(`${API_BASE_URL}/unread/${role}/${id}`, {
+    const response = await authedFetch(`${API_BASE_URL}/unread/${role}/${id}`, {
         method: "GET",
         redirect: "follow",
     });
@@ -1281,7 +1576,7 @@ export const markNotificationAsRead = async (
     notificationId: string
 ): Promise<{ success: boolean; message: string }> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/read/${notificationId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/read/${notificationId}`, {
             method: "PUT",
             redirect: "follow",
         });
@@ -1297,7 +1592,7 @@ export const deleteNotification = async (
     notificationId: string
 ): Promise<{ success: boolean; message: string }> => {
     try {
-        const response = await fetch(`${API_BASE_URL}/deleteNotification/${notificationId}`, {
+        const response = await authedFetch(`${API_BASE_URL}/deleteNotification/${notificationId}`, {
             method: "DELETE",
             redirect: "follow",
         });
@@ -1337,7 +1632,7 @@ export const saveFcmToken = async (
         body.append("role", role);
         body.append("fcmToken", fcmToken);
 
-        const res = await fetch(`${API_BASE_URL}/saveFcmToken`, {
+        const res = await authedFetch(`${API_BASE_URL}/saveFcmToken`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body,
@@ -1367,7 +1662,7 @@ export const notifyMatchingWorkers = async (
         const body = new URLSearchParams();
         body.append("jobId", jobId);
 
-        const response = await fetch(`${API_BASE_URL}/notifyMatchingWorkers`, {
+        const response = await authedFetch(`${API_BASE_URL}/notifyMatchingWorkers`, {
             method: "POST",
             headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body,
@@ -1398,7 +1693,7 @@ export interface ReviewData {
 export const getReviews = async (
     workerId: string
 ): Promise<{ success: boolean; data: ReviewData[] }> => {
-    const res = await fetch(`${API_BASE_URL}/getReviews?workerId=${workerId}`);
+    const res = await authedFetch(`${API_BASE_URL}/getReviews?workerId=${workerId}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     return res.json();
 };
@@ -1423,7 +1718,7 @@ export const getReviewById = async (
     reviewId: string
 ): Promise<{ success: boolean; data: SingleReviewData }> => {
     try {
-        const res = await fetch(`${API_BASE_URL}/getReviewById/${reviewId}`, {
+        const res = await authedFetch(`${API_BASE_URL}/getReviewById/${reviewId}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
         });
@@ -1447,7 +1742,7 @@ export const addReview = async (
     formData.append("rating", String(rating));
     formData.append("review", review);
 
-    const res = await fetch(`${API_BASE_URL}/addReview`, {
+    const res = await authedFetch(`${API_BASE_URL}/addReview`, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,
@@ -1467,7 +1762,7 @@ export const updateReview = async (
     formData.append("rating", String(rating));
     formData.append("review", review);
 
-    const res = await fetch(`${API_BASE_URL}/updateReview/${reviewId}`, {
+    const res = await authedFetch(`${API_BASE_URL}/updateReview/${reviewId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: formData,
@@ -1478,7 +1773,7 @@ export const updateReview = async (
 };
 
 export const deleteReview = async (reviewId: string) => {
-    const res = await fetch(`${API_BASE_URL}/deleteReview/${reviewId}`, {
+    const res = await authedFetch(`${API_BASE_URL}/deleteReview/${reviewId}`, {
         method: "DELETE",
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -1486,7 +1781,7 @@ export const deleteReview = async (reviewId: string) => {
 };
 
 export const getWorkerAverageRating = async (workerId: string) => {
-    const res = await fetch(`${API_BASE_URL}/getWorkerAverageRating?workerId=${workerId}`, {
+    const res = await authedFetch(`${API_BASE_URL}/getWorkerAverageRating?workerId=${workerId}`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
     });
